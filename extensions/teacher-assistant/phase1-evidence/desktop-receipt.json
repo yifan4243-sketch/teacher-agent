@@ -1,0 +1,18 @@
+{
+  "home": "C:\\Users\\yifan\\AppData\\Local\\Temp\\teacher-desktop-dGNYHK",
+  "backend": "real Hermes Gateway",
+  "database": "real SQLite",
+  "model": "loopback scripted test provider",
+  "operations_verified": [
+    "course.create",
+    "course.update",
+    "class.create",
+    "student.create",
+    "course.assign_class",
+    "enrollment.create",
+    "task.create",
+    "task.run",
+    "task.review",
+    "reload persistence"
+  ]
+}

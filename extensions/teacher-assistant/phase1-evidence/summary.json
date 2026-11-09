@@ -1,0 +1,38 @@
+{
+  "phase": 1,
+  "python_foundation_tests": 11,
+  "gateway_and_plugin_regression": {
+    "passed": 17,
+    "failed": 0,
+    "skipped": 1
+  },
+  "desktop_integration": {
+    "passed": 1,
+    "failed": 0,
+    "real_gateway": true,
+    "real_sqlite": true,
+    "model": "loopback scripted provider"
+  },
+  "typecheck_exit_code": 0,
+  "plugin_validate_exit_code": 0,
+  "repository_checks": 15,
+  "local_logs": "E:\\TeacherAgentData\\phase1-evidence",
+  "artifacts": {
+    "agent-cache-regression.log": "4289cd23514e801a8862ae210c50f81a19cbaa55b62d10c6568fa6683dddfd35",
+    "desktop-acceptance-configured.log": "84ad6f62ee4af879befc05479540c04aa9c78e9965975f82842f0f0ce5b19812",
+    "desktop-full-flow.log": "d4f6825d0eda02f8d70af80239b2e80838b9d66488fce68bf79326fa11040858",
+    "desktop-receipt.json": "9f1fb754ed1dcf61ecfd97ea227813670aef9ff0c0af8bafbb70f37e5cf62d2c",
+    "foundation-final.log": "c15ee5385b08790e4f11a88c4364f7c383e2ba044114b0b3afaa4dbd0a9c7b72",
+    "phase1-checks-clean.log": "408a5d31b7b5f0436b4969fc341d282081f00512bc8facaa800c84b44d459aa1",
+    "phase1-final-regression.log": "7942401259dbb3ec0485910b4811fd70eccc9cf91d1f08688b5591a160944817",
+    "plugin-validation.log": "c82627ef3732f42ecfa9c9af4842535f92990c0db553cf5035d3c93ce7ba4a01",
+    "repository-checks-fixed.log": "1a8ba72c98579cff8f937dce7dde6c7cab89b0acf0cc52debaaa51b03bf256f8",
+    "teacher-workspace.png": "91f35a177d9c94c9f57a8227bc48dfd15a44da6a148897aad75d6a0001d20fef"
+  },
+  "final_python_regression": {
+    "passed": 59,
+    "failed": 0,
+    "skipped": 1,
+    "files": 4
+  }
+}

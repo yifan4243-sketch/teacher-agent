@@ -1,0 +1,8 @@
+name: teacher-assistant
+version: 0.1.0
+description: Local teaching records, reviewable workflows and teacher workspace.
+author: yifan4243-sketch
+license: MIT
+provides_tools:
+  - teacher_records
+  - teacher_tasks

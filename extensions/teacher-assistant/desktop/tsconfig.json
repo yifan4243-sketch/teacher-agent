@@ -1,0 +1,15 @@
+{
+  "extends": "../../../apps/desktop/tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["../../../apps/desktop/node_modules/@types"],
+    "paths": {
+      "@/*": ["../../../apps/desktop/src/*"],
+      "@hermes/plugin-sdk": ["../../../apps/desktop/src/sdk/index.ts"],
+      "@hermes/shared": ["../../../apps/shared/src/index.ts"],
+      "@hermes/shared/*": ["../../../apps/shared/src/*"],
+      "react": ["../../../apps/desktop/node_modules/@types/react"],
+      "react/jsx-runtime": ["../../../apps/desktop/node_modules/@types/react/jsx-runtime.d.ts"]
+    }
+  },
+  "include": ["src", "../../../apps/desktop/src/vite-env.d.ts", "../../../apps/desktop/src/global.d.ts"]
+}

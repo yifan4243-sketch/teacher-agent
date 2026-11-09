@@ -22,9 +22,25 @@
       "sha256": "27c83778b46a54307a506464ddd1d0b44e26d82eb951bf0a9f4657416fc13435",
       "status": "received",
       "source": "user_chat_message",
-      "usage": ["language_style", "classroom_interaction", "teaching_rhythm"],
+      "usage": [
+        "language_style",
+        "classroom_interaction",
+        "teaching_rhythm"
+      ],
       "textbook_references_verified": false,
-      "declared_section_minutes": [5, 7, 2, 1]
+      "declared_section_minutes": [
+        5,
+        7,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "teacher-agent-pro-v5.1-execution",
+      "kind": "execution_authorization",
+      "path": "requirements/Teacher_Agent_Pro_V5.1_Execution.txt",
+      "sha256": "1f45d9f938b7b0ca888685ffec077fbd7fef2e38aae93e29e247dc023b8d9750",
+      "status": "received"
     }
   ]
 }

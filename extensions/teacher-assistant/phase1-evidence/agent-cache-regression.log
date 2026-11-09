@@ -1,0 +1,19 @@
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 2 test files (~53 tests) under ['tests\\extensions\\test_teacher_foundation.py', 'tests\\agent\\test_prompt_caching.py']; running with -j 2
+[ 79.2% |    42/~53 | ✓42 | ✗ 0] ✓ tests\agent\test_prompt_caching.py (42✓, 3.3s)
+[100.0% |    53/~53 | ✓53 | ✗ 0] ✓ tests\extensions\test_teacher_foundation.py (11✓, 20.3s)
+
+=== Summary: 2 files, 53 tests passed, 0 failed (100% complete) in 20.5s (2 workers) ===
+  Durations cached to test_durations.json (2 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   2
+  Total subprocess CPU-wall: 23.6s  (runner wall: 20.5s, parallelism: 2x)
+  P50: 20.32s  P90: 20.32s  P95: 20.32s  P99: 20.32s  Max: 20.32s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     20.32s  tests\extensions\test_teacher_foundation.py
+      3.27s  tests\agent\test_prompt_caching.py

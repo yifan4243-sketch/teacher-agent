@@ -1,0 +1,25 @@
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 4 test files (~59 tests) under ['tests\\extensions\\test_teacher_foundation.py', 'tests\\agent\\test_prompt_caching.py', 'tests\\hermes_cli\\test_plugin_api_compat.py', 'tests\\gateway\\test_session_plugin_rpc.py']; running with -j 4
+[  1.7% |     1/~59 | ✓1 | ✗0] ✓ tests\hermes_cli\test_plugin_api_compat.py (1✓, 2.9s)
+[ 72.9% |    43/~59 | ✓43 | ✗ 0] ✓ tests\agent\test_prompt_caching.py (42✓, 3.6s)
+[ 81.4% |    48/~59 | ✓48 | ✗ 0] ✓ tests\gateway\test_session_plugin_rpc.py (5✓ 1s, 9.0s)
+[100.0% |    59/~59 | ✓59 | ✗ 0] ✓ tests\extensions\test_teacher_foundation.py (11✓, 24.9s)
+
+=== Summary: 4 files, 59 tests passed, 0 failed, 1 skipped (100% complete) in 25.1s (4 workers) ===
+
+  note: platforms('posix') tests (in 1 file) were SKIPPED on this host (win32); they run on the main Linux CI lane, the macOS Python-tests lane.
+  Durations cached to test_durations.json (4 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   4
+  Total subprocess CPU-wall: 40.4s  (runner wall: 25.1s, parallelism: 4x)
+  P50: 9.00s  P90: 24.94s  P95: 24.94s  P99: 24.94s  Max: 24.94s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     24.94s  tests\extensions\test_teacher_foundation.py
+      9.00s  tests\gateway\test_session_plugin_rpc.py
+      3.56s  tests\agent\test_prompt_caching.py
+      2.93s  tests\hermes_cli\test_plugin_api_compat.py

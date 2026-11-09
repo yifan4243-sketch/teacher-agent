@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "teacher-agent-pro-v5.1-requirements",
+      "kind": "requirements",
+      "path": "requirements/Teacher_Agent_Pro_V5.1_Codex.txt",
+      "sha256": "6ac3bb263c4b9648b7a867be1ea216a9dfb6323392ca46a4aa67c1dce24b33ef",
+      "status": "received"
+    },
+    {
+      "id": "lesson-plan-original",
+      "kind": "lesson_plan_template",
+      "path": "templates/教案模板（新）.docx",
+      "sha256": "1e846fc3c288f482e25bcc86a9ba119256577f95398fe8646c613b578ef9f084",
+      "status": "received"
+    },
+    {
+      "id": "teaching-script-style-reference",
+      "kind": "teaching_script_reference",
+      "path": "style-references/industrial-robotics-teaching-script.md",
+      "sha256": "27c83778b46a54307a506464ddd1d0b44e26d82eb951bf0a9f4657416fc13435",
+      "status": "received",
+      "source": "user_chat_message",
+      "usage": ["language_style", "classroom_interaction", "teaching_rhythm"],
+      "textbook_references_verified": false,
+      "declared_section_minutes": [5, 7, 2, 1]
+    }
+  ]
+}

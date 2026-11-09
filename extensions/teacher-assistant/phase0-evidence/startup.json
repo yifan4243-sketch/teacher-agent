@@ -1,0 +1,29 @@
+{
+  "health": {
+    "ok": true,
+    "version": "unknown",
+    "displayVersion": "git.8c1a9c0",
+    "commit": "8c1a9c0b6da872cca5083b98a7a1022edc3dfb4b",
+    "auth_required": false
+  },
+  "websocket_connected": true,
+  "subprotocol": null,
+  "runtime_describe": {
+    "jsonrpc": "2.0",
+    "id": "phase0-describe",
+    "error": {
+      "code": -32601,
+      "message": "unknown method: runtime.describe — not available on this Hermes backend"
+    }
+  },
+  "session_list": {
+    "jsonrpc": "2.0",
+    "id": "phase0-sessions",
+    "result": {
+      "sessions": []
+    }
+  },
+  "notification_methods": [
+    "event"
+  ]
+}

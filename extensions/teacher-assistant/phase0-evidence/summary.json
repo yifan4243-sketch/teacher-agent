@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "phase": 0,
+  "date": "2026-11-09",
+  "host": "Windows x64",
+  "source_baseline": "8c1a9c0b6da872cca5083b98a7a1022edc3dfb4b",
+  "fix_commit": "ce7d855aef0843ca934071b34850caa1ed15a168",
+  "baseline_tests": {
+    "files": 13,
+    "passed": 664,
+    "failed": 10,
+    "skipped": 12,
+    "seconds": 198.7,
+    "exit_code": 1
+  },
+  "final_tests": {
+    "files": 13,
+    "passed": 669,
+    "failed": 0,
+    "skipped": 17,
+    "seconds": 79.6,
+    "exit_code": 0
+  },
+  "repository_checks": {
+    "checks": 15,
+    "blocking": 0,
+    "advisory": 0,
+    "exit_code": 0
+  },
+  "local_evidence_directory": "E:\\TeacherAgentData\\phase0-evidence",
+  "protocol_probe_model_requests_submitted": 0,
+  "desktop": {
+    "build_exit_code": 0,
+    "electron_version": "44.9.3",
+    "real_onboarding_ui_visible": true,
+    "automatic_onboarding_submissions": 2,
+    "confirmed_successful_welcome_model_calls": 1,
+    "welcome_tier": "free",
+    "observations": [
+      "duplicate name forms visible during onboarding"
+    ],
+    "closed": true
+  },
+  "probe_services_stopped": true,
+  "local_raw_artifacts": {
+    "baseline-tests.log": {
+      "sha256": "8132dde58b89f163ffc3458073970f9a239fd7e3efc3bc2675ee6258b27fb637",
+      "bytes": 43845
+    },
+    "focused-tests.log": {
+      "sha256": "d7a9dadb697a6d598959791b6eb6707f3c61a4a938f8519d4bf29777eb5e8fb4",
+      "bytes": 6567
+    },
+    "final-tests.log": {
+      "sha256": "5f8b6c37e6344699cd501caac35c68ec6c3f2de96082e787007decd44c6a389f",
+      "bytes": 3436
+    },
+    "checks.log": {
+      "sha256": "cbfe764ba70c2ce5ad8f6eadda5a1975fd525651b08b0f4b8c5f23b71cd467f7",
+      "bytes": 125
+    },
+    "node-install.log": {
+      "sha256": "5a4aaad15961f37c569b0bc069698a20939fd160ceb74343d4cc129ba826efd3",
+      "bytes": 16734
+    },
+    "desktop-build.log": {
+      "sha256": "a8f476615866fe1c77b38a76c85b04fde8e4c84e501520db0ff93fcedb6ac353",
+      "bytes": 121683
+    },
+    "desktop-probe.json": {
+      "sha256": "9a054356d9831036387b2e46fa5eadb0666bf4f11f030a6e8625059a828b1eaa",
+      "bytes": 1389
+    },
+    "desktop-startup.png": {
+      "sha256": "cc1a25cab37c608e6bc22b0bc6f380f2cd36408ee992889c8ff4e7b3ae6e13bd",
+      "bytes": 47083
+    },
+    "gateway-stop.log": {
+      "sha256": "04d83f337cf9e8da25f256d5ef38b01b31f96a8eab76441cb407644576989d18",
+      "bytes": 275
+    },
+    "staged-checks.log": {
+      "sha256": "e9fae27295f147ec2433ba1a2039e69a22f698ab57eec31010282f11f67a5a3e",
+      "bytes": 125
+    }
+  },
+  "exported_text_line_endings": "LF",
+  "exported_artifacts": {
+    "checks.log": {
+      "sha256": "c92e8cce3a9cb767e6ee5714ecf3c47e59a20d8d5e69784b82b83a93e9365b56",
+      "bytes": 120
+    },
+    "desktop-probe.json": {
+      "sha256": "9a054356d9831036387b2e46fa5eadb0666bf4f11f030a6e8625059a828b1eaa",
+      "bytes": 1389
+    },
+    "desktop-startup.png": {
+      "sha256": "cc1a25cab37c608e6bc22b0bc6f380f2cd36408ee992889c8ff4e7b3ae6e13bd",
+      "bytes": 47083
+    },
+    "final-tests.log": {
+      "sha256": "c4c73af047cf80b3c505500b1c7bb1d8f92423a39f5379e5b17b20314d887112",
+      "bytes": 3394
+    },
+    "gateway-probe.json": {
+      "sha256": "d2a8bceed7b92687424702f4db89467f3ed24c77d24e8b003c1e476affcc08e9",
+      "bytes": 5047
+    },
+    "gateway-stop.log": {
+      "sha256": "f5cf1d0c963a09fa8d214a1929f226bc141556870d11d12f8b3760ca54a23e3a",
+      "bytes": 272
+    },
+    "preservation-check.json": {
+      "sha256": "f5d375a01d902c165128075ef286ecb2c0ddcad23dffaed576971d60ea4fd50f",
+      "bytes": 108
+    },
+    "staged-checks.log": {
+      "sha256": "fbbd252388059fa9da43dcde3d07c2fb38fecf1eaded9b1b3e82ad9d0ed0ac8e",
+      "bytes": 120
+    },
+    "startup.json": {
+      "sha256": "cf6c6b7df2235a9bb800e0e640ac101677bed54ac9b0dd4fb5c7c15e19aecb3b",
+      "bytes": 619
+    }
+  },
+  "staged_repository_checks": {
+    "checks": 15,
+    "blocking": 0,
+    "advisory": 0,
+    "exit_code": 0
+  }
+}

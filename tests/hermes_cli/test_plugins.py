@@ -171,7 +171,7 @@ class TestPluginDiscovery:
                 "$schema": PLUGIN_SCHEMA_V1,
                 "name": "portable.test",
                 "extensions": {"com.nousresearch.hermes": {"servers": {"worker": {
-                    "app": {"darwin": {"presence": "executable", "location": str(app)}},
+                    "app": {sys.platform: {"presence": "executable", "location": str(app)}},
                     "requires": {"app": True},
                     "liveness": {"kind": "static"},
                 }}}},

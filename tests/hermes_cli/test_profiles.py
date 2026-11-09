@@ -152,8 +152,8 @@ class TestCreateProfile:
             line.startswith("#") or not line.strip()
             for line in content.splitlines()
         )
-        mode = stat.S_IMODE(env_path.stat().st_mode)
-        assert mode == 0o600
+        if os.name == "posix":
+            assert stat.S_IMODE(env_path.stat().st_mode) == 0o600
 
 
     def test_fresh_profile_inherits_a_usable_model(self, profile_env):
@@ -337,6 +337,7 @@ class TestCreateProfile:
         (default_home / "config.yaml").write_text(f"model: test\nskills:\n  external_dirs:\n    - {external}\n", encoding="utf-8")
         return default_home, external
 
+    @pytest.mark.require_symlinks
     @pytest.mark.parametrize("clone_kwargs", [{"clone_config": True}, {"clone_all": True}])
     def test_clone_recreates_skill_junctions_and_skips_dangling_ones(self, profile_env, monkeypatch, clone_kwargs):
         """A junctioned skill stays a link (one candidate with its external original), a dangling
@@ -531,7 +532,8 @@ class TestBackfillProfileEnvs:
         assert sorted(backfilled) == ["old1", "old2"]
         for p in (p1, p2):
             assert "root-key" not in (p / ".env").read_text(encoding="utf-8-sig")
-            assert stat.S_IMODE((p / ".env").stat().st_mode) == 0o600
+            if os.name == "posix":
+                assert stat.S_IMODE((p / ".env").stat().st_mode) == 0o600
 
 
     def test_placeholder_when_default_has_no_env(self, profile_env):
@@ -1063,6 +1065,7 @@ class TestAliasCollision:
 class TestWrapperScript:
     """Tests for create_wrapper_script() and remove_wrapper_script()."""
 
+    @pytest.mark.platforms("posix")
     def test_creates_sh_on_posix(self, profile_env, monkeypatch):
         monkeypatch.setattr("hermes_cli.profiles.shutil.which", lambda name: "/opt/hermes/bin/hermes")
         from hermes_cli.profiles import create_wrapper_script
@@ -1144,11 +1147,11 @@ class TestFindAliasForProfile:
             list_profiles,
         )
         create_profile("steve", no_alias=True)
-        create_wrapper_script("qiaobusi", target="steve")
+        wrapper = create_wrapper_script("qiaobusi", target="steve")
         info = next(p for p in list_profiles() if p.name == "steve")
         assert info.alias_name == "qiaobusi"
         assert info.alias_path is not None
-        assert info.alias_path.name == "qiaobusi"
+        assert info.alias_path == wrapper
 
 
 # ===================================================================
@@ -1423,6 +1426,7 @@ class TestExportImport:
         assert "default/memories/MEMORY.md" in names
 
 
+    @pytest.mark.require_symlinks
     def test_export_default_handles_broken_symlinks(self, profile_env, tmp_path):
         """Broken symlinks inside allowed artifacts are preserved, not crashed (#58394).
 
@@ -1581,6 +1585,7 @@ class TestWriteProfileMetaDurability:
         assert "🧙" in raw
         assert profiles.read_profile_meta(profile_dir)["description"] == "Code wizard 🧙 ✨"
 
+    @pytest.mark.require_symlinks
     def test_symlinked_profile_yaml_survives_the_write(self, tmp_path):
         """Guard on the conversion, not a behavior change.
 

@@ -1,0 +1,2 @@
+# Original PNG is preserved locally and at the generation source. Ship the JPEG copy within the repository blob limit.
+generated-design.png

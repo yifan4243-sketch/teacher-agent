@@ -1,0 +1,17 @@
+{
+  "rendering_application": "WPS Presentation KWPP.Application",
+  "slides": 1,
+  "native_objects": 32,
+  "text_boxes": 7,
+  "auto_shapes": 19,
+  "connectors": 5,
+  "tables": 1,
+  "native_table_cells": 9,
+  "pictures": 0,
+  "wps_title_edit_persisted": true,
+  "wps_shape_move_persisted": true,
+  "wps_table_edit_persisted": true,
+  "image_origin": "real image_gen output, automatically generated from teaching-script comparison content",
+  "layout_origin": "developer visual measurement, not a live plugin vision-model call",
+  "live_plugin_vision_inference": "pending provider credentials and fee authorization"
+}

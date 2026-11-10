@@ -7,7 +7,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
-from . import models, records, workflows
+from . import knowledge, knowledge_models, lessons, models, records, semantic, workflows
 from .database import database, encode
 
 
@@ -17,6 +17,15 @@ READS = {
     "student.list": (models.ListRecords, partial(records.list_records, entity="student")),
     "enrollment.list": (models.CourseFilter, records.list_enrollments),
     "course.classes": (models.CourseFilter, records.list_course_classes),
+    "textbook.list": (models.CourseFilter, knowledge.list_books),
+    "textbook.get": (models.Identifier, knowledge.get_book),
+    "textbook.version": (models.Identifier, knowledge.get_version),
+    "source.get": (models.Identifier, knowledge.get_source),
+    "source.list": (knowledge_models.VersionFilter, knowledge.list_sources),
+    "knowledge.list": (knowledge_models.VersionFilter, knowledge.list_knowledge),
+    "knowledge.search": (knowledge_models.SourceSearch, knowledge.search_sources),
+    "lesson.get": (models.Identifier, lessons.get_lesson),
+    "lesson.list": (models.CourseFilter, lessons.list_lessons),
 }
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
@@ -31,6 +40,13 @@ WRITES = {
     "task.run": (models.Identifier, workflows.run_task),
     "task.cancel": (models.TaskChange, partial(workflows.change_task, target="cancelled")),
     "task.retry": (models.TaskChange, partial(workflows.change_task, target="pending")),
+    "textbook.import": (knowledge_models.ImportBook, knowledge.import_book),
+    "textbook.upload.begin": (knowledge_models.UploadBegin, knowledge.begin_upload),
+    "textbook.upload.chunk": (knowledge_models.UploadChunk, knowledge.upload_chunk),
+    "textbook.upload.finish": (models.Identifier, knowledge.finish_upload),
+    "chapter.update": (knowledge_models.ChapterUpdate, knowledge.rename_chapter),
+    "knowledge.review": (knowledge_models.KnowledgeReview, knowledge.review_knowledge),
+    "lesson.create": (lessons.LessonCreate, lessons.create_lesson),
 }
 
 
@@ -46,6 +62,7 @@ READS["task.list"] = (models.Input, lambda conn, data: workflows.list_tasks(conn
 class TeachingService:
     def __init__(self, ctx):
         self.ctx = ctx
+        self.reads = {**READS, "knowledge.semantic": (knowledge_models.SemanticSearch, partial(semantic.search, ctx=ctx))}
 
     def call(self, operation, data=None, request_id=None, *, human=False, session_id=None):
         try:
@@ -57,26 +74,30 @@ class TeachingService:
             return {"ok": False, "error": {"code": exc.code, "message": str(exc)}}
         except sqlite3.IntegrityError:
             return {"ok": False, "error": {"code": "conflict", "message": "记录重复或关联约束冲突"}}
+        except OSError:
+            return {"ok": False, "error": {"code": "file_access_error", "message": "教学文件无法读取或保存，请检查文件权限与可用磁盘空间"}}
 
     def _call(self, operation, data, request_id, human, session_id):
         if operation == "schema":
-            return {key: schema.model_json_schema() for key, (schema, _) in {**READS, **WRITES}.items()}
+            return {key: schema.model_json_schema() for key, (schema, _) in {**self.reads, **WRITES}.items()}
         if operation == "settings.get":
             return self.settings()
         if operation == "settings.update":
             return self.update_settings(data, human)
         writes = {**WRITES, "task.review": (models.TaskReview, workflows.review_task)} if human else WRITES
-        schema, handler = ({**READS, **writes}).get(operation, (None, None))
+        schema, handler = ({**self.reads, **writes}).get(operation, (None, None))
         if schema is None:
             raise models.DomainError("unknown_operation", "不支持的操作")
         if not human and operation in self.settings()["disabled_operations"]:
             raise models.DomainError("permission_denied", "教师配置已禁用此 Agent 操作")
         if not human and operation.startswith(("student.", "enrollment.")) and not self.settings()["agent_student_access"]:
             raise models.DomainError("permission_denied", "学生资料默认仅供本地教师界面访问")
+        if not human and operation == "knowledge.review":
+            raise models.DomainError("permission_denied", "知识点确认需要教师在界面复核")
         payload = schema.model_validate(data)
         actor = "desktop:teacher" if human else "agent:" + (session_id or "local")
         with database() as conn:
-            if operation in READS:
+            if operation in self.reads:
                 return handler(conn=conn, data=payload)
             if not human and operation == "task.run" and "course.create" in self.settings()["disabled_operations"]:
                 raise models.DomainError("permission_denied", "课程创建权限已禁用，任务不能代为创建课程")
@@ -100,7 +121,7 @@ class TeachingService:
         if not human:
             raise models.DomainError("permission_denied", "模型和工具权限由教师在设置页修改")
         policy = models.Policy.model_validate({**self.settings(), **data})
-        if any(op not in {**READS, **WRITES} for op in policy.disabled_operations):
+        if any(op not in {**self.reads, **WRITES} for op in policy.disabled_operations):
             raise models.DomainError("invalid_input", "权限设置格式不正确")
         self.ctx.set_config("policy", policy.model_dump())
         return self.settings()

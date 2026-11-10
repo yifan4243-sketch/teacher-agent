@@ -1,8 +1,8 @@
 // Generated from desktop/src by scripts/build_desktop.mjs.
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { Button as Button4, host as host2, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery4, useValue } from "@hermes/plugin-sdk";
-import { useState as useState3 } from "react";
+import { Button as Button6, host as host2, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery6, useValue } from "@hermes/plugin-sdk";
+import { useState as useState5 } from "react";
 
 // extensions/teacher-assistant/desktop/src/records.tsx
 import { Button, Input, useMutation, useQuery, useQueryClient } from "@hermes/plugin-sdk";
@@ -239,7 +239,7 @@ function Settings({ route }) {
       const model = String(form.get(`${key}.model`) ?? "").trim();
       if (provider || model) stageModels[key] = { provider, model };
     }
-    mutation.mutate({ agent_student_access: form.has("student_access"), disabled_operations: form.getAll("disabled_operation").map(String), stage_models: stageModels });
+    mutation.mutate({ agent_student_access: form.has("student_access"), semantic_llm_enabled: form.has("semantic_llm"), disabled_operations: form.getAll("disabled_operation").map(String), stage_models: stageModels });
   }
   return /* @__PURE__ */ jsxs2("section", { className: "space-y-5", "aria-label": "\u6A21\u578B\u4E0E\u6743\u9650\u8BBE\u7F6E", children: [
     /* @__PURE__ */ jsx2("h2", { className: "text-lg font-semibold", children: "\u6A21\u578B\u4E0E\u5DE5\u5177\u6743\u9650" }),
@@ -248,6 +248,10 @@ function Settings({ route }) {
       /* @__PURE__ */ jsxs2("label", { className: "flex items-center gap-3", children: [
         /* @__PURE__ */ jsx2("input", { type: "checkbox", name: "student_access", defaultChecked: settings.data.agent_student_access }),
         "\u5141\u8BB8 Agent \u8BBF\u95EE\u672C\u5730\u5B66\u751F\u8D44\u6599"
+      ] }),
+      /* @__PURE__ */ jsxs2("label", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsx2("input", { type: "checkbox", name: "semantic_llm", defaultChecked: settings.data.semantic_llm_enabled }),
+        "\u542F\u7528\u6309\u9700\u8BED\u4E49\u68C0\u7D22\uFF0C\u5141\u8BB8\u5C06\u6559\u6750\u5019\u9009\u7247\u6BB5\u53D1\u9001\u7ED9 Hermes \u5F53\u524D\u6A21\u578B\uFF0C\u6BCF\u6B21\u6700\u591A\u4E24\u6B21\u6A21\u578B\u8BF7\u6C42\uFF0C\u53EF\u80FD\u4EA7\u751F API \u8D39\u7528"
       ] }),
       /* @__PURE__ */ jsxs2("fieldset", { className: "space-y-3", children: [
         /* @__PURE__ */ jsx2("legend", { className: "mb-3 font-medium", children: "\u5206\u9636\u6BB5\u6A21\u578B" }),
@@ -332,21 +336,287 @@ function Tasks({ route }) {
   ] });
 }
 
+// extensions/teacher-assistant/desktop/src/textbooks.tsx
+import { Button as Button5, Input as Input5, useMutation as useMutation5, useQuery as useQuery5, useQueryClient as useQueryClient5 } from "@hermes/plugin-sdk";
+import { useState as useState4 } from "react";
+
+// extensions/teacher-assistant/desktop/src/textbook-api.ts
+async function uploadTextbook(route, file, courseId, title, textbookId, progress) {
+  if (file.size === 0 || file.size > 50 * 1024 * 1024) throw new Error("\u6559\u6750\u6587\u4EF6\u9700\u5927\u4E8E0\u4E14\u4E0D\u8D85\u8FC750MB");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  const sha256 = Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const requestId = crypto.randomUUID();
+  const upload = await call(route, "textbook.upload.begin", {
+    course_id: courseId,
+    textbook_id: textbookId || null,
+    title,
+    filename: file.name,
+    total_bytes: bytes.length,
+    sha256
+  }, `${requestId}:begin`);
+  for (let offset = 0; offset < bytes.length; offset += 128 * 1024) {
+    const chunk = bytes.subarray(offset, offset + 128 * 1024);
+    let binary = "";
+    for (const byte of chunk) binary += String.fromCharCode(byte);
+    await call(route, "textbook.upload.chunk", { id: upload.id, offset, content_base64: btoa(binary) }, `${requestId}:${offset}`);
+    progress(`\u5DF2\u4E0A\u4F20 ${Math.round((offset + chunk.length) / bytes.length * 100)}%`);
+  }
+  progress("\u6B63\u5728\u89E3\u6790\u6559\u6750\u5E76\u5EFA\u7ACB\u7D22\u5F15\u2026");
+  return call(route, "textbook.upload.finish", { id: upload.id }, `${requestId}:finish`);
+}
+
+// extensions/teacher-assistant/desktop/src/textbook-version.tsx
+import { Button as Button4, Input as Input4, useMutation as useMutation4, useQuery as useQuery4, useQueryClient as useQueryClient4 } from "@hermes/plugin-sdk";
+import { useState as useState3 } from "react";
+import { Fragment as Fragment2, jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+function TextbookVersion({ route, versionId, onSearch, searchPending }) {
+  const queryClient = useQueryClient4();
+  const [offset, setOffset] = useState3(0);
+  const [sourceId, setSourceId] = useState3("");
+  const version = useQuery4({ queryKey: [...routeKey(route), "version", versionId], queryFn: () => call(route, "textbook.version", { id: versionId }), enabled: !!versionId });
+  const points = useQuery4({ queryKey: [...routeKey(route), "knowledge", versionId, offset], queryFn: () => call(route, "knowledge.list", { version_id: versionId, offset, limit: 20 }), enabled: !!versionId });
+  const source = useQuery4({ queryKey: [...routeKey(route), "source", sourceId], queryFn: () => call(route, "source.get", { id: sourceId }), enabled: !!sourceId });
+  const update = useMutation4({
+    mutationFn: ({ operation, id, title }) => call(route, operation, { id, title }, crypto.randomUUID()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) })
+  });
+  function rename(event, operation, id) {
+    event.preventDefault();
+    update.mutate({ operation, id, title: String(new FormData(event.currentTarget).get("title")) });
+  }
+  return /* @__PURE__ */ jsxs4("div", { className: "space-y-5", children: [
+    version.data && /* @__PURE__ */ jsxs4(Fragment2, { children: [
+      /* @__PURE__ */ jsxs4("p", { children: [
+        "\u539F\u6587\u7247\u6BB5 ",
+        version.data.metadata.source_unit_count,
+        " \xB7 \u77E5\u8BC6\u70B9\u5019\u9009 ",
+        version.data.knowledge_point_count
+      ] }),
+      /* @__PURE__ */ jsxs4("p", { className: "break-all text-sm", children: [
+        "SHA-256 ",
+        version.data.sha256
+      ] }),
+      version.data.metadata.warnings.map((warning) => /* @__PURE__ */ jsx4("p", { role: "note", children: warning }, warning)),
+      version.data.metadata.toc.length > 0 && /* @__PURE__ */ jsxs4("details", { children: [
+        /* @__PURE__ */ jsx4("summary", { children: "\u539F\u4E66\u76EE\u5F55\u7684\u5F85\u6838\u9A8C\u9875\u7801" }),
+        version.data.metadata.toc.map((item, index) => /* @__PURE__ */ jsxs4("p", { children: [
+          item.title,
+          " \xB7 \u5370\u5237\u9875\u7801\u63D0\u793A ",
+          item.printed_page_hint,
+          " \xB7 \u5C1A\u672A\u6838\u9A8C"
+        ] }, index))
+      ] }),
+      /* @__PURE__ */ jsxs4("details", { open: true, children: [
+        /* @__PURE__ */ jsx4("summary", { children: "\u7AE0\u8282\u7ED3\u6784\u4E0E\u4FEE\u8BA2" }),
+        /* @__PURE__ */ jsx4("div", { className: "space-y-2", children: version.data.chapters.map((chapter) => /* @__PURE__ */ jsxs4("form", { className: "flex gap-2", style: { marginLeft: `${Math.min(chapter.level - 1, 5) * 16}px` }, onSubmit: (event) => rename(event, "chapter.update", chapter.id), children: [
+          /* @__PURE__ */ jsx4(Input4, { "aria-label": `\u7AE0\u8282\u540D\u79F0 ${chapter.title}`, name: "title", defaultValue: chapter.title, maxLength: 200, required: true }),
+          /* @__PURE__ */ jsx4(Button4, { type: "submit", variant: "secondary", disabled: update.isPending, children: "\u4FEE\u8BA2\u7AE0\u8282" })
+        ] }, chapter.id)) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs4("form", { onSubmit: onSearch, className: "grid max-w-xl gap-3", children: [
+      /* @__PURE__ */ jsxs4("label", { children: [
+        "\u6559\u6750\u68C0\u7D22\u8BCD",
+        /* @__PURE__ */ jsx4(Input4, { "aria-label": "\u6559\u6750\u68C0\u7D22\u8BCD", name: "query", required: true, maxLength: 300 })
+      ] }),
+      /* @__PURE__ */ jsxs4("label", { children: [
+        "\u68C0\u7D22\u7AE0\u8282",
+        /* @__PURE__ */ jsxs4("select", { "aria-label": "\u68C0\u7D22\u7AE0\u8282", name: "chapter_id", children: [
+          /* @__PURE__ */ jsx4("option", { value: "", children: "\u5168\u90E8\u7AE0\u8282" }),
+          version.data?.chapters.map((chapter) => /* @__PURE__ */ jsx4("option", { value: chapter.id, children: chapter.title }, chapter.id))
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs4("label", { className: "flex items-start gap-2", children: [
+        /* @__PURE__ */ jsx4("input", { type: "checkbox", name: "semantic" }),
+        "\u672C\u6B21\u4F7F\u7528\u8BED\u4E49\u68C0\u7D22\uFF0C\u5141\u8BB8\u6A21\u578B\u5904\u7406\u6559\u6750\u5019\u9009\u7247\u6BB5\uFF0C\u9700\u5148\u542F\u7528\u6743\u9650\uFF0C\u53EF\u80FD\u4EA7\u751F\u8D39\u7528"
+      ] }),
+      /* @__PURE__ */ jsx4(Button4, { type: "submit", disabled: searchPending, children: "\u68C0\u7D22\u6559\u6750" })
+    ] }),
+    points.data && /* @__PURE__ */ jsxs4("details", { open: true, children: [
+      /* @__PURE__ */ jsxs4("summary", { children: [
+        "\u77E5\u8BC6\u70B9\u5019\u9009\u4E0E\u6559\u5E08\u590D\u6838 \xB7 \u5171 ",
+        points.data.total,
+        " \u9879"
+      ] }),
+      /* @__PURE__ */ jsx4("p", { children: "\u4EE5\u4E0B\u5185\u5BB9\u7531\u539F\u6587\u89C4\u5219\u63D0\u53D6\uFF0C\u6559\u5E08\u53EF\u4FEE\u8BA2\u540D\u79F0\u5E76\u786E\u8BA4\u3002" }),
+      points.data.items.map((point) => /* @__PURE__ */ jsxs4("article", { className: "my-3 rounded border border-(--ui-border) p-3", children: [
+        /* @__PURE__ */ jsx4("p", { className: "whitespace-pre-wrap", children: point.text }),
+        /* @__PURE__ */ jsxs4("form", { className: "mt-3 flex gap-2", onSubmit: (event) => rename(event, "knowledge.review", point.id), children: [
+          /* @__PURE__ */ jsx4(Input4, { "aria-label": `\u77E5\u8BC6\u70B9\u540D\u79F0 ${point.id}`, name: "title", defaultValue: point.title, required: true, maxLength: 200 }),
+          /* @__PURE__ */ jsx4(Button4, { type: "submit", disabled: update.isPending, children: point.review_status === "reviewed" ? "\u66F4\u65B0\u786E\u8BA4" : "\u6559\u5E08\u786E\u8BA4" }),
+          /* @__PURE__ */ jsx4(Button4, { type: "button", variant: "secondary", onClick: () => setSourceId(point.source_id), children: "\u67E5\u770B\u539F\u6587" })
+        ] })
+      ] }, point.id)),
+      /* @__PURE__ */ jsxs4("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsx4(Button4, { disabled: offset === 0, onClick: () => setOffset(Math.max(0, offset - 20)), children: "\u4E0A\u4E00\u7EC4\u77E5\u8BC6\u70B9" }),
+        /* @__PURE__ */ jsx4(Button4, { disabled: points.data.next_offset == null, onClick: () => setOffset(points.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u7EC4\u77E5\u8BC6\u70B9" })
+      ] })
+    ] }),
+    source.data && /* @__PURE__ */ jsxs4("aside", { "aria-label": "\u77E5\u8BC6\u70B9\u539F\u6587", className: "rounded border border-(--ui-border) p-4", children: [
+      /* @__PURE__ */ jsx4("p", { className: "whitespace-pre-wrap", children: source.data.text }),
+      /* @__PURE__ */ jsxs4("p", { children: [
+        source.data.filename,
+        " \xB7 v",
+        source.data.version,
+        " \xB7 ",
+        source.data.locator
+      ] }),
+      /* @__PURE__ */ jsxs4("p", { children: [
+        "\u6765\u6E90ID ",
+        source.data.id
+      ] })
+    ] }),
+    [version.error, points.error, source.error, update.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx4("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+
+// extensions/teacher-assistant/desktop/src/textbooks.tsx
+import { Fragment as Fragment3, jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
+function Textbooks({ route }) {
+  const queryClient = useQueryClient5();
+  const [courseId, setCourseId] = useState4("");
+  const [versionId, setVersionId] = useState4("");
+  const [progress, setProgress] = useState4("");
+  const [results, setResults] = useState4(null);
+  const courses = useQuery5({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
+  const books = useQuery5({ queryKey: [...routeKey(route), "textbooks", courseId], queryFn: () => call(route, "textbook.list", { course_id: courseId }), enabled: !!courseId });
+  const upload = useMutation5({
+    mutationFn: ({ file, title, textbookId }) => uploadTextbook(route, file, courseId, title, textbookId, setProgress),
+    onSuccess: async (version) => {
+      await queryClient.invalidateQueries({ queryKey: [...routeKey(route), "textbooks"] });
+      setVersionId(version.id);
+      setProgress("\u6559\u6750\u5DF2\u4FDD\u5B58\uFF0C\u539F\u59CB\u6587\u4EF6\u548C\u7248\u672C\u54C8\u5E0C\u5DF2\u4FDD\u7559");
+    }
+  });
+  const search = useMutation5({
+    mutationFn: ({ query, semantic, chapterId }) => call(route, semantic ? "knowledge.semantic" : "knowledge.search", {
+      course_id: courseId,
+      query,
+      version_id: versionId || null,
+      chapter_id: chapterId || null,
+      ...semantic ? { allow_model_call: true } : {}
+    }),
+    onSuccess: setResults
+  });
+  function submitUpload(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const file = form.get("file");
+    setProgress("\u6B63\u5728\u8BA1\u7B97\u6587\u4EF6\u54C8\u5E0C\u2026");
+    upload.mutate({ file, title: String(form.get("title")), textbookId: String(form.get("textbook_id") ?? "") });
+  }
+  function submitSearch(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setResults(null);
+    search.mutate({ query: String(form.get("query")), semantic: form.has("semantic"), chapterId: String(form.get("chapter_id") ?? "") });
+  }
+  return /* @__PURE__ */ jsxs5("section", { className: "space-y-5", "aria-label": "\u6559\u6750\u77E5\u8BC6\u5E93\u7BA1\u7406", children: [
+    /* @__PURE__ */ jsx5("h2", { className: "text-lg font-semibold", children: "\u6559\u6750\u77E5\u8BC6\u5E93" }),
+    /* @__PURE__ */ jsxs5("label", { className: "grid max-w-xl gap-2", children: [
+      "\u6559\u6750\u6240\u5C5E\u8BFE\u7A0B",
+      /* @__PURE__ */ jsxs5("select", { "aria-label": "\u6559\u6750\u6240\u5C5E\u8BFE\u7A0B", value: courseId, onChange: (event) => {
+        setCourseId(event.target.value);
+        setVersionId("");
+        setResults(null);
+        setProgress("");
+      }, disabled: upload.isPending, children: [
+        /* @__PURE__ */ jsx5("option", { value: "", children: "\u9009\u62E9\u8BFE\u7A0B" }),
+        courses.data?.items.map((course) => /* @__PURE__ */ jsx5("option", { value: course.id, children: course.title }, course.id))
+      ] })
+    ] }),
+    courseId && /* @__PURE__ */ jsxs5(Fragment3, { children: [
+      /* @__PURE__ */ jsxs5("form", { onSubmit: submitUpload, className: "grid max-w-xl gap-3", children: [
+        /* @__PURE__ */ jsxs5("label", { children: [
+          "\u6559\u6750\u540D\u79F0",
+          /* @__PURE__ */ jsx5(Input5, { name: "title", "aria-label": "\u6559\u6750\u540D\u79F0", required: true, maxLength: 200 })
+        ] }),
+        /* @__PURE__ */ jsxs5("label", { children: [
+          "\u6559\u6750\u6587\u4EF6",
+          /* @__PURE__ */ jsx5("input", { "aria-label": "\u6559\u6750\u6587\u4EF6", name: "file", type: "file", accept: ".pdf,.docx,.pptx,.txt", required: true })
+        ] }),
+        /* @__PURE__ */ jsxs5("label", { children: [
+          "\u7248\u672C\u5F52\u5C5E",
+          /* @__PURE__ */ jsxs5("select", { "aria-label": "\u7248\u672C\u5F52\u5C5E", name: "textbook_id", children: [
+            /* @__PURE__ */ jsx5("option", { value: "", children: "\u4F5C\u4E3A\u65B0\u6559\u6750\u5BFC\u5165" }),
+            books.data?.items.map((book) => /* @__PURE__ */ jsxs5("option", { value: book.id, children: [
+              "\u65B0\u589E\u300A",
+              book.title,
+              "\u300B\u7248\u672C"
+            ] }, book.id))
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx5(Button5, { type: "submit", disabled: upload.isPending, children: "\u4E0A\u4F20\u5E76\u89E3\u6790\u6559\u6750" }),
+        progress && /* @__PURE__ */ jsx5("p", { role: "status", children: progress })
+      ] }),
+      books.data?.items.length === 0 && /* @__PURE__ */ jsx5("p", { children: "\u8FD9\u95E8\u8BFE\u7A0B\u8FD8\u6CA1\u6709\u6559\u6750\u3002" }),
+      /* @__PURE__ */ jsxs5("label", { className: "grid max-w-xl gap-2", children: [
+        "\u6559\u6750\u7248\u672C",
+        /* @__PURE__ */ jsxs5("select", { "aria-label": "\u6559\u6750\u7248\u672C", value: versionId, onChange: (event) => {
+          setVersionId(event.target.value);
+          setResults(null);
+        }, children: [
+          /* @__PURE__ */ jsx5("option", { value: "", children: "\u68C0\u7D22\u5404\u6559\u6750\u6700\u65B0\u7248\u672C" }),
+          books.data?.items.flatMap((book) => book.versions.map((version) => /* @__PURE__ */ jsxs5("option", { value: version.id, children: [
+            book.title,
+            " \xB7 v",
+            version.version,
+            " \xB7 ",
+            version.filename
+          ] }, version.id)))
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx5(TextbookVersion, { route, versionId, onSearch: submitSearch, searchPending: search.isPending }, versionId),
+      results && /* @__PURE__ */ jsxs5("div", { className: "space-y-3", "aria-label": "\u6559\u6750\u68C0\u7D22\u7ED3\u679C", children: [
+        /* @__PURE__ */ jsxs5("p", { role: "status", children: [
+          "\u68C0\u7D22\u5230 ",
+          results.items.length,
+          " \u6761\u6765\u6E90 \xB7 ",
+          results.mode === "full_text" ? "\u5168\u6587\u68C0\u7D22" : "\u6A21\u578B\u8BED\u4E49\u68C0\u7D22"
+        ] }),
+        results.scope_note && /* @__PURE__ */ jsx5("p", { children: results.scope_note }),
+        results.usage?.map((usage, index) => /* @__PURE__ */ jsxs5("p", { children: [
+          usage.provider,
+          " \xB7 ",
+          usage.model,
+          " \xB7 ",
+          usage.cost_usd == null ? "\u670D\u52A1\u5546\u672A\u8FD4\u56DE\u8D39\u7528" : `$${usage.cost_usd}`
+        ] }, index)),
+        results.items.map((source) => /* @__PURE__ */ jsxs5("article", { className: "rounded border border-(--ui-border) p-4", children: [
+          /* @__PURE__ */ jsx5("p", { className: "whitespace-pre-wrap", children: source.text }),
+          /* @__PURE__ */ jsxs5("p", { className: "mt-2 text-sm", children: [
+            source.filename,
+            " \xB7 v",
+            source.version,
+            " \xB7 ",
+            source.locator,
+            " \xB7 \u6765\u6E90ID ",
+            source.id
+          ] })
+        ] }, source.id))
+      ] })
+    ] }),
+    [courses.error, books.error, upload.error, search.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx5("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
 var PAGES = [
   ["course", "\u6211\u7684\u8BFE\u7A0B"],
   ["class", "\u73ED\u7EA7"],
   ["student", "\u5B66\u751F\u6863\u6848"],
   ["roster", "\u8BFE\u7A0B\u8EAB\u4EFD\u5173\u8054"],
+  ["textbooks", "\u6559\u6750\u77E5\u8BC6\u5E93"],
   ["tasks", "\u4EFB\u52A1\u4E0E\u5BA1\u6279"],
   ["settings", "\u6A21\u578B\u4E0E\u6743\u9650"]
 ];
 function TeacherWorkspace() {
   const profile = useValue(host2.state.profile);
   const connectionId = useValue(host2.state.connectionId);
-  const [page, setPage] = useState3("course");
-  const routing = useQuery4({
+  const [page, setPage] = useState5("course");
+  const routing = useQuery6({
     queryKey: ["teacher-route", connectionId, profile],
     queryFn: async () => {
       const routes = await host2.profileRoutes();
@@ -356,23 +626,24 @@ function TeacherWorkspace() {
     }
   });
   const route = routing.data;
-  return /* @__PURE__ */ jsxs4("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
-    /* @__PURE__ */ jsxs4("header", { className: "mb-6 space-y-2", children: [
-      /* @__PURE__ */ jsx4("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
-      /* @__PURE__ */ jsxs4("p", { children: [
+  return /* @__PURE__ */ jsxs6("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
+    /* @__PURE__ */ jsxs6("header", { className: "mb-6 space-y-2", children: [
+      /* @__PURE__ */ jsx6("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
+      /* @__PURE__ */ jsxs6("p", { children: [
         "\u5F53\u524D\u914D\u7F6E \xB7 ",
         profile,
         " \xB7 \u672C\u5730\u6559\u5B66\u6570\u636E\u4E0E Hermes \u4F1A\u8BDD\u5206\u5F00\u4FDD\u5B58"
       ] })
     ] }),
-    /* @__PURE__ */ jsx4("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx4(Button4, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
-    routing.isPending && /* @__PURE__ */ jsx4("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
-    routing.error && /* @__PURE__ */ jsx4("p", { role: "alert", children: routing.error.message }),
-    route && /* @__PURE__ */ jsxs4("div", { children: [
-      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx4(RecordEditor, { route, entity: page }),
-      page === "roster" && /* @__PURE__ */ jsx4(CourseRoster, { route }),
-      page === "tasks" && /* @__PURE__ */ jsx4(Tasks, { route }),
-      page === "settings" && /* @__PURE__ */ jsx4(Settings, { route })
+    /* @__PURE__ */ jsx6("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx6(Button6, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
+    routing.isPending && /* @__PURE__ */ jsx6("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
+    routing.error && /* @__PURE__ */ jsx6("p", { role: "alert", children: routing.error.message }),
+    route && /* @__PURE__ */ jsxs6("div", { children: [
+      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx6(RecordEditor, { route, entity: page }),
+      page === "roster" && /* @__PURE__ */ jsx6(CourseRoster, { route }),
+      page === "tasks" && /* @__PURE__ */ jsx6(Tasks, { route }),
+      page === "textbooks" && /* @__PURE__ */ jsx6(Textbooks, { route }),
+      page === "settings" && /* @__PURE__ */ jsx6(Settings, { route })
     ] }, `${route.connectionId}:${route.profile}:${route.targetProfile}:${page}`)
   ] });
 }
@@ -381,7 +652,7 @@ var plugin_default = {
   name: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0",
   register(ctx) {
     ctx.registerMany([
-      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx4(TeacherWorkspace, {}) },
+      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx6(TeacherWorkspace, {}) },
       { id: "navigation", area: SIDEBAR_NAV_AREA, data: { path: "/teacher", label: "\u6559\u5E08\u5DE5\u4F5C\u53F0", codicon: "mortar-board" } }
     ]);
   }

@@ -116,6 +116,7 @@ class ModelSelection(Input):
 
 class Policy(Input):
     agent_student_access: bool = Field(default=False, strict=True)
+    semantic_llm_enabled: bool = Field(default=False, strict=True)
     disabled_operations: list[str] = Field(default_factory=list)
     stage_models: dict[Literal["teaching_script", "lesson_plan", "slides", "exams", "grading", "analysis"], ModelSelection] = Field(default_factory=dict)
 

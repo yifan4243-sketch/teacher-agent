@@ -20,3 +20,13 @@ Agent Loop 测试使用真实 Hermes Agent、原生 Tool Search 调用桥和真�
 日志位于 `E:\TeacherAgentData\phase1-evidence`，阶段交付时将保留最终凭据。
 
 后续测试分别记录真实环境、模拟模型、静态检查和外部条件待验证的结果。
+
+## Phase 2
+
+官方runner执行教材、基础和PPTX测试共24项通过、0失败。TypeScript类型检查成功。真实Desktop端到端1项通过，包含真实上传、版本与来源检索、教师复核、章节修订及重载。WPS原生编辑和保存后重读核验通过，PPTX位图为0。
+
+另跑原生提示缓存、插件兼容及Gateway RPC回归48项通过、1项POSIX跳过，合计Python72项通过、0失败。原生插件校验与仓库15项检查通过。
+
+语义扩词与重排、视觉布局适配器采用模拟模型响应，真实外部模型联调待授权。PPT输入图由实际生图工具生成，当前重建布局为开发者视觉测量，自动流水线仍需Phase 4–5联调。
+
+初次依赖失败及Desktop冷启动超时保留于外部日志目录，修复后最终回归通过。证据见 `phase2-evidence` 和 `PHASE2_REPORT.md`。

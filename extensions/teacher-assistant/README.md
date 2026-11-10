@@ -1,6 +1,6 @@
 # Teacher Agent Pro V5.1
 
-教师业务通过统一插件接入 Hermes Agent 和原生 Desktop。当前已实现 Phase 1 的课程、班级、学生身份、选课关联与可审核课程任务。后续模块的实际状态见 `IMPLEMENTATION_CHECKLIST.md`。
+教师业务通过统一插件接入 Hermes Agent 和原生 Desktop。当前已实现基础课程与身份、可审核任务及教材知识库。后续模块的实际状态见 `IMPLEMENTATION_CHECKLIST.md`。
 
 ## 本机安装
 
@@ -27,7 +27,9 @@ Desktop 首次进入“技能与工具 → 插件”，启用“教师专业工�
 
 - `teacher_records` 管理课程、班级与学生课程关联，`schema` 返回具体字段。
 - `teacher_tasks` 创建、执行、查询、重试或取消教学任务。
+- `teacher_knowledge` 导入教材、查询版本与来源、检索和创建关联教材的课次。
 - `teacher-assistant:teacher-workspace` 为只读原生 Skill。
+- `teacher-assistant:teacher-knowledge` 指导教材导入、来源引用及复核。
 - Desktop 使用受原生 Gateway `session:control` 验证的 `plugin.teacher-assistant.call` RPC。
 - 教师审核由 Desktop RPC 提交，Agent 工具保留待审核状态。
 
@@ -39,7 +41,15 @@ pnpm --filter hermes exec tsc -p ../../extensions/teacher-assistant/desktop/tsco
 pnpm --filter hermes exec playwright test --config ../../extensions/teacher-assistant/desktop/playwright.config.mjs
 ```
 
-Python 测试使用项目官方 `scripts/run_tests.sh tests/extensions/test_teacher_foundation.py`。测试覆盖真实插件发现、Hermes 工具调用、事务、跨进程恢复和审批。Agent 集成测试的模型为本地脚本服务，Desktop 使用真实 Gateway 与 SQLite。
+Python 测试使用项目官方 `scripts/run_tests.sh tests/extensions/`。测试环境通过 `pm.testenv.ensure_testenv(Path.cwd(), extras=['all','documents','documents-pdf'])` 准备，显式将管理的测试解释器传给未激活runner的 `HERMES_PYTHON`。测试覆盖真实插件发现、文件解析、Hermes工具、事务、跨进程恢复和审批。模型集成采用本地脚本服务，Desktop使用真实Gateway与SQLite。
+
+## 教材操作
+
+通过“教材知识库”选择课程，填写教材名称并上传PDF、DOCX、PPTX或TXT。新增版本时选择已有教材，原文件及旧版本继续保留。扫描图片等无法直接提取文本的内容会显示解析告警。
+
+选择教材版本后可修订章节、复核知识点并查看原文。全文搜索本地执行。语义检索需在“模型与权限”启用，每次检索还需确认模型调用，会向Hermes当前模型发送查询及最多60条候选教材片段，可能产生费用。
+
+PPT设计图默认由教学内容和Slide Blueprint自动生成，可选主题无需人工参考。提前验证样例位于 `resources/slide-prototype`，编辑与渲染证据位于 `phase2-evidence`。
 
 ## 当前交付范围
 

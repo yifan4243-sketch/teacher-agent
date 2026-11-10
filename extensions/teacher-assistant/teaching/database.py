@@ -7,6 +7,8 @@ from uuid import uuid4
 
 from plugins.plugin_storage import plugin_db
 
+from .knowledge_schema import SCHEMA as KNOWLEDGE_SCHEMA
+
 
 SCHEMA = (
     """CREATE TABLE courses (
@@ -78,12 +80,16 @@ def database():
     conn = plugin_db("teacher-assistant", "teaching.db")
     conn.row_factory = sqlite3.Row
     try:
-        if conn.execute("PRAGMA user_version").fetchone()[0] < 1:
+        migrations = (SCHEMA, KNOWLEDGE_SCHEMA)
+        if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
+            raise ValueError("教学数据库来自更新版本，请升级教师插件")
+        if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):
             conn.execute("BEGIN IMMEDIATE")
-            if conn.execute("PRAGMA user_version").fetchone()[0] < 1:
-                for statement in SCHEMA:
+            version = conn.execute("PRAGMA user_version").fetchone()[0]
+            for index in range(version, len(migrations)):
+                for statement in migrations[index]:
                     conn.execute(statement)
-                conn.execute("PRAGMA user_version=1")
+                conn.execute(f"PRAGMA user_version={index + 1}")
             conn.commit()
         with conn:
             yield conn

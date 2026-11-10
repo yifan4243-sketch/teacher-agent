@@ -32,6 +32,7 @@ export interface TeachingTask {
 
 export interface TeacherSettings {
   agent_student_access: boolean
+  semantic_llm_enabled: boolean
   disabled_operations: string[]
   stage_models: Record<string, { provider: string; model: string }>
 }

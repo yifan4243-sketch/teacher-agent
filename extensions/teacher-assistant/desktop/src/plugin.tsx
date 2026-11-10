@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { RecordEditor, CourseRoster } from './records'
 import { Settings } from './settings'
 import { Tasks } from './tasks'
+import { Textbooks } from './textbooks'
 
 const PAGES = [
   ['course', '我的课程'], ['class', '班级'], ['student', '学生档案'],
-  ['roster', '课程身份关联'], ['tasks', '任务与审批'], ['settings', '模型与权限'],
+  ['roster', '课程身份关联'], ['textbooks', '教材知识库'], ['tasks', '任务与审批'], ['settings', '模型与权限'],
 ]
 
 function TeacherWorkspace() {
@@ -38,6 +39,7 @@ function TeacherWorkspace() {
       {['course', 'class', 'student'].includes(page) && <RecordEditor route={route} entity={page as 'course' | 'class' | 'student'} />}
       {page === 'roster' && <CourseRoster route={route} />}
       {page === 'tasks' && <Tasks route={route} />}
+      {page === 'textbooks' && <Textbooks route={route} />}
       {page === 'settings' && <Settings route={route} />}
     </div>}
   </main>

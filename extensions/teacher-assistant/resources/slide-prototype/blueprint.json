@@ -1,0 +1,18 @@
+{
+  "title": "定位精度与重复定位精度",
+  "purpose": "comparison",
+  "theme": "blue_white_teaching",
+  "source": "resources/style-references/industrial-robotics-teaching-script.md",
+  "learning_objective": "区分与目标的偏差和重复到达位置的一致程度",
+  "key_points": [
+    "定位精度关注目标偏差",
+    "重复定位精度关注多次结果的一致程度"
+  ],
+  "visuals": [
+    "两个含十字轴线与位置点的靶心图",
+    "三列表格"
+  ],
+  "discussion": "每次都停在同一位置，就一定准确吗？",
+  "image_prompt": "根据比较概念页自动设计16比9中文职业教育课堂幻灯片。蓝白教学风，清晰中文大字，左右两列对比定位精度和重复定位精度，两个靶心图与三列表格，突出目标偏差和一致程度的区别。",
+  "test_status": "真实AI生成图片，开发者视觉测量布局，自动原生对象导出。视觉模型适配器独立模拟测试，尚未付费联调。"
+}

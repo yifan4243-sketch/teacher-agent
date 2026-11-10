@@ -9,13 +9,16 @@ from .teaching.service import READS, WRITES, TeachingService
 def register(ctx):
     service = TeachingService(ctx)
     knowledge_prefixes = ("textbook.", "knowledge.", "source.", "chapter.", "lesson.")
-    record_operations = sorted(op for op in {**READS, **WRITES} if not op.startswith(("task.", *knowledge_prefixes)))
+    preparation_prefixes = ("document.", "preparation.")
+    record_operations = sorted(op for op in {**READS, **WRITES} if not op.startswith(("task.", *knowledge_prefixes, *preparation_prefixes)))
     knowledge_operations = sorted(op for op in {**service.reads, **WRITES} if op.startswith(knowledge_prefixes))
     task_operations = sorted(op for op in {**READS, **WRITES} if op.startswith("task."))
+    preparation_operations = sorted(op for op in {**READS, **WRITES} if op.startswith(preparation_prefixes))
     for name, description, operations in (
         ("teacher_records", "Manage local courses, classes and student-course associations.", ["schema", *record_operations]),
         ("teacher_tasks", "Run durable teaching tasks and wait for teacher review.", task_operations),
         ("teacher_knowledge", "Import textbooks and retrieve verifiable chapter sources.", ["schema", *knowledge_operations]),
+        ("teacher_preparation", "Save full teaching scripts and template-based lesson plans as reviewable DOCX versions.", ["schema", *preparation_operations]),
     ):
         def handle(args, task_id=None, **kwargs):
             return json.dumps(service.call(args.get("operation"), args.get("data"), args.get("request_id"),

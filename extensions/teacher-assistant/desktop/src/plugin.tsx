@@ -5,10 +5,11 @@ import { RecordEditor, CourseRoster } from './records'
 import { Settings } from './settings'
 import { Tasks } from './tasks'
 import { Textbooks } from './textbooks'
+import { Preparation } from './preparation'
 
 const PAGES = [
   ['course', '我的课程'], ['class', '班级'], ['student', '学生档案'],
-  ['roster', '课程身份关联'], ['textbooks', '教材知识库'], ['tasks', '任务与审批'], ['settings', '模型与权限'],
+  ['roster', '课程身份关联'], ['textbooks', '教材知识库'], ['preparation', '授课稿与教案'], ['tasks', '任务与审批'], ['settings', '模型与权限'],
 ]
 
 function TeacherWorkspace() {
@@ -40,6 +41,7 @@ function TeacherWorkspace() {
       {page === 'roster' && <CourseRoster route={route} />}
       {page === 'tasks' && <Tasks route={route} />}
       {page === 'textbooks' && <Textbooks route={route} />}
+      {page === 'preparation' && <Preparation route={route} />}
       {page === 'settings' && <Settings route={route} />}
     </div>}
   </main>

@@ -41,6 +41,8 @@ def change_task(conn, data, actor, target):
     if before["version"] != data.version:
         raise DomainError("version_conflict", "任务已更新，请刷新后重试")
     allowed = {"pending": {"failed"}, "cancelled": {"pending", "awaiting_review", "failed"}}
+    if target == "cancelled" and before["kind"] == "document_generation":
+        allowed[target].add("running")
     if before["status"] not in allowed[target]:
         raise DomainError("invalid_transition", "当前任务状态不允许此操作")
     conn.execute("UPDATE workflows SET status=?,error=NULL,version=version+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?",
@@ -82,6 +84,8 @@ def run_task(conn, data, actor):
 
 def review_task(conn, data, actor):
     before = get_task(conn, data.id)
+    if before["kind"] != "course_setup":
+        raise DomainError("review_required", "教学文档请在备课页面审核对应的完整正文版本")
     if before["status"] != "awaiting_review" or before["version"] != data.version:
         raise DomainError("version_conflict", "审核对象已变化，请刷新后审核")
     from .records import get_record

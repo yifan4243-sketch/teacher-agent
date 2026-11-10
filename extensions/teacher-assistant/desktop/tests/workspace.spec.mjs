@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -124,6 +124,70 @@ test('教师工作台通过原生 Gateway 操作教学数据库并审批任务',
     await expect(page.getByLabel('教材检索结果').getByText(/text\/line:3/)).toBeVisible()
     await page.getByRole('button', { name: '教师确认', exact: true }).first().click()
     await expect(page.getByRole('button', { name: '更新确认', exact: true })).toHaveCount(1)
+    await page.getByRole('button', { name: '授课稿与教案', exact: true }).click()
+    await page.getByLabel('备课课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
+    await page.getByText('创建教材关联课次', { exact: true }).click()
+    await page.getByLabel('课次名称', { exact: true }).fill('UI备课测试课次')
+    await page.getByLabel('课次教学目标', { exact: true }).fill('理解工业机器人的基本技术参数')
+    await page.getByLabel('课次教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v1' })
+    await page.getByLabel('选择来源 text/line:3', { exact: true }).check()
+    await page.getByRole('button', { name: '保存课次与教材依据', exact: true }).click()
+    await expect(page.getByLabel('备课课次', { exact: true }).locator('option:checked')).toHaveText('UI备课测试课次')
+    for (const [kind, label, output] of [['script', '授课稿', 'script.docx'], ['lesson_plan', '教案', 'lesson-plan.docx']]) {
+      await page.getByLabel('生成文档类型', { exact: true }).selectOption(kind)
+      await page.getByLabel(/允许本次调用Hermes Agent生成文档/).check()
+      await page.getByRole('button', { name: '调用原生Agent生成草稿', exact: true }).click()
+      await expect(page.getByText('本地模拟模型已保存教学草稿，请教师审核。', { exact: true }).last()).toBeVisible({ timeout: 120000 })
+      await page.getByText('教师工作台', { exact: true }).click()
+      await page.getByRole('button', { name: '授课稿与教案', exact: true }).click()
+      await page.getByLabel('备课课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
+      await page.getByLabel('备课课次', { exact: true }).selectOption({ label: 'UI备课测试课次' })
+      await page.getByLabel('教学文档版本', { exact: true }).selectOption({ label: `${label} · v1 · 草稿` })
+      if (kind === 'script') {
+        await page.getByText('测试环节1 · 10分钟', { exact: true }).click()
+        await page.getByLabel('环节标题 0-0', { exact: true }).fill('UI教师修订的导入')
+        await page.getByRole('button', { name: '保存此环节为新版本', exact: true }).first().click()
+      } else {
+        await page.getByLabel('教案教学重点', { exact: true }).fill('教师已复核的自由度概念')
+        await page.getByRole('button', { name: '保存教案修订版', exact: true }).click()
+      }
+      await expect(page.getByRole('heading', { name: / · v2 · 待审核草稿$/ })).toBeVisible()
+      await page.getByLabel('我已核对完整正文、教材依据和时间分配', { exact: true }).check()
+      await page.getByRole('button', { name: '审核通过此版本', exact: true }).click()
+      const downloadPath = testInfo.outputPath(output)
+      // Pick a deterministic target in the native dialog. The authenticated file transfer still runs normally.
+      await app.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }) }, downloadPath)
+      await page.getByRole('button', { name: '下载正式DOCX', exact: true }).click()
+      await expect.poll(() => existsSync(downloadPath), { timeout: 30000 }).toBe(true)
+    }
+    const fileProbe = spawnSync(python, ['-c', `
+import hashlib
+import json
+import sqlite3
+import sys
+from pathlib import Path
+from docx import Document
+home, output = map(Path, sys.argv[1:])
+with sqlite3.connect(home / 'plugin-data/teacher-assistant/teaching.db') as conn:
+    rows = conn.execute('SELECT d.kind,e.sha256 FROM teaching_exports e JOIN teaching_documents d ON d.id=e.document_id').fetchall()
+verified = []
+for kind, digest in rows:
+    path = output / ('script.docx' if kind == 'script' else 'lesson-plan.docx')
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
+    document = Document(path)
+    assert document.paragraphs
+    if kind == 'lesson_plan':
+        assert len(document.tables) == 1 and len(document.tables[0].rows) == 14
+    verified.append({'kind': kind, 'sha256': digest, 'bytes': path.stat().st_size})
+assert len(verified) == 2
+print(json.dumps(verified))
+`, home, testInfo.outputPath()], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(fileProbe.status, fileProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('docx-download-receipt.json'), fileProbe.stdout)
+    await page.screenshot({ path: testInfo.outputPath('teacher-documents.png') })
+    await page.getByRole('button', { name: '教材知识库', exact: true }).click()
+    await page.getByLabel('教材所属课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
+    await page.getByLabel('教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v1 · UI教材.txt' })
     await page.getByRole('button', { name: '查看原文', exact: true }).first().click()
     await expect(page.getByLabel('知识点原文').getByText('自由度描述独立运动的数量。', { exact: true })).toBeVisible()
     await page.getByLabel('章节名称 1.1 技术参数', { exact: true }).fill('1.1 已复核技术参数')

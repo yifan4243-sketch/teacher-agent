@@ -7,7 +7,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
-from . import knowledge, knowledge_models, lessons, models, records, semantic, workflows
+from . import document_models, documents, knowledge, knowledge_models, lessons, models, preparation, records, semantic, workflows
 from .database import database, encode
 
 
@@ -26,6 +26,12 @@ READS = {
     "knowledge.search": (knowledge_models.SourceSearch, knowledge.search_sources),
     "lesson.get": (models.Identifier, lessons.get_lesson),
     "lesson.list": (models.CourseFilter, lessons.list_lessons),
+    "document.get": (models.Identifier, documents.get_document),
+    "document.list": (document_models.DocumentList, documents.list_documents),
+    "document.schema": (models.Input, preparation.content_schema),
+    "preparation.context": (models.Identifier, preparation.context),
+    "document.generation.get": (models.Identifier, preparation.get_generation),
+    "document.generation.list": (document_models.DocumentList, preparation.list_generations),
 }
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
@@ -47,6 +53,9 @@ WRITES = {
     "chapter.update": (knowledge_models.ChapterUpdate, knowledge.rename_chapter),
     "knowledge.review": (knowledge_models.KnowledgeReview, knowledge.review_knowledge),
     "lesson.create": (lessons.LessonCreate, lessons.create_lesson),
+    "document.save": (document_models.DocumentSave, documents.save_document),
+    "document.revise_segment": (document_models.SegmentRevision, documents.revise_segment),
+    "document.export": (models.Identifier, documents.export_document),
 }
 
 
@@ -63,6 +72,12 @@ class TeachingService:
     def __init__(self, ctx):
         self.ctx = ctx
         self.reads = {**READS, "knowledge.semantic": (knowledge_models.SemanticSearch, partial(semantic.search, ctx=ctx))}
+        self.human_writes = {
+            "task.review": (models.TaskReview, workflows.review_task),
+            "document.review": (document_models.DocumentReview, documents.review_document),
+            "document.generation.begin": (document_models.GenerationStart, partial(preparation.begin_generation, ctx=ctx)),
+            "document.generation.claim": (document_models.GenerationClaim, preparation.claim_generation),
+        }
 
     def call(self, operation, data=None, request_id=None, *, human=False, session_id=None):
         try:
@@ -84,8 +99,9 @@ class TeachingService:
             return self.settings()
         if operation == "settings.update":
             return self.update_settings(data, human)
-        writes = {**WRITES, "task.review": (models.TaskReview, workflows.review_task)} if human else WRITES
-        schema, handler = ({**self.reads, **writes}).get(operation, (None, None))
+        writes = {**WRITES, **self.human_writes} if human else WRITES
+        reads = {**self.reads, "document.file": (models.Identifier, documents.read_export)} if human else self.reads
+        schema, handler = ({**reads, **writes}).get(operation, (None, None))
         if schema is None:
             raise models.DomainError("unknown_operation", "不支持的操作")
         if not human and operation in self.settings()["disabled_operations"]:
@@ -97,7 +113,7 @@ class TeachingService:
         payload = schema.model_validate(data)
         actor = "desktop:teacher" if human else "agent:" + (session_id or "local")
         with database() as conn:
-            if operation in self.reads:
+            if operation in reads:
                 return handler(conn=conn, data=payload)
             if not human and operation == "task.run" and "course.create" in self.settings()["disabled_operations"]:
                 raise models.DomainError("permission_denied", "课程创建权限已禁用，任务不能代为创建课程")

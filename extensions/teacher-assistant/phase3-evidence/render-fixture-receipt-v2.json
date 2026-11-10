@@ -1,0 +1,23 @@
+{
+  "script": {
+    "id": "9fddd35e-94d0-4ccb-8910-d684387e1de5",
+    "document_id": "ff43511f-9ba9-4acc-9fd5-3749ee427844",
+    "stored_path": "E:\\TeacherAgentData\\phase3-evidence\\render-fixture-home-v2\\plugin-data\\teacher-assistant\\files\\fe9b94f4daf48a3e4e9b472eaf4ee9955e3db37373c63ffff7b1f9a3c73207f6.docx",
+    "sha256": "fe9b94f4daf48a3e4e9b472eaf4ee9955e3db37373c63ffff7b1f9a3c73207f6",
+    "byte_size": 36432,
+    "filename": "授课逐字稿-v1.docx",
+    "template_sha256": null,
+    "created_at": "2026-11-10T11:36:28.748Z"
+  },
+  "plan": {
+    "id": "41628d1e-e73c-4153-8911-263c99d76c05",
+    "document_id": "a89c162f-715c-4f4d-93df-8da607386c98",
+    "stored_path": "E:\\TeacherAgentData\\phase3-evidence\\render-fixture-home-v2\\plugin-data\\teacher-assistant\\files\\d658161986de46d4c219fc88d6ff214175a008e2a2f937da269aba087aa60cd5.docx",
+    "sha256": "d658161986de46d4c219fc88d6ff214175a008e2a2f937da269aba087aa60cd5",
+    "byte_size": 16205,
+    "filename": "正式教案-v1.docx",
+    "template_sha256": "1e846fc3c288f482e25bcc86a9ba119256577f95398fe8646c613b578ef9f084",
+    "created_at": "2026-11-10T11:36:28.930Z"
+  },
+  "model": "none, deterministic mock teaching prose solely for timing and pagination verification"
+}

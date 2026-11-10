@@ -30,12 +30,13 @@ export function Tasks({ route }: { route: PluginProfileRoute }) {
         <p>已持久保存步骤 · {task.steps.map(step => step.step_key).join('、') || '暂无'}</p>
         {task.error && <p role="alert">{task.error}</p>}
         <div className="flex flex-wrap gap-3">
-          {task.status === 'pending' && <Button disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.run', data: { id: task.id } })}>执行任务</Button>}
+          {task.status === 'pending' && task.kind === 'course_setup' && <Button disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.run', data: { id: task.id } })}>执行任务</Button>}
           {task.status === 'failed' && <Button disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.retry', data: { id: task.id, version: task.version } })}>准备重试</Button>}
-          {task.status === 'awaiting_review' && <>
+          {task.status === 'awaiting_review' && task.kind === 'course_setup' && <>
             <Button disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.review', data: { id: task.id, version: task.version, decision: 'approved' } })}>教师批准</Button>
             <Button variant="secondary" disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.review', data: { id: task.id, version: task.version, decision: 'rejected' } })}>退回任务</Button>
           </>}
+          {task.kind === 'document_generation' && <p>请在“授课稿与教案”查看Agent会话、全文及审核版本。</p>}
           {['pending', 'failed', 'awaiting_review'].includes(task.status) && <Button variant="secondary" disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.cancel', data: { id: task.id, version: task.version } })}>取消任务</Button>}
         </div>
       </li>)}

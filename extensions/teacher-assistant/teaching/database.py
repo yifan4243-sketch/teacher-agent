@@ -8,6 +8,7 @@ from uuid import uuid4
 from plugins.plugin_storage import plugin_db
 
 from .knowledge_schema import SCHEMA as KNOWLEDGE_SCHEMA
+from .document_schema import SCHEMA as DOCUMENT_SCHEMA
 
 
 SCHEMA = (
@@ -80,7 +81,7 @@ def database():
     conn = plugin_db("teacher-assistant", "teaching.db")
     conn.row_factory = sqlite3.Row
     try:
-        migrations = (SCHEMA, KNOWLEDGE_SCHEMA)
+        migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA)
         if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
             raise ValueError("教学数据库来自更新版本，请升级教师插件")
         if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):

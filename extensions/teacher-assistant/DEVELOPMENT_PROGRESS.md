@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-Phase 1 已提交，Phase 2 的教材库、界面与提前 PPTX 原型已通过功能测试、原生插件校验和仓库15项检查。Phase 2 完整内容保存在本次阶段提交中，父提交为 `f5809eadcf146a83d1b4f16893f689b16643bf75`。Phase 0 已由用户验收，交付基线为 `bdbdc35865015135e1ad1ee3f86a4bcef1008e81`。
+Phase 2 已提交并推送，SHA为 `0d1f63156b03bfb7299cb6a99947b2f14ec1fad7`，远端分支核验一致。当前完成Phase 3文档与原生Agent入口，进行最终测试、记录和提交。Phase 0 已由用户验收，交付基线为 `bdbdc35865015135e1ad1ee3f86a4bcef1008e81`。
 
 正式工作区为 `C:\Users\yifan\Desktop\teacher_Agent_dev`，分支为 `teacher/v5.1-foundation`。完整执行授权保存在 `resources/requirements/Teacher_Agent_Pro_V5.1_Execution.txt`。
 
@@ -23,11 +23,17 @@ Phase 2 已实现分块上传、PDF/DOCX/PPTX/TXT实际解析、不可变版本�
 
 PPTX 提前原型采用系统实际生成的设计图片，开发者测量布局后由通用渲染器生成32个原生对象。WPS实际修改标题、移动形状、编辑表格并保存后，重读核验成功，位图对象为0。视觉布局模型适配器只有模拟测试，不能当作全自动流水线联调通过。
 
-下一步进入 Phase 3，实现完整逐字稿、原模板教案、分段修订和DOCX导出。Phase 3–9 的完整范围见 `IMPLEMENTATION_CHECKLIST.md`，所有模块继续保留。
+Phase 3 已加入完整正文结构、两个40分钟单元、独立10分钟休息、语速与活动时长估算、来源校验、分段修订、原模板教案、版本审核和仅DOCX导出。生成入口使用原生Hermes会话、Tool Search、Skill及Agent Loop，模型使用阶段配置或当前默认配置。生成记录绑定原生会话，保存后的文档与任务审批状态关联。
+
+Desktop已增加教材关联课次、生成任务、正文阅读、逐段修订、教案修订、教师审核和原生文件下载。模型使用本机脚本服务进行集成测试，不能当作真实付费模型教学质量验收。模板内容行从固定高度改为最小高度，保留原表格、列宽与页边距，避免长正文截断。
+
+下一步进入Phase 4，实现完整Slide Blueprint、内容关联、可选主题、逐页图片生成和预算与缓存。Phase 4–9 的完整范围见 `IMPLEMENTATION_CHECKLIST.md`，所有模块继续保留。
 
 ## 最近成功测试
 
 Phase 2 的 `teacher-regression-final.log` 为24通过、0失败。`desktop-knowledge-retry.log` 为1项真实Electron、Gateway与SQLite端到端测试通过，包含上传、检索、教师复核、章节修订及刷新持久性。TypeScript成功退出。原始日志位于 `E:\TeacherAgentData\phase2-evidence`。Phase 1 的59通过、1平台跳过记录继续保留。
+
+Phase 3教师测试27项通过。文档及原生回归51项通过、1项POSIX跳过，其中3项文档测试与教师测试重复，独立合计75项通过。Desktop的原生Skill加载、Agent保存、两类文档修订为v2、审核、真实下载和SHA-256核验通过。WPS实际渲染技术样例为14页逐字稿和2页模板教案，正文采用明确标注的模拟文本。原始证据位于 `E:\TeacherAgentData\phase3-evidence`。
 
 ## 恢复入口
 

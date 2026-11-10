@@ -28,8 +28,10 @@ Desktop 首次进入“技能与工具 → 插件”，启用“教师专业工�
 - `teacher_records` 管理课程、班级与学生课程关联，`schema` 返回具体字段。
 - `teacher_tasks` 创建、执行、查询、重试或取消教学任务。
 - `teacher_knowledge` 导入教材、查询版本与来源、检索和创建关联教材的课次。
+- `teacher_preparation` 保存完整教学正文、修订、版本查询及审核后DOCX导出。
 - `teacher-assistant:teacher-workspace` 为只读原生 Skill。
 - `teacher-assistant:teacher-knowledge` 指导教材导入、来源引用及复核。
+- `teacher-assistant:teacher-preparation` 指导逐字稿和原模板教案生成。
 - Desktop 使用受原生 Gateway `session:control` 验证的 `plugin.teacher-assistant.call` RPC。
 - 教师审核由 Desktop RPC 提交，Agent 工具保留待审核状态。
 
@@ -50,6 +52,14 @@ Python 测试使用项目官方 `scripts/run_tests.sh tests/extensions/`。测�
 选择教材版本后可修订章节、复核知识点并查看原文。全文搜索本地执行。语义检索需在“模型与权限”启用，每次检索还需确认模型调用，会向Hermes当前模型发送查询及最多60条候选教材片段，可能产生费用。
 
 PPT设计图默认由教学内容和Slide Blueprint自动生成，可选主题无需人工参考。提前验证样例位于 `resources/slide-prototype`，编辑与渲染证据位于 `phase2-evidence`。
+
+## 授课稿与教案
+
+在“授课稿与教案”选择课程，创建课次并选取固定教材版本和原文依据。确认本次模型调用后，生成按钮会启动原生Hermes Agent会话。阶段模型通过“模型与权限”配置，凭据沿用原生设置。
+
+Agent先读取教师Skill、完整授课风格范例和教材原文，再保存结构化草稿。返回工作台可阅读全文、逐段修订授课稿、修订教案和查看时间估算。已审核版本保留，修订另建版本。教案关联一个已审核授课稿，活动逐一对应两个40分钟单元。
+
+审核通过后使用“下载正式DOCX”通过原生保存对话框保存文件。文档时间估算还需教师按实际语速试读核验。生成任务保存原生会话入口，状态不明确时打开原会话核查。“取消草稿保存任务”阻止后续正文保存，停止模型调用请使用原生会话的停止按钮。
 
 ## 当前交付范围
 

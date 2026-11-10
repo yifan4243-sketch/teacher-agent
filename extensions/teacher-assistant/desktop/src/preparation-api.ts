@@ -1,6 +1,7 @@
 import { captureGatewayFileDownload, host, type PluginProfileRoute } from '@hermes/plugin-sdk'
 
 import { call, type TeachingTask } from './api'
+import type { BlueprintContent } from './blueprint-api'
 
 export interface Lesson {
   id: string
@@ -56,18 +57,18 @@ export interface PlanContent {
 export interface TeachingDocument {
   id: string
   lesson_id: string
-  kind: 'script' | 'lesson_plan'
+  kind: 'script' | 'lesson_plan' | 'slide_blueprint'
   version: number
   status: string
   script_id: string | null
-  content: ScriptContent | PlanContent
+  content: ScriptContent | PlanContent | BlueprintContent
   timing?: { estimated_units_minutes: number[]; warnings: string[]; method: string }
 }
 
 export interface Generation {
   workflow_id: string
   prompt: string
-  kind: 'script' | 'lesson_plan'
+  kind: 'script' | 'lesson_plan' | 'slide_blueprint'
   model: { provider?: string; model?: string }
   stored_session_id: string | null
   runtime_session_id: string | null

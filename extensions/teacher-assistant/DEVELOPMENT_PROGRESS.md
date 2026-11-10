@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-Phase 2 已提交并推送，SHA为 `0d1f63156b03bfb7299cb6a99947b2f14ec1fad7`，远端分支核验一致。当前完成Phase 3文档与原生Agent入口，进行最终测试、记录和提交。Phase 0 已由用户验收，交付基线为 `bdbdc35865015135e1ad1ee3f86a4bcef1008e81`。
+Phase 3 已提交并推送，SHA为 `cdef9071df842eb01462c2663ea33c210366d4c8`，远端分支核验一致。Phase 2提交为 `0d1f63156b03bfb7299cb6a99947b2f14ec1fad7`。当前在Phase 4，完成页面蓝图与自动提示词的首个模块，图片生成、缓存、成本预算及视觉核验继续开发。Phase 0 已由用户验收，交付基线为 `bdbdc35865015135e1ad1ee3f86a4bcef1008e81`。
 
 正式工作区为 `C:\Users\yifan\Desktop\teacher_Agent_dev`，分支为 `teacher/v5.1-foundation`。完整执行授权保存在 `resources/requirements/Teacher_Agent_Pro_V5.1_Execution.txt`。
 
@@ -27,13 +27,17 @@ Phase 3 已加入完整正文结构、两个40分钟单元、独立10分钟休�
 
 Desktop已增加教材关联课次、生成任务、正文阅读、逐段修订、教案修订、教师审核和原生文件下载。模型使用本机脚本服务进行集成测试，不能当作真实付费模型教学质量验收。模板内容行从固定高度改为最小高度，保留原表格、列宽与页边距，避免长正文截断。
 
-下一步进入Phase 4，实现完整Slide Blueprint、内容关联、可选主题、逐页图片生成和预算与缓存。Phase 4–9 的完整范围见 `IMPLEMENTATION_CHECKLIST.md`，所有模块继续保留。
+Phase 4已实现版本化Slide Blueprint、四种可选主题、逐页内容密度和两个40分钟时间校验、教材知识点和授课稿环节覆盖校验。蓝图绑定确定的已审核授课稿与教案版本，单页提示词自动合成教材、正文、目标、重点难点和页面用途。原生Agent可保存蓝图，Desktop可逐页修订、查看提示词、审核新版本。schema 4同时兼容schema 3的文档幂等回执。
+
+下一步实现通过Hermes原生image_generate的逐页图片执行，先做好事务化预算预留、持久状态、缓存和明确的费用授权，再增加真实图片保存、16比9核验、预览、单页重做及文字准确性检查。Phase 4–9 的完整范围见 `IMPLEMENTATION_CHECKLIST.md`，所有模块继续保留。
 
 ## 最近成功测试
 
 Phase 2 的 `teacher-regression-final.log` 为24通过、0失败。`desktop-knowledge-retry.log` 为1项真实Electron、Gateway与SQLite端到端测试通过，包含上传、检索、教师复核、章节修订及刷新持久性。TypeScript成功退出。原始日志位于 `E:\TeacherAgentData\phase2-evidence`。Phase 1 的59通过、1平台跳过记录继续保留。
 
 Phase 3教师测试27项通过。文档及原生回归51项通过、1项POSIX跳过，其中3项文档测试与教师测试重复，独立合计75项通过。Desktop的原生Skill加载、Agent保存、两类文档修订为v2、审核、真实下载和SHA-256核验通过。WPS实际渲染技术样例为14页逐字稿和2页模板教案，正文采用明确标注的模拟文本。原始证据位于 `E:\TeacherAgentData\phase3-evidence`。
+
+Phase 4首个模块的蓝图与文档测试5项通过。Desktop蓝图集成1项通过，包含前述全部教材和文档链路，再经原生Skill/Agent生成8页蓝图、修订为v2、切换科技主题、核对生图提示词和审核。模型仍为本机模拟服务，未触发付费生图。原始日志位于 `E:\TeacherAgentData\phase4-evidence`。
 
 ## 恢复入口
 

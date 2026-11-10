@@ -58,14 +58,14 @@ export function Preparation({ route }: { route: PluginProfileRoute }) {
         <label className="flex items-start gap-2"><input type="checkbox" required />允许本次调用Hermes Agent生成文档，使用阶段配置模型或当前模型，可能产生API费用</label>
         <Button type="submit" disabled={generation.isPending}>调用原生Agent生成草稿</Button>
       </form>
-      {generations.data?.items.map(task => <article key={task.workflow_id} className="space-y-2 rounded border border-(--ui-border) p-3">
+      {generations.data?.items.filter(task => task.kind !== 'slide_blueprint').map(task => <article key={task.workflow_id} className="space-y-2 rounded border border-(--ui-border) p-3">
         <p>{task.task.input.title} · {STATUS[task.task.status] ?? task.task.status} · {task.workflow_id}</p>
         <Button disabled={reopen.isPending} onClick={() => reopen.mutate(task)}>{task.task.status === 'pending' ? '启动已保存任务' : '打开原Agent会话'}</Button>
         {['pending', 'running', 'awaiting_review'].includes(task.task.status) && <Button variant="secondary" onClick={() => cancel.mutate(task)} disabled={cancel.isPending}>取消草稿保存任务</Button>}
         {task.task.status === 'running' && <p>如需停止模型调用，请打开原Agent会话使用停止按钮。任务提交状态不确定时，先核查原会话。</p>}
       </article>)}
       <label className="grid max-w-xl gap-2">教学文档版本<select aria-label="教学文档版本" value={documentId} onChange={event => setDocumentId(event.target.value)}>
-        <option value="">选择文档版本</option>{documents.data?.items.map(document => <option value={document.id} key={document.id}>{document.kind === 'script' ? '授课稿' : '教案'} · v{document.version} · {document.status === 'approved' ? '已审核' : document.status === 'rejected' ? '已退回' : '草稿'}</option>)}
+        <option value="">选择文档版本</option>{documents.data?.items.filter(document => document.kind !== 'slide_blueprint').map(document => <option value={document.id} key={document.id}>{document.kind === 'script' ? '授课稿' : '教案'} · v{document.version} · {document.status === 'approved' ? '已审核' : document.status === 'rejected' ? '已退回' : '草稿'}</option>)}
       </select></label>
       <Button variant="secondary" onClick={() => queryClient.invalidateQueries({ queryKey: routeKey(route) })}>刷新备课记录</Button>
       {documents.data?.items.length === 0 && <p>尚未保存教学正文。Agent保存后重新进入本页面即可读取。</p>}

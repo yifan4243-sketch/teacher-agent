@@ -7,7 +7,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
-from . import document_models, documents, knowledge, knowledge_models, lessons, models, preparation, records, semantic, workflows
+from . import blueprint_models, blueprints, document_models, documents, knowledge, knowledge_models, lessons, models, preparation, records, semantic, workflows
 from .database import database, encode
 
 
@@ -32,6 +32,8 @@ READS = {
     "preparation.context": (models.Identifier, preparation.context),
     "document.generation.get": (models.Identifier, preparation.get_generation),
     "document.generation.list": (document_models.DocumentList, preparation.list_generations),
+    "slide.prompt": (blueprint_models.PageRequest, blueprints.get_prompt),
+    "slide.themes": (models.Input, blueprints.list_themes),
 }
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
@@ -123,7 +125,11 @@ class TeachingService:
             conn.execute("BEGIN IMMEDIATE")
             receipt = conn.execute("SELECT * FROM command_receipts WHERE request_id=?", (request_id,)).fetchone()
             if receipt:
-                if receipt["operation"] != operation or receipt["fingerprint"] != fingerprint:
+                fingerprints = {fingerprint}
+                if operation == "document.save" and payload.kind in {"script", "lesson_plan"} and payload.plan_id is None:
+                    # Schema 3 receipts predate the optional blueprint-plan association.
+                    fingerprints.add(hashlib.sha256(encode(payload.model_dump(exclude={"plan_id"})).encode("utf-8")).hexdigest())
+                if receipt["operation"] != operation or receipt["fingerprint"] not in fingerprints:
                     raise models.DomainError("idempotency_conflict", "同一 request_id 的操作和内容必须一致")
                 return json.loads(receipt["result_json"])
             result = handler(conn=conn, data=payload, actor=actor)

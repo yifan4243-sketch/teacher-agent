@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 
 from .database import audit, encode, new_id
+from . import blueprints
+from .blueprint_models import SlideBlueprint
 from .document_models import DocumentSave, PlanContent, ScriptContent, timing_report
 from .lessons import get_lesson
 from .models import DomainError, Identifier
@@ -35,14 +37,16 @@ def save_document(conn, data, actor):
         generation = get_generation(conn, Identifier(id=data.generation_id))
         if generation["task"]["status"] != "running" or generation["lesson_id"] != data.lesson_id or generation["kind"] != data.kind or generation["expected_version"] != data.expected_version:
             raise DomainError("invalid_transition", "生成任务已结束、取消或与文档不匹配")
-    schema = {"script": ScriptContent, "lesson_plan": PlanContent}[data.kind]
+        if any(getattr(data, key) != value for key, value in generation["input_documents"].items()):
+            raise DomainError("association_conflict", "生成结果需要关联任务启动时选定的教学文档版本")
+    schema = {"script": ScriptContent, "lesson_plan": PlanContent, "slide_blueprint": SlideBlueprint}[data.kind]
     content = schema.model_validate(data.content)
     latest = conn.execute("SELECT id,version FROM teaching_documents WHERE lesson_id=? AND kind=? ORDER BY version DESC LIMIT 1", (data.lesson_id, data.kind)).fetchone()
     version = latest["version"] if latest else 0
     if data.expected_version != version:
         raise DomainError("version_conflict", "文档已有新版本，请刷新后修订")
     if data.kind == "script":
-        if data.script_id:
+        if data.script_id or data.plan_id:
             raise DomainError("invalid_input", "授课稿无需关联其他授课稿")
         sources = {source["id"] for source in lesson["sources"]}
         if any(source not in sources for unit in content.units for segment in unit.segments for source in segment.source_ids):
@@ -51,14 +55,20 @@ def save_document(conn, data, actor):
         script = get_document(conn, Identifier(id=data.script_id or "missing"))
         if script["lesson_id"] != data.lesson_id or script["kind"] != "script":
             raise DomainError("association_conflict", "教案需要关联本课次的授课稿版本")
-        expected = {(unit_index, segment_index) for unit_index, unit in enumerate(script["content"]["units"])
-                    for segment_index in range(len(unit["segments"]))}
-        actual = [(activity.unit_index, activity.segment_index) for activity in content.activities]
-        if len(actual) != len(expected) or set(actual) != expected:
-            raise DomainError("association_conflict", "教案活动必须逐一对应授课稿所有环节，避免重复或遗漏课时")
+        if data.kind == "lesson_plan":
+            if data.plan_id:
+                raise DomainError("invalid_input", "教案无需关联其他教案")
+            expected = {(unit_index, segment_index) for unit_index, unit in enumerate(script["content"]["units"])
+                        for segment_index in range(len(unit["segments"]))}
+            actual = [(activity.unit_index, activity.segment_index) for activity in content.activities]
+            if len(actual) != len(expected) or set(actual) != expected:
+                raise DomainError("association_conflict", "教案活动必须逐一对应授课稿所有环节，避免重复或遗漏课时")
+        else:
+            plan = get_document(conn, Identifier(id=data.plan_id or "missing"))
+            blueprints.validate_links(conn, content, lesson, script, plan)
     identifier = new_id()
-    conn.execute("INSERT INTO teaching_documents(id,lesson_id,kind,version,parent_id,script_id,content_json,created_by) VALUES(?,?,?,?,?,?,?,?)",
-                 (identifier, data.lesson_id, data.kind, version + 1, latest["id"] if latest else None, data.script_id, encode(content.model_dump()), actor))
+    conn.execute("INSERT INTO teaching_documents(id,lesson_id,kind,version,parent_id,script_id,plan_id,content_json,created_by) VALUES(?,?,?,?,?,?,?,?,?)",
+                 (identifier, data.lesson_id, data.kind, version + 1, latest["id"] if latest else None, data.script_id, data.plan_id, encode(content.model_dump()), actor))
     result = get_document(conn, Identifier(id=identifier))
     if generation:
         conn.execute("UPDATE document_generations SET document_id=? WHERE workflow_id=?", (identifier, data.generation_id))
@@ -92,7 +102,7 @@ def review_document(conn, data, actor):
         raise DomainError("invalid_transition", "已审核版本不能再次审核，请创建修订版")
     if data.decision == "approved":
         check = before
-        if before["kind"] == "lesson_plan":
+        if before["kind"] != "script":
             check = get_document(conn, Identifier(id=before["script_id"]))
             if check["status"] != "approved":
                 raise DomainError("review_required", "请先审核教案关联的授课稿版本")
@@ -112,6 +122,8 @@ def export_document(conn, data, actor):
     from .files import store_bytes
 
     document = get_document(conn, data)
+    if document["kind"] not in {"script", "lesson_plan"}:
+        raise DomainError("unsupported_export", "页面蓝图属于课件内部数据，请通过课件中心生成设计图与PPTX")
     if document["status"] != "approved":
         raise DomainError("review_required", "正式DOCX导出需要教师审核通过该版本")
     previous = conn.execute("SELECT * FROM teaching_exports WHERE document_id=?", (data.id,)).fetchone()

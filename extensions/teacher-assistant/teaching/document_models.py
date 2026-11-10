@@ -73,10 +73,11 @@ class PlanContent(Input):
 
 class DocumentSave(Input):
     lesson_id: str = Field(min_length=1, max_length=64)
-    kind: Literal["script", "lesson_plan"]
+    kind: Literal["script", "lesson_plan", "slide_blueprint"]
     expected_version: int = Field(default=0, ge=0, strict=True)
     content: dict
     script_id: str | None = Field(default=None, min_length=1, max_length=64)
+    plan_id: str | None = Field(default=None, min_length=1, max_length=64)
     generation_id: str | None = Field(default=None, min_length=1, max_length=64)
 
 
@@ -85,7 +86,7 @@ class DocumentList(Input):
 
 
 class GenerationStart(DocumentList):
-    kind: Literal["script", "lesson_plan"]
+    kind: Literal["script", "lesson_plan", "slide_blueprint"]
     allow_model_call: bool = Field(default=False, strict=True)
 
 

@@ -1,3 +1,4 @@
 resources/requirements/*.txt -text whitespace=cr-at-eol
 phase2-evidence/*.log -text whitespace=cr-at-eol
 phase3-evidence/*.log -text whitespace=cr-at-eol
+phase4-evidence/*.log -text whitespace=cr-at-eol

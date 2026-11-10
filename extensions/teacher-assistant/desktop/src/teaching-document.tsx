@@ -47,6 +47,7 @@ export function DocumentEditor({ route, documentId, onVersion }: Props) {
     content.activities = content.activities.map((activity, index) => ({ ...activity, teacher_activity: String(form.get(`teacher-${index}`)), student_activity: String(form.get(`student-${index}`)), methods: String(form.get(`methods-${index}`)) }))
     write.mutate({ operation: 'document.save', data: { lesson_id: saved.lesson_id, kind: saved.kind, expected_version: saved.version, script_id: saved.script_id, content } })
   }
+  if (saved?.kind === 'slide_blueprint') return <p>请在课件页面蓝图中心查看与审核该版本。</p>
   return <article className="space-y-5" aria-label="教学文档正文与审核">
     {saved && <>
       <h3 className="text-lg font-semibold">{saved.content.title} · v{saved.version} · {saved.status === 'approved' ? '教师已审核' : saved.status === 'rejected' ? '已退回' : '待审核草稿'}</h3>

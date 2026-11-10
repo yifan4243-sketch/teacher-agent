@@ -29,9 +29,11 @@ Desktop 首次进入“技能与工具 → 插件”，启用“教师专业工�
 - `teacher_tasks` 创建、执行、查询、重试或取消教学任务。
 - `teacher_knowledge` 导入教材、查询版本与来源、检索和创建关联教材的课次。
 - `teacher_preparation` 保存完整教学正文、修订、版本查询及审核后DOCX导出。
+- `teacher_slides` 读取可选主题与按蓝图自动合成的单页生图提示词。
 - `teacher-assistant:teacher-workspace` 为只读原生 Skill。
 - `teacher-assistant:teacher-knowledge` 指导教材导入、来源引用及复核。
 - `teacher-assistant:teacher-preparation` 指导逐字稿和原模板教案生成。
+- `teacher-assistant:teacher-slide-design` 指导有来源的教学页面蓝图。
 - Desktop 使用受原生 Gateway `session:control` 验证的 `plugin.teacher-assistant.call` RPC。
 - 教师审核由 Desktop RPC 提交，Agent 工具保留待审核状态。
 
@@ -60,6 +62,12 @@ PPT设计图默认由教学内容和Slide Blueprint自动生成，可选主题�
 Agent先读取教师Skill、完整授课风格范例和教材原文，再保存结构化草稿。返回工作台可阅读全文、逐段修订授课稿、修订教案和查看时间估算。已审核版本保留，修订另建版本。教案关联一个已审核授课稿，活动逐一对应两个40分钟单元。
 
 审核通过后使用“下载正式DOCX”通过原生保存对话框保存文件。文档时间估算还需教师按实际语速试读核验。生成任务保存原生会话入口，状态不明确时打开原会话核查。“取消草稿保存任务”阻止后续正文保存，停止模型调用请使用原生会话的停止按钮。
+
+## 课件页面蓝图
+
+在“课件页面蓝图”选择已完成授课稿和教案审核的课次，确认模型调用后由原生Agent规划页面。蓝图绑定已审核文档的固定版本和实际教材知识点，每页与授课稿环节对应。
+
+可按页修订标题、准确可见文字、备注和布局，选择简洁、科技、蓝白或深色主题，查看自动合成的单页生图提示词。审核保存蓝图版本后，后续图片与可编辑PPTX继续沿同一版本关联实现。图片执行、缓存、预算和可编辑还原的完成状态见实施清单。
 
 ## 当前交付范围
 

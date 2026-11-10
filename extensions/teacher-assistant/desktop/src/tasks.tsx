@@ -36,7 +36,7 @@ export function Tasks({ route }: { route: PluginProfileRoute }) {
             <Button disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.review', data: { id: task.id, version: task.version, decision: 'approved' } })}>教师批准</Button>
             <Button variant="secondary" disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.review', data: { id: task.id, version: task.version, decision: 'rejected' } })}>退回任务</Button>
           </>}
-          {task.kind === 'document_generation' && <p>请在“授课稿与教案”查看Agent会话、全文及审核版本。</p>}
+          {task.kind === 'document_generation' && <p>请在“授课稿与教案”或“课件页面蓝图”查看对应的Agent会话与审核版本。</p>}
           {['pending', 'failed', 'awaiting_review'].includes(task.status) && <Button variant="secondary" disabled={mutation.isPending} onClick={() => mutation.mutate({ operation: 'task.cancel', data: { id: task.id, version: task.version } })}>取消任务</Button>}
         </div>
       </li>)}

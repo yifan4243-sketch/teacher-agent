@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import re
+import shutil
 import sqlite3
 import sys
 
@@ -10,6 +11,7 @@ from tests.e2e.core.history._helpers import NO_BACKGROUND_REVIEW, OFFLINE_CONFIG
 from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall, write_hermes_home
 from tests.extensions.test_teacher_documents import plan_fixture, script_fixture
 from tests.extensions.test_teacher_blueprints import blueprint_fixture
+from tests.extensions.test_teacher_slides import sample_layout
 
 
 def document_responder(home):
@@ -17,6 +19,8 @@ def document_responder(home):
 
     def respond(record):
         messages = record["body"]["messages"]
+        if any("将这张教学幻灯片图片分解为可编辑页面对象" in str(message.get("content", "")) for message in messages):
+            return Text(json.dumps(sample_layout(), ensure_ascii=False))
         match = next((re.search(r"生成任务ID为 ([0-9a-f-]+)，kind为 (script|lesson_plan|slide_blueprint)", str(message.get("content", "")))
                       for message in reversed(messages) if message["role"] == "user"), None)
         if match is None:
@@ -48,7 +52,10 @@ def document_responder(home):
                 "content": content}, "request_id": identifier + ":model-save"}))
         if stage == 0:
             skill = "teacher-slide-design" if kind == "slide_blueprint" else "teacher-preparation"
-            return ToolCall("tool_call", {"calls": [{"name": "skill_view", "arguments": {"name": "teacher-assistant:" + skill}}]})
+            return ToolCall("skill_view", {"name": "teacher-assistant:" + skill})
+        if stage == 1:
+            loaded = json.loads(messages[-1]["content"])
+            assert loaded.get("success") is True, loaded
         if stage <= len(calls):
             name, arguments = calls[stage - 1]
             return ToolCall("tool_call", {"calls": [{"name": name, "arguments": arguments}]})
@@ -59,8 +66,14 @@ def document_responder(home):
 
 def main():
     home = Path(sys.argv[1])
-    with FakeLLMServer(document_responder(home), default_text="本地界面测试模型。") as server:
-        write_hermes_home(home, server.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + "plugins:\n  enabled: [teacher-assistant]\nonboarding:\n  run: false\n")
+    image_plugin = home / "plugins/teacher-ui-image"
+    image_plugin.mkdir(parents=True)
+    shutil.copy2(Path(__file__).with_name("teacher_ui_image_provider.py"), image_plugin / "__init__.py")
+    shutil.copy2(home / "plugins/teacher-assistant/resources/slide-prototype/generated-design.jpg", image_plugin / "fixture.jpg")
+    (image_plugin / "plugin.yaml").write_text("name: teacher-ui-image\nversion: 0.0.1\ndescription: Offline test image fixture\n", encoding="utf-8")
+    responder = document_responder(home)
+    with FakeLLMServer(responder, aux=responder, default_text="本地界面测试模型。") as server:
+        write_hermes_home(home, server.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + "plugins:\n  enabled: [teacher-assistant, teacher-ui-image]\nimage_gen:\n  provider: teacher-ui-image\nonboarding:\n  run: false\n")
         print(json.dumps({"ready": True}), flush=True)
         sys.stdin.readline()
         print(json.dumps({"model_requests": len(server.main_requests())}), flush=True)

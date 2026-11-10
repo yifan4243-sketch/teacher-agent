@@ -86,6 +86,7 @@ export async function openGeneration(route: PluginProfileRoute, generation: Gene
   try {
     const session = await host.requestProfile<{ session_id: string; stored_session_id: string }>(route, 'session.create', {
       profile: route.targetProfile, title: generation.task.input.title, request_id: generation.workflow_id,
+      toolsets: ['teacher', 'skills'],
       ...generation.model,
     })
     await call(route, 'document.generation.claim', { id: generation.workflow_id, runtime_session_id: session.session_id, stored_session_id: session.stored_session_id }, `${generation.workflow_id}:claim`)

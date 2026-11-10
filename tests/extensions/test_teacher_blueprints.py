@@ -21,8 +21,7 @@ def blueprint_fixture(source_id, point_id):
         for index in range(8)]}
 
 
-def test_blueprint_source_links_and_automatic_page_prompt(teacher, tmp_path):
-    _, _, call = teacher
+def preparation_fixture(call, tmp_path):
     lesson = lesson_fixture(call, tmp_path)
     source_id = lesson["sources"][0]["id"]
     script = saved(call, "document.save", {"lesson_id": lesson["id"], "kind": "script", "content": script_fixture(source_id)})
@@ -33,6 +32,13 @@ def test_blueprint_source_links_and_automatic_page_prompt(teacher, tmp_path):
     point_id = next(point["id"] for point in points if point["source_id"] == source_id)
     content = blueprint_fixture(source_id, point_id)
     params = {"lesson_id": lesson["id"], "kind": "slide_blueprint", "script_id": script["id"], "plan_id": plan["id"], "content": content}
+    return lesson, script, plan, params
+
+
+def test_blueprint_source_links_and_automatic_page_prompt(teacher, tmp_path):
+    _, _, call = teacher
+    lesson, script, plan, params = preparation_fixture(call, tmp_path)
+    content = params["content"]
     blueprint = saved(call, "document.save", params)
     prompt = call("slide.prompt", {"id": blueprint["id"], "page_number": 1})
     assert prompt["ok"], prompt

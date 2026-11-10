@@ -1,0 +1,1 @@
+{"states": ["succeeded", "succeeded", "cached", "cancelled"], "provider_calls": 1, "sha256": "b713c8eccc2528742955690dc9bf5589d74760d2a84e60ab088f0f485c503ef9", "provider": "offline fixture", "text_check": "needs_correction", "layout_elements": 32}

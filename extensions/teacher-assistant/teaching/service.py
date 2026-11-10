@@ -7,7 +7,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
-from . import blueprint_models, blueprints, document_models, documents, knowledge, knowledge_models, lessons, models, preparation, records, semantic, workflows
+from . import blueprint_models, blueprints, document_models, documents, image_analysis, image_assets, image_models, images, knowledge, knowledge_models, lessons, models, preparation, records, semantic, workflows
 from .database import database, encode
 
 
@@ -34,6 +34,9 @@ READS = {
     "document.generation.list": (document_models.DocumentList, preparation.list_generations),
     "slide.prompt": (blueprint_models.PageRequest, blueprints.get_prompt),
     "slide.themes": (models.Input, blueprints.list_themes),
+    "slide.image.get": (models.Identifier, images.get_job),
+    "slide.image.list": (image_models.ImageList, images.list_jobs),
+    "slide.image.budget": (image_models.BlueprintFilter, images.budget),
 }
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
@@ -74,11 +77,17 @@ class TeachingService:
     def __init__(self, ctx):
         self.ctx = ctx
         self.reads = {**READS, "knowledge.semantic": (knowledge_models.SemanticSearch, partial(semantic.search, ctx=ctx))}
+        self.external_writes = {"slide.image.run": (models.Identifier, partial(images.execute, ctx=ctx))}
         self.human_writes = {
             "task.review": (models.TaskReview, workflows.review_task),
             "document.review": (document_models.DocumentReview, documents.review_document),
             "document.generation.begin": (document_models.GenerationStart, partial(preparation.begin_generation, ctx=ctx)),
             "document.generation.claim": (document_models.GenerationClaim, preparation.claim_generation),
+            "slide.image.set_budget": (image_models.ImageBudget, images.set_budget),
+            "slide.image.reserve": (image_models.ImageReserve, images.reserve),
+            "slide.image.abandon": (image_models.ImageAbandon, images.abandon),
+            "slide.image.review": (image_assets.ImageReview, image_assets.review),
+            "slide.image.reserve_analysis": (image_analysis.AnalysisReserve, image_analysis.reserve),
         }
 
     def call(self, operation, data=None, request_id=None, *, human=False, session_id=None):
@@ -96,13 +105,15 @@ class TeachingService:
 
     def _call(self, operation, data, request_id, human, session_id):
         if operation == "schema":
-            return {key: schema.model_json_schema() for key, (schema, _) in {**self.reads, **WRITES}.items()}
+            return {key: schema.model_json_schema() for key, (schema, _) in {**self.reads, **WRITES, **self.external_writes}.items()}
         if operation == "settings.get":
             return self.settings()
         if operation == "settings.update":
             return self.update_settings(data, human)
-        writes = {**WRITES, **self.human_writes} if human else WRITES
-        reads = {**self.reads, "document.file": (models.Identifier, documents.read_export)} if human else self.reads
+        writes = {**WRITES, **self.external_writes, **(self.human_writes if human else {})}
+        reads = {**self.reads, "document.file": (models.Identifier, documents.read_export),
+                 "slide.image.preview": (models.Identifier, image_assets.preview),
+                 "slide.image.file": (models.Identifier, image_assets.download)} if human else self.reads
         schema, handler = ({**reads, **writes}).get(operation, (None, None))
         if schema is None:
             raise models.DomainError("unknown_operation", "不支持的操作")
@@ -114,6 +125,8 @@ class TeachingService:
             raise models.DomainError("permission_denied", "知识点确认需要教师在界面复核")
         payload = schema.model_validate(data)
         actor = "desktop:teacher" if human else "agent:" + (session_id or "local")
+        if operation in self.external_writes:
+            return handler(data=payload, actor=actor, request_id=request_id, session_id=session_id)
         with database() as conn:
             if operation in reads:
                 return handler(conn=conn, data=payload)
@@ -143,7 +156,7 @@ class TeachingService:
         if not human:
             raise models.DomainError("permission_denied", "模型和工具权限由教师在设置页修改")
         policy = models.Policy.model_validate({**self.settings(), **data})
-        if any(op not in {**self.reads, **WRITES} for op in policy.disabled_operations):
+        if any(op not in {**self.reads, **WRITES, **self.external_writes} for op in policy.disabled_operations):
             raise models.DomainError("invalid_input", "权限设置格式不正确")
         self.ctx.set_config("policy", policy.model_dump())
         return self.settings()

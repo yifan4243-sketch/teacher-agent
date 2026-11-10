@@ -2,7 +2,7 @@ import { Button, useMutation, useQuery, useQueryClient, type PluginProfileRoute 
 import { useState, type FormEvent } from 'react'
 
 import { call, routeKey } from './api'
-import { downloadSlides, PAGE_LABELS, type EditablePage } from './reconstruction-api'
+import { downloadSlides, OBJECT_LABELS, PAGE_LABELS, type EditablePage } from './reconstruction-api'
 
 interface Props {
   route: PluginProfileRoute
@@ -48,6 +48,13 @@ export function EditableSlide({ route, pageId, onVersion }: Props) {
       edited.fill = String(form.get('fill')) || null
       edited.line_color = String(form.get('line_color')) || null
     }
+    if (edited.kind === 'image') {
+      edited.source_x = Number(form.get('source_x'))
+      edited.source_y = Number(form.get('source_y'))
+      edited.source_width = Number(form.get('source_width'))
+      edited.source_height = Number(form.get('source_height'))
+      edited.description = String(form.get('description'))
+    }
     revise.mutate(layout)
   }
   function approve(event: FormEvent<HTMLFormElement>) {
@@ -58,24 +65,28 @@ export function EditableSlide({ route, pageId, onVersion }: Props) {
   return <article className="space-y-3" aria-label="可编辑页面对象">
     {saved && <>
       <h4>可编辑第{saved.page_number}页 · v{saved.version} · {PAGE_LABELS[saved.status]}</h4>
-      <p>原生对象 {Object.entries(saved.object_counts).map(([kind, count]) => `${kind} ${count}`).join(' · ')}</p>
-      <p>当前重建支持文字、形状、连接线和原生表格。图片区域、渲染差异与自动修复继续开发。</p>
+      <p>页面对象 {Object.entries(saved.object_counts).map(([kind, count]) => `${OBJECT_LABELS[kind]} ${count}`).join(' · ')}</p>
+      <p>文字、形状、连接线与表格为原生对象。照片和复杂插画保存为独立裁切图片，支持移动、缩放和裁切。坐标与尺寸采用原图像素。</p>
       {saved.text_check.missing_text.map((text, i) => <p role="alert" key={i}>页面缺少蓝图文字 {text}</p>)}
       <label>编辑页面对象<select aria-label="编辑页面对象" value={index} onChange={event => setIndex(Number(event.target.value))}>
-        {saved.layout.elements.map((element, i) => <option key={element.name} value={i}>{element.name} · {element.kind}</option>)}
+        {saved.layout.elements.map((element, i) => <option key={element.name} value={i}>{element.name} · {OBJECT_LABELS[element.kind]}</option>)}
       </select></label>
       {element && <form key={`${pageId}:${element.name}`} onSubmit={saveElement} className="grid max-w-3xl gap-2">
         {([['x', '水平位置'], ['y', '垂直位置'], ['width', '宽度'], ['height', '高度']] as const).map(([key, label]) => <label key={key}>{label}<input aria-label={`对象${label}`} type="number" name={key} min={key === 'x' || key === 'y' ? 0 : 0.01} step="0.01" defaultValue={element[key]} required /></label>)}
         {element.kind === 'text' && <label>对象文字<textarea aria-label="对象文字" name="text" defaultValue={element.text} maxLength={5000} className="min-h-28 w-full rounded border border-(--ui-border) p-3" required /></label>}
         {element.kind === 'table' && <fieldset className="grid gap-2"><legend>表格单元格</legend>{element.rows!.map((row, rowIndex) => <div className="flex flex-wrap gap-2" key={rowIndex}>{row.map((cell, columnIndex) => <label key={columnIndex}>第{rowIndex + 1}行第{columnIndex + 1}列<input aria-label={`表格第${rowIndex + 1}行第${columnIndex + 1}列`} name={`cell-${rowIndex}-${columnIndex}`} defaultValue={cell} maxLength={2000} /></label>)}</div>)}</fieldset>}
         {(element.kind === 'text' || element.kind === 'table') && <>
-          <label>对象字号<input aria-label="对象字号" name="font_size" type="number" min="8" max="160" step="0.1" defaultValue={element.font_size} required /></label>
+          <label>对象字号<input aria-label="对象字号" name="font_size" type="number" min="8" max={element.kind === 'table' ? 100 : 160} step="0.1" defaultValue={element.font_size} required /></label>
           <label>对象文字颜色<input aria-label="对象文字颜色" name="color" pattern="[0-9A-Fa-f]{6}" defaultValue={element.color} required /></label>
         </>}
         {element.kind === 'shape' && <>
           <label>对象填充颜色<input aria-label="对象填充颜色" name="fill" pattern="[0-9A-Fa-f]{6}" defaultValue={element.fill ?? ''} /></label>
           <label>对象边线颜色<input aria-label="对象边线颜色" name="line_color" pattern="[0-9A-Fa-f]{6}" defaultValue={element.line_color ?? ''} /></label>
         </>}
+        {element.kind === 'image' && <fieldset className="grid gap-2"><legend>原图裁切区域</legend>
+          {([['source_x', '裁切水平位置'], ['source_y', '裁切垂直位置'], ['source_width', '裁切宽度'], ['source_height', '裁切高度']] as const).map(([key, label]) => <label key={key}>{label}<input aria-label={label} name={key} type="number" min={key === 'source_x' || key === 'source_y' ? 0 : 1} step="0.01" defaultValue={element[key]} required /></label>)}
+          <label>图片说明<input aria-label="图片说明" name="description" defaultValue={element.description} maxLength={500} required /></label>
+        </fieldset>}
         <Button type="submit" disabled={revise.isPending}>保存页面对象为新版本</Button>
       </form>}
       <Button variant="secondary" disabled={download.isPending} onClick={() => download.mutate()}>{saved.status === 'approved' ? '下载单页可编辑PPTX' : '下载单页草稿PPTX'}</Button>

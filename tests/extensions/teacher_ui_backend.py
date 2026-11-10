@@ -20,7 +20,10 @@ def document_responder(home):
     def respond(record):
         messages = record["body"]["messages"]
         if any("将这张教学幻灯片图片分解为可编辑页面对象" in str(message.get("content", "")) for message in messages):
-            return Text(json.dumps(sample_layout(), ensure_ascii=False))
+            layout = sample_layout()
+            layout["elements"].append({"kind": "image", "name": "detail-illustration", "x": 1460, "y": 400, "width": 100, "height": 100,
+                "source_x": 1110, "source_y": 400, "source_width": 100, "source_height": 100, "description": "独立裁切插画技术样例"})
+            return Text(json.dumps(layout, ensure_ascii=False))
         match = next((re.search(r"生成任务ID为 ([0-9a-f-]+)，kind为 (script|lesson_plan|slide_blueprint)", str(message.get("content", "")))
                       for message in reversed(messages) if message["role"] == "user"), None)
         if match is None:

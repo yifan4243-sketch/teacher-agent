@@ -1164,10 +1164,11 @@ function SlideImages({ route, blueprint }) {
   const execute = useMutation10({ mutationFn: (job) => runImage(route, job), retry: false, onSettled: refresh });
   const executeBatch = useMutation10({ mutationFn: () => runQueuedImages(route, blueprint.id, refresh), retry: false, onSettled: refresh });
   const analyze = useMutation10({
-    mutationFn: ({ assetId, estimate }) => call(route, "slide.image.reserve_analysis", {
+    mutationFn: ({ assetId, estimate, force }) => call(route, "slide.image.reserve_analysis", {
       id: assetId,
       estimated_micro_usd: estimate,
-      allow_model_call: true
+      allow_model_call: true,
+      force_regenerate: force
     }, crypto.randomUUID()),
     onSettled: refresh
   });
@@ -1185,7 +1186,7 @@ function SlideImages({ route, blueprint }) {
   function reserveAnalysis(event, assetId) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    analyze.mutate({ assetId, estimate: Math.round(Number(form.get("analysis-estimate")) * 1e6) });
+    analyze.mutate({ assetId, estimate: Math.round(Number(form.get("analysis-estimate")) * 1e6), force: form.has("analysis-force") });
   }
   const states = { queued: "\u5F85\u6267\u884C", running: "\u6267\u884C\u4E2D\uFF0C\u52FF\u91CD\u590D\u8C03\u7528", succeeded: "\u5DF2\u751F\u6210", failed: "\u5931\u8D25", cancelled: "\u5DF2\u53D6\u6D88", cached: "\u590D\u7528\u7F13\u5B58" };
   return /* @__PURE__ */ jsxs10("section", { className: "space-y-4", "aria-label": "AI\u9010\u9875\u8BBE\u8BA1\u56FE\u7247", children: [
@@ -1285,6 +1286,10 @@ function SlideImages({ route, blueprint }) {
           /* @__PURE__ */ jsx10("input", { type: "checkbox", required: true }),
           "\u6388\u6743\u5C06\u5F53\u524D\u8BBE\u8BA1\u56FE\u53D1\u9001\u7ED9\u8BFE\u4EF6\u9636\u6BB5\u89C6\u89C9\u6A21\u578B\u5E76\u63A5\u53D7\u4F30\u7B97\u8D39\u7528\uFF0C\u8BC6\u522B\u7ED3\u679C\u540C\u65F6\u7528\u4E8E\u540E\u7EED\u53EF\u7F16\u8F91\u8BFE\u4EF6\u91CD\u5EFA"
         ] }),
+        /* @__PURE__ */ jsxs10("label", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsx10("input", { type: "checkbox", name: "analysis-force" }),
+          "\u91CD\u65B0\u8BC6\u522B\u5F53\u524D\u56FE\u7247\u5E76\u53E6\u8BA1\u8D39\u7528\uFF0C\u4FDD\u7559\u6B64\u524D\u8BC6\u522B\u4EFB\u52A1"
+        ] }),
         /* @__PURE__ */ jsx10(Button10, { type: "submit", disabled: analyze.isPending, children: "\u9884\u7559\u6B64\u9875\u6587\u5B57\u4E0E\u5E03\u5C40\u8BC6\u522B" })
       ] }),
       job.analysis.text_check && /* @__PURE__ */ jsxs10("div", { className: "space-y-2", children: [
@@ -1315,6 +1320,7 @@ import { useState as useState10 } from "react";
 // extensions/teacher-assistant/desktop/src/reconstruction-api.ts
 import { captureGatewayFileDownload as captureGatewayFileDownload3 } from "@hermes/plugin-sdk";
 var PAGE_LABELS = { draft: "\u8349\u7A3F", approved: "\u5DF2\u5BA1\u6838", rejected: "\u5DF2\u9000\u56DE" };
+var OBJECT_LABELS = { text: "\u6587\u5B57", shape: "\u5F62\u72B6", line: "\u8FDE\u63A5\u7EBF", table: "\u8868\u683C", image: "\u56FE\u7247" };
 async function downloadSlides(route, operation, id) {
   const save = captureGatewayFileDownload3();
   const file = await call(route, operation, { id }, crypto.randomUUID());
@@ -1364,6 +1370,13 @@ function EditableSlide({ route, pageId, onVersion }) {
       edited.fill = String(form.get("fill")) || null;
       edited.line_color = String(form.get("line_color")) || null;
     }
+    if (edited.kind === "image") {
+      edited.source_x = Number(form.get("source_x"));
+      edited.source_y = Number(form.get("source_y"));
+      edited.source_width = Number(form.get("source_width"));
+      edited.source_height = Number(form.get("source_height"));
+      edited.description = String(form.get("description"));
+    }
     revise.mutate(layout);
   }
   function approve(event) {
@@ -1382,10 +1395,10 @@ function EditableSlide({ route, pageId, onVersion }) {
         PAGE_LABELS[saved.status]
       ] }),
       /* @__PURE__ */ jsxs11("p", { children: [
-        "\u539F\u751F\u5BF9\u8C61 ",
-        Object.entries(saved.object_counts).map(([kind, count]) => `${kind} ${count}`).join(" \xB7 ")
+        "\u9875\u9762\u5BF9\u8C61 ",
+        Object.entries(saved.object_counts).map(([kind, count]) => `${OBJECT_LABELS[kind]} ${count}`).join(" \xB7 ")
       ] }),
-      /* @__PURE__ */ jsx11("p", { children: "\u5F53\u524D\u91CD\u5EFA\u652F\u6301\u6587\u5B57\u3001\u5F62\u72B6\u3001\u8FDE\u63A5\u7EBF\u548C\u539F\u751F\u8868\u683C\u3002\u56FE\u7247\u533A\u57DF\u3001\u6E32\u67D3\u5DEE\u5F02\u4E0E\u81EA\u52A8\u4FEE\u590D\u7EE7\u7EED\u5F00\u53D1\u3002" }),
+      /* @__PURE__ */ jsx11("p", { children: "\u6587\u5B57\u3001\u5F62\u72B6\u3001\u8FDE\u63A5\u7EBF\u4E0E\u8868\u683C\u4E3A\u539F\u751F\u5BF9\u8C61\u3002\u7167\u7247\u548C\u590D\u6742\u63D2\u753B\u4FDD\u5B58\u4E3A\u72EC\u7ACB\u88C1\u5207\u56FE\u7247\uFF0C\u652F\u6301\u79FB\u52A8\u3001\u7F29\u653E\u548C\u88C1\u5207\u3002\u5750\u6807\u4E0E\u5C3A\u5BF8\u91C7\u7528\u539F\u56FE\u50CF\u7D20\u3002" }),
       saved.text_check.missing_text.map((text, i) => /* @__PURE__ */ jsxs11("p", { role: "alert", children: [
         "\u9875\u9762\u7F3A\u5C11\u84DD\u56FE\u6587\u5B57 ",
         text
@@ -1395,7 +1408,7 @@ function EditableSlide({ route, pageId, onVersion }) {
         /* @__PURE__ */ jsx11("select", { "aria-label": "\u7F16\u8F91\u9875\u9762\u5BF9\u8C61", value: index, onChange: (event) => setIndex(Number(event.target.value)), children: saved.layout.elements.map((element2, i) => /* @__PURE__ */ jsxs11("option", { value: i, children: [
           element2.name,
           " \xB7 ",
-          element2.kind
+          OBJECT_LABELS[element2.kind]
         ] }, element2.name)) })
       ] }),
       element && /* @__PURE__ */ jsxs11("form", { onSubmit: saveElement, className: "grid max-w-3xl gap-2", children: [
@@ -1421,7 +1434,7 @@ function EditableSlide({ route, pageId, onVersion }) {
         (element.kind === "text" || element.kind === "table") && /* @__PURE__ */ jsxs11(Fragment7, { children: [
           /* @__PURE__ */ jsxs11("label", { children: [
             "\u5BF9\u8C61\u5B57\u53F7",
-            /* @__PURE__ */ jsx11("input", { "aria-label": "\u5BF9\u8C61\u5B57\u53F7", name: "font_size", type: "number", min: "8", max: "160", step: "0.1", defaultValue: element.font_size, required: true })
+            /* @__PURE__ */ jsx11("input", { "aria-label": "\u5BF9\u8C61\u5B57\u53F7", name: "font_size", type: "number", min: "8", max: element.kind === "table" ? 100 : 160, step: "0.1", defaultValue: element.font_size, required: true })
           ] }),
           /* @__PURE__ */ jsxs11("label", { children: [
             "\u5BF9\u8C61\u6587\u5B57\u989C\u8272",
@@ -1436,6 +1449,17 @@ function EditableSlide({ route, pageId, onVersion }) {
           /* @__PURE__ */ jsxs11("label", { children: [
             "\u5BF9\u8C61\u8FB9\u7EBF\u989C\u8272",
             /* @__PURE__ */ jsx11("input", { "aria-label": "\u5BF9\u8C61\u8FB9\u7EBF\u989C\u8272", name: "line_color", pattern: "[0-9A-Fa-f]{6}", defaultValue: element.line_color ?? "" })
+          ] })
+        ] }),
+        element.kind === "image" && /* @__PURE__ */ jsxs11("fieldset", { className: "grid gap-2", children: [
+          /* @__PURE__ */ jsx11("legend", { children: "\u539F\u56FE\u88C1\u5207\u533A\u57DF" }),
+          [["source_x", "\u88C1\u5207\u6C34\u5E73\u4F4D\u7F6E"], ["source_y", "\u88C1\u5207\u5782\u76F4\u4F4D\u7F6E"], ["source_width", "\u88C1\u5207\u5BBD\u5EA6"], ["source_height", "\u88C1\u5207\u9AD8\u5EA6"]].map(([key, label]) => /* @__PURE__ */ jsxs11("label", { children: [
+            label,
+            /* @__PURE__ */ jsx11("input", { "aria-label": label, name: key, type: "number", min: key === "source_x" || key === "source_y" ? 0 : 1, step: "0.01", defaultValue: element[key], required: true })
+          ] }, key)),
+          /* @__PURE__ */ jsxs11("label", { children: [
+            "\u56FE\u7247\u8BF4\u660E",
+            /* @__PURE__ */ jsx11("input", { "aria-label": "\u56FE\u7247\u8BF4\u660E", name: "description", defaultValue: element.description, maxLength: 500, required: true })
           ] })
         ] }),
         /* @__PURE__ */ jsx11(Button11, { type: "submit", disabled: revise.isPending, children: "\u4FDD\u5B58\u9875\u9762\u5BF9\u8C61\u4E3A\u65B0\u7248\u672C" })

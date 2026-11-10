@@ -48,7 +48,7 @@ def test_reviewed_native_pages_and_real_editable_pptx(reconstruction_workspace, 
     call, blueprint, prepare = reconstruction_workspace
     analysis, content = prepare(1)
     page = saved(call, "slide.page.from_analysis", {"id": analysis["id"]})
-    assert page["object_counts"] == {"text": 7, "shape": 19, "line": 5, "table": 1}
+    assert page["object_counts"] == {"text": 7, "shape": 19, "line": 5, "table": 1, "image": 0}
     assert call("slide.page.review", {"id": page["id"], "decision": "approved", "note": "wrong text"}, "reject-unmatched")["error"]["code"] == "slide_text_mismatch"
     draft = saved(call, "slide.page.preview_export", {"id": page["id"]})
     assert draft["filename"].startswith("预览草稿-")
@@ -108,3 +108,41 @@ def test_image_review_and_layout_boundary_before_reconstruction(reconstruction_w
     call, _, prepare = reconstruction_workspace
     analysis, _ = prepare(1, approve_image=False)
     assert call("slide.page.from_analysis", {"id": analysis["id"]}, "unreviewed-image")["error"]["code"] == "review_required"
+
+
+def test_image_regions_export_as_independent_crops_and_reject_page_backgrounds(reconstruction_workspace, tmp_path):
+    from io import BytesIO
+
+    from PIL import Image
+    from pptx import Presentation
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    call, _, prepare = reconstruction_workspace
+    analysis, layout = prepare(1, matching=True)
+    page = saved(call, "slide.page.from_analysis", {"id": analysis["id"]})
+    layout["elements"].append({"kind": "image", "name": "illustration-crop", "x": 1400, "y": 500, "width": 200, "height": 150,
+        "source_x": 300, "source_y": 300, "source_width": 200, "source_height": 150, "description": "technical illustration crop fixture"})
+    revised = saved(call, "slide.page.revise", {"id": page["id"], "layout": layout})
+    assert revised["object_counts"]["image"] == 1
+    saved(call, "slide.page.review", {"id": revised["id"], "decision": "approved", "note": "fixture crop reviewed"})
+    exported = saved(call, "slide.page.export", {"id": revised["id"]})
+    presentation = Presentation(exported["stored_path"])
+    slide = presentation.slides[0]
+    pictures = [shape for shape in slide.shapes if shape.shape_type == MSO_SHAPE_TYPE.PICTURE]
+    assert len(pictures) == 1 and pictures[0].image.size == (200, 150)
+    assert pictures[0]._element.nvPicPr.cNvPr.get("descr") == "technical illustration crop fixture"
+    assert len(slide.shapes) == len(layout["elements"])
+    assert any(shape.has_table for shape in slide.shapes)
+    asset = call("slide.image.file", {"id": analysis["input_asset_id"]})["data"]
+    with Image.open(asset["stored_path"]) as source, Image.open(BytesIO(pictures[0].image.blob)) as cropped:
+        assert cropped.convert("RGBA").tobytes() == source.crop((300, 300, 500, 450)).convert("RGBA").tobytes()
+    previous_x = pictures[0].left
+    pictures[0].left += 50000
+    edited = tmp_path / "picture-object-edited.pptx"
+    presentation.save(edited)
+    assert next(shape for shape in Presentation(edited).slides[0].shapes if shape.name == "illustration-crop").left == previous_x + 50000
+    picture = layout["elements"][-1]
+    picture.update(x=0, y=0, width=layout["width"], height=layout["height"])
+    assert call("slide.page.revise", {"id": revised["id"], "layout": layout}, "full-page-bitmap")["error"]["code"] == "invalid_input"
+    picture.update(x=1400, y=500, width=200, height=150, source_x=layout["width"] - 100)
+    assert call("slide.page.revise", {"id": revised["id"], "layout": layout}, "crop-outside")["error"]["code"] == "invalid_input"

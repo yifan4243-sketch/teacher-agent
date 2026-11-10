@@ -1,0 +1,14 @@
+{
+  "application": "WPS Presentation KWPP.Application",
+  "objects": 33,
+  "independent_picture_objects": 1,
+  "embedded_crop_pixels": [
+    80,
+    80
+  ],
+  "whole_page_bitmaps": 0,
+  "picture_move_persisted": true,
+  "picture_resize_persisted": true,
+  "download_sha256": "2aed2f5b1c0451705827a272739e61c7c579bd2abb3d67881b61d674263d27ac",
+  "source": "offline structured vision response, real original design image bytes"
+}

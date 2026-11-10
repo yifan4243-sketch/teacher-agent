@@ -3,9 +3,10 @@ import { captureGatewayFileDownload, type PluginProfileRoute } from '@hermes/plu
 import { call } from './api'
 
 export const PAGE_LABELS: Record<string, string> = { draft: '草稿', approved: '已审核', rejected: '已退回' }
+export const OBJECT_LABELS: Record<string, string> = { text: '文字', shape: '形状', line: '连接线', table: '表格', image: '图片' }
 
 export interface NativeElement {
-  kind: 'text' | 'shape' | 'line' | 'table'
+  kind: 'text' | 'shape' | 'line' | 'table' | 'image'
   name: string
   x: number
   y: number
@@ -18,6 +19,11 @@ export interface NativeElement {
   rows?: string[][]
   fill?: string | null
   line_color?: string | null
+  source_x?: number
+  source_y?: number
+  source_width?: number
+  source_height?: number
+  description?: string
 }
 
 export interface NativeLayout {

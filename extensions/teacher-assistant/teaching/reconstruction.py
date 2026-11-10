@@ -51,7 +51,7 @@ def get_page(conn, data):
     page["layout"] = json.loads(page.pop("layout_json"))
     layout = SlideLayout.model_validate(page["layout"])
     page["text_check"] = layout_text_check(layout, _page_content(conn, page["blueprint_id"], page["page_number"]))
-    page["object_counts"] = {kind: sum(element.kind == kind for element in layout.elements) for kind in ("text", "shape", "line", "table")}
+    page["object_counts"] = {kind: sum(element.kind == kind for element in layout.elements) for kind in ("text", "shape", "line", "table", "image")}
     return page
 
 
@@ -118,8 +118,15 @@ def _export(conn, blueprint_id, pages, actor):
     cached = conn.execute("SELECT * FROM slide_deck_exports WHERE blueprint_id=? AND selection_hash=?", (blueprint_id, selection_hash)).fetchone()
     if cached:
         return _checked_export(dict(cached))
+    image_sources = []
+    for page in pages:
+        source = None
+        if any(element["kind"] == "image" for element in page["layout"]["elements"]):
+            asset, _ = read_asset(conn, Identifier(id=page["asset_id"]))
+            source = asset["stored_path"]
+        image_sources.append(source)
     with tempfile.TemporaryDirectory(prefix=".editable-slides-", dir=file_root()) as work:
-        path = export_pptx([page["layout"] for page in pages], Path(work) / "deck.pptx")
+        path = export_pptx([page["layout"] for page in pages], Path(work) / "deck.pptx", source_images=image_sources)
         content = path.read_bytes()
     stored, digest = store_bytes(content, ".pptx")
     identifier = new_id()

@@ -37,8 +37,8 @@ export function SlideImages({ route, blueprint }: Props) {
   const execute = useMutation({ mutationFn: (job: ImageJob) => runImage(route, job), retry: false, onSettled: refresh })
   const executeBatch = useMutation({ mutationFn: () => runQueuedImages(route, blueprint.id, refresh), retry: false, onSettled: refresh })
   const analyze = useMutation({
-    mutationFn: ({ assetId, estimate }: { assetId: string; estimate: number }) => call(route, 'slide.image.reserve_analysis', {
-      id: assetId, estimated_micro_usd: estimate, allow_model_call: true,
+    mutationFn: ({ assetId, estimate, force }: { assetId: string; estimate: number; force: boolean }) => call(route, 'slide.image.reserve_analysis', {
+      id: assetId, estimated_micro_usd: estimate, allow_model_call: true, force_regenerate: force,
     }, crypto.randomUUID()),
     onSettled: refresh,
   })
@@ -56,7 +56,7 @@ export function SlideImages({ route, blueprint }: Props) {
   function reserveAnalysis(event: FormEvent<HTMLFormElement>, assetId: string) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    analyze.mutate({ assetId, estimate: Math.round(Number(form.get('analysis-estimate')) * 1_000_000) })
+    analyze.mutate({ assetId, estimate: Math.round(Number(form.get('analysis-estimate')) * 1_000_000), force: form.has('analysis-force') })
   }
   const states = { queued: '待执行', running: '执行中，勿重复调用', succeeded: '已生成', failed: '失败', cancelled: '已取消', cached: '复用缓存' }
   return <section className="space-y-4" aria-label="AI逐页设计图片">
@@ -93,6 +93,7 @@ export function SlideImages({ route, blueprint }: Props) {
       {job.kind === 'generation' && ['succeeded', 'cached'].includes(job.state) && job.asset_id && <form onSubmit={event => reserveAnalysis(event, job.asset_id!)} className="grid gap-2">
         <label>视觉检查估算费用（美元）<input name="analysis-estimate" aria-label="视觉检查估算费用（美元）" type="number" min="0.000001" max="1000" step="0.000001" required /></label>
         <label className="flex gap-2"><input type="checkbox" required />授权将当前设计图发送给课件阶段视觉模型并接受估算费用，识别结果同时用于后续可编辑课件重建</label>
+        <label className="flex gap-2"><input type="checkbox" name="analysis-force" />重新识别当前图片并另计费用，保留此前识别任务</label>
         <Button type="submit" disabled={analyze.isPending}>预留此页文字与布局识别</Button>
       </form>}
       {job.analysis.text_check && <div className="space-y-2">

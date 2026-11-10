@@ -1,0 +1,16 @@
+{
+  "application": "WPS Presentation KWPP.Application",
+  "pages": 1,
+  "objects_before": 32,
+  "objects_after": 32,
+  "bitmaps_before": 0,
+  "bitmaps_after": 0,
+  "title_edit_persisted": true,
+  "shape_move_persisted": true,
+  "table_edit_persisted": true,
+  "download_sha256": "125c2778e27d7b02b1f824b70faab1438726d809f7b939bed770c39e9c204390",
+  "edited_sha256": "6c86c30fb1e94f03be8f9871fc929d1f369c0737d07492dbf075b2c69652bcc9",
+  "layout_origin": "offline structured vision fixture through native PluginLlm",
+  "image_origin": "previous system-generated image through offline test image provider",
+  "live_paid_model_integration": false
+}

@@ -262,6 +262,51 @@ print(json.dumps({'states': states, 'provider_calls': len(calls), 'sha256': asse
 `, home, imagePath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
     expect(imageProbe.status, imageProbe.stderr).toBe(0)
     writeFileSync(testInfo.outputPath('image-receipt.json'), imageProbe.stdout)
+    const reconstruction = page.getByRole('region', { name: '图片转可编辑课件', exact: true })
+    await expect(reconstruction.getByLabel('视觉布局任务', { exact: true }).locator('option')).toHaveCount(2)
+    const analysisId = await reconstruction.getByLabel('视觉布局任务', { exact: true }).locator('option').nth(1).getAttribute('value')
+    await reconstruction.getByLabel('视觉布局任务', { exact: true }).selectOption(analysisId)
+    await reconstruction.getByRole('button', { name: '从识别布局建立可编辑页面', exact: true }).click()
+    await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v1 · 草稿', exact: true })).toBeVisible()
+    await expect(reconstruction.getByRole('alert').filter({ hasText: '页面缺少蓝图文字' }).first()).toBeVisible()
+    await reconstruction.getByLabel('编辑页面对象', { exact: true }).selectOption({ label: 'title · text' })
+    const requiredText = `${await page.getByLabel('页面标题', { exact: true }).inputValue()}\n${await page.getByLabel('准确可见文字', { exact: true }).inputValue()}`
+    await reconstruction.getByLabel('对象文字', { exact: true }).fill(requiredText)
+    await reconstruction.getByLabel('对象字号', { exact: true }).fill('24')
+    await reconstruction.getByLabel('对象高度', { exact: true }).fill('120')
+    await reconstruction.getByRole('button', { name: '保存页面对象为新版本', exact: true }).click()
+    await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v2 · 草稿', exact: true })).toBeVisible()
+    await expect(reconstruction.getByRole('alert').filter({ hasText: '页面缺少蓝图文字' })).toHaveCount(0)
+    await reconstruction.getByLabel(/已核对原生文字/).check()
+    await reconstruction.getByLabel('可编辑页面审核意见', { exact: true }).fill('离线布局和固定设计图用于技术验证')
+    await reconstruction.getByRole('button', { name: '审核通过可编辑页面', exact: true }).click()
+    await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v2 · 已审核', exact: true })).toBeVisible()
+    const pptxPath = testInfo.outputPath('editable-page.pptx')
+    await app.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }) }, pptxPath)
+    await reconstruction.getByRole('button', { name: '下载单页可编辑PPTX', exact: true }).click()
+    await expect.poll(() => existsSync(pptxPath)).toBe(true)
+    const pptxProbe = spawnSync(python, ['-c', `
+import hashlib, json, sqlite3, sys
+from pathlib import Path
+from pptx import Presentation
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+home, path = map(Path, sys.argv[1:])
+with sqlite3.connect(home / 'plugin-data/teacher-assistant/teaching.db') as conn:
+    digest = conn.execute('SELECT sha256 FROM slide_deck_exports').fetchone()[0]
+    versions = conn.execute('SELECT version,status FROM slide_pages ORDER BY version').fetchall()
+assert versions == [(1, 'draft'), (2, 'approved')]
+assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
+slide = Presentation(path).slides[0]
+assert not any(shape.shape_type == MSO_SHAPE_TYPE.PICTURE for shape in slide.shapes)
+assert 'UI教师修订的技术参数页' in next(shape for shape in slide.shapes if shape.name == 'title').text
+assert any(shape.has_table for shape in slide.shapes)
+print(json.dumps({'pages': 1, 'objects': len(slide.shapes), 'bitmaps': 0, 'versions': versions, 'sha256': digest}))
+`, home, pptxPath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(pptxProbe.status, pptxProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('pptx-receipt.json'), pptxProbe.stdout)
+    await reconstruction.getByRole('button', { name: '下载完整可编辑PPTX', exact: true }).click()
+    await expect(reconstruction.getByRole('alert').filter({ hasText: '第2页尚无已审核的可编辑版本' })).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath('teacher-editable-page.png') })
     await page.getByRole('button', { name: '教材知识库', exact: true }).click()
     await page.getByLabel('教材所属课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
     await page.getByLabel('教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v1 · UI教材.txt' })

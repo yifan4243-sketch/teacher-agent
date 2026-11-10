@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { call, routeKey } from './api'
 import type { BlueprintContent, BlueprintDocument, SlideTheme } from './blueprint-api'
 import { SlideImages } from './slide-images'
+import { ReconstructionWorkspace } from './reconstruction-workspace'
 
 const LAYOUTS = [['single_column', '单栏'], ['two_column', '双栏'], ['three_column', '三栏'], ['comparison', '对比'], ['timeline', '时间线'], ['table', '表格']]
 
@@ -60,6 +61,7 @@ export function BlueprintEditor({ route, documentId, onVersion }: { route: Plugi
       <Button disabled={!confirmed || write.isPending} onClick={() => write.mutate({ operation: 'document.review', data: { id: documentId, decision: 'approved' } })}>审核通过蓝图版本</Button>
     </div>}
     {saved?.status === 'approved' && <SlideImages key={saved.id} route={route} blueprint={saved} />}
+    {saved?.status === 'approved' && <ReconstructionWorkspace key={`reconstruction:${saved.id}`} route={route} blueprintId={saved.id} />}
     {[document.error, themes.error, prompt.error, write.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
   </article>
 }

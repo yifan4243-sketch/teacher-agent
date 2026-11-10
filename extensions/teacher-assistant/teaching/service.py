@@ -7,7 +7,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
-from . import blueprint_models, blueprints, document_models, documents, image_analysis, image_assets, image_models, images, knowledge, knowledge_models, lessons, models, preparation, records, semantic, workflows
+from . import blueprint_models, blueprints, document_models, documents, image_analysis, image_assets, image_models, images, knowledge, knowledge_models, lessons, models, preparation, reconstruction, records, semantic, workflows
 from .database import database, encode
 
 
@@ -37,6 +37,8 @@ READS = {
     "slide.image.get": (models.Identifier, images.get_job),
     "slide.image.list": (image_models.ImageList, images.list_jobs),
     "slide.image.budget": (image_models.BlueprintFilter, images.budget),
+    "slide.page.get": (models.Identifier, reconstruction.get_page),
+    "slide.page.list": (reconstruction.PageList, reconstruction.list_pages),
 }
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
@@ -61,6 +63,11 @@ WRITES = {
     "document.save": (document_models.DocumentSave, documents.save_document),
     "document.revise_segment": (document_models.SegmentRevision, documents.revise_segment),
     "document.export": (models.Identifier, documents.export_document),
+    "slide.page.from_analysis": (reconstruction.PageFromAnalysis, reconstruction.from_analysis),
+    "slide.page.revise": (reconstruction.PageRevision, reconstruction.revise),
+    "slide.page.export": (models.Identifier, reconstruction.export_page),
+    "slide.page.preview_export": (models.Identifier, reconstruction.preview_page),
+    "slide.deck.export": (models.Identifier, reconstruction.export_deck),
 }
 
 
@@ -88,6 +95,7 @@ class TeachingService:
             "slide.image.abandon": (image_models.ImageAbandon, images.abandon),
             "slide.image.review": (image_assets.ImageReview, image_assets.review),
             "slide.image.reserve_analysis": (image_analysis.AnalysisReserve, image_analysis.reserve),
+            "slide.page.review": (reconstruction.PageReview, reconstruction.review),
         }
 
     def call(self, operation, data=None, request_id=None, *, human=False, session_id=None):

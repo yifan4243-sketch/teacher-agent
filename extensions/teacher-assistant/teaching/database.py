@@ -13,6 +13,7 @@ from .slide_schema import SCHEMA as SLIDE_SCHEMA
 from .image_schema import SCHEMA as IMAGE_SCHEMA
 from .image_asset_schema import SCHEMA as IMAGE_ASSET_SCHEMA
 from .image_analysis_schema import SCHEMA as IMAGE_ANALYSIS_SCHEMA
+from .reconstruction_schema import SCHEMA as RECONSTRUCTION_SCHEMA
 
 
 SCHEMA = (
@@ -85,7 +86,7 @@ def database():
     conn = plugin_db("teacher-assistant", "teaching.db")
     conn.row_factory = sqlite3.Row
     try:
-        migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA)
+        migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA)
         if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
             raise ValueError("教学数据库来自更新版本，请升级教师插件")
         if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):

@@ -59,6 +59,12 @@ def analyze(conn, job, ctx):
     if (layout.width, layout.height) != (asset["width"], asset["height"]):
         raise DomainError("invalid_model_response", "视觉模型返回的画布尺寸与实际图片不一致")
     page = get_prompt(conn, PageRequest(id=job["blueprint_id"], page_number=job["page_number"]))["page"]
+    return {**layout_text_check(layout, page), "layout": layout.model_dump(), "asset_sha256": asset["sha256"],
+            "review_note": "视觉识别可能遗漏或误读文字，教师仍需核对教材依据、图解关系、主题一致性和投影可读性"}, {
+                "provider": usage["provider"], "model": usage["model"], "reported_cost_usd": usage["cost_usd"]}
+
+
+def layout_text_check(layout, page):
     texts = []
     for element in layout.elements:
         if element.kind == "text":
@@ -68,7 +74,5 @@ def analyze(conn, job, ctx):
     observed = "".join("".join(normalize("NFKC", text).split()) for text in texts)
     expected = [page["title"], *page["key_messages"]]
     missing = [text for text in expected if "".join(normalize("NFKC", text).split()) not in observed]
-    return {"layout": layout.model_dump(), "visible_text": texts, "expected_text": expected, "missing_text": missing,
-            "text_check": "needs_correction" if missing else "matched_extracted_text", "asset_sha256": asset["sha256"],
-            "review_note": "视觉识别可能遗漏或误读文字，教师仍需核对教材依据、图解关系、主题一致性和投影可读性"}, {
-                "provider": usage["provider"], "model": usage["model"], "reported_cost_usd": usage["cost_usd"]}
+    return {"visible_text": texts, "expected_text": expected, "missing_text": missing,
+            "text_check": "needs_correction" if missing else "matched_extracted_text"}

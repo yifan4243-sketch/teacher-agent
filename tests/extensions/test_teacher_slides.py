@@ -71,6 +71,7 @@ def test_vision_adapter_requires_authorization_and_validates_layout(teacher):
     layout, usage = vision.extract_layout(ctx, source, allow_model_call=True)
     assert layout.elements and usage["model"] == "scripted-vision"
     assert invocations[0]["input"][0]["data"] == source.read_bytes()
+    assert "1672×941" in invocations[0]["instructions"]
     bad = sample_layout()
     bad["elements"][0]["x"] = bad["width"]
     with pytest.raises(ValueError, match="画布"):

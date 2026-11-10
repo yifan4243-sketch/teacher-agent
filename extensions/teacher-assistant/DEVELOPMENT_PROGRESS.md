@@ -33,6 +33,8 @@ Phase 4图片模块已接入原生image_generate、预算预留、持久认领�
 
 下一步继续可选参考素材管理、Phase 4真实服务条件记录和Phase 5多页可编辑重建、页面修订、渲染与差异修复。Phase 4–9 的完整范围见 `IMPLEMENTATION_CHECKLIST.md`，所有模块继续保留。
 
+提前PPTX原型现已扩展为schema 8持久页面、对象修订、版本审核、单页草稿及正式导出和完整课件导出。导出复用已完成的视觉布局，正式课件逐页采用最新已审核版本。Desktop可编辑文字、位置、颜色和表格单元格，实际文件经原生下载和本机WPS编辑、渲染、保存后重读验证。图片区域、生产渲染预览、差异与自动修复继续开发，真实模型质量仍待联调。
+
 ## 最近成功测试
 
 Phase 2 的 `teacher-regression-final.log` 为24通过、0失败。`desktop-knowledge-retry.log` 为1项真实Electron、Gateway与SQLite端到端测试通过，包含上传、检索、教师复核、章节修订及刷新持久性。TypeScript成功退出。原始日志位于 `E:\TeacherAgentData\phase2-evidence`。Phase 1 的59通过、1平台跳过记录继续保留。
@@ -42,6 +44,8 @@ Phase 3教师测试27项通过。文档及原生回归51项通过、1项POSIX跳
 Phase 4首个模块的蓝图与文档测试5项通过。Desktop蓝图集成1项通过，包含前述全部教材和文档链路，再经原生Skill/Agent生成8页蓝图、修订为v2、切换科技主题、核对生图提示词和审核。模型仍为本机模拟服务，未触发付费生图。原始日志位于 `E:\TeacherAgentData\phase4-evidence`。
 
 图片任务模块加入后，完整教师插件35项通过。TypeScript、插件校验和仓库15项检查通过。最终Desktop回归通过批量生图分发、独立视觉提取、差异提示、高清下载与哈希、教师复核、缓存和取消，输入为系统曾实际生成的图片，服务响应来自离线测试提供者。完整记录见 `PHASE4_IMAGES_CHECKPOINT.md`。
+
+可编辑集成模块加入后，完整教师插件38项通过。Desktop已通过布局导入、v2文字修订、页面审核、真实PPTX下载、32个原生对象与0位图核验，以及完整课件缺页拦截。WPS进一步验证标题、圆形和表格的实际编辑与另存，证据见 `PHASE5_RECONSTRUCTION_CHECKPOINT.md`。
 
 ## 恢复入口
 

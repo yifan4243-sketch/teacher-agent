@@ -134,6 +134,7 @@ class TeachingService:
             "reminder.background.remove": Operation('models.Input', 'reminder_schedule.remove'),
         }
         self.human_writes = {
+            "grade.export": Operation('grade_reports.GradeExport', 'grade_reports.export'),
             "submission.save": Operation('grading_models.SubmissionSave', 'submissions.save'),
             "grading.score": Operation('grading_models.GradeScore', 'grading.score_submission'),
             "grading.publish": Operation('grading_models.GradeReview', 'grading.publish'),
@@ -197,6 +198,7 @@ class TeachingService:
                  "grading.draft.get": Operation('models.Identifier', 'grading.get_draft'),
                  "grading.generation.list": Operation('models.Identifier', 'grading_generation.list_generations'),
                  "grade.get": Operation('models.Identifier', 'grading.get_grade'),
+                 "grade.export.file": Operation('models.Identifier', 'grade_reports.download'),
                  "grade.list": Operation('grading_models.GradeList', 'grading.list_grades'),
                  "reminder.probe": Operation('models.Input', 'windows_notifications.probe'),
                  "reminder.background.status": Operation('models.Input', 'reminder_schedule.status'),

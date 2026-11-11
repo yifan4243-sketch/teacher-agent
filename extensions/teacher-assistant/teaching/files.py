@@ -16,15 +16,23 @@ def file_root():
     return root
 
 
+def check_owned_export(result, label):
+    path = Path(result["stored_path"])
+    if not path.resolve().is_relative_to(file_root().resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != result["sha256"]:
+        raise DomainError("file_integrity_error", label + "文件未通过归属及哈希校验")
+    return result
+
+
 def store_bytes(data, suffix):
     digest = hashlib.sha256(data).hexdigest()
     destination = file_root() / (digest + suffix)
-    with tempfile.NamedTemporaryFile(dir=file_root(), prefix=".staging-", delete=False) as stream:
-        staging = Path(stream.name)
-        stream.write(data)
-        stream.flush()
-        os.fsync(stream.fileno())
+    stream = tempfile.NamedTemporaryFile(dir=file_root(), prefix=".staging-", delete=False)
+    staging = Path(stream.name)
     try:
+        with stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
         try:
             os.link(staging, destination)
         except FileExistsError:

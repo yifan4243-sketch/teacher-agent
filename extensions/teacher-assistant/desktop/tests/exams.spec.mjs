@@ -161,6 +161,18 @@ test('教师通过真实Agent会话命题审核并导出隔离答案的试卷', 
     await expect(gradeRecords.getByRole('button', { name: '虚构评分学生 · 10.00分', exact: true })).toBeVisible()
     await gradeRecords.getByRole('button', { name: '查看前次成绩', exact: true }).click()
     await expect(gradeRecords.getByText('复核总分 9.50分 · 历史成绩', { exact: true })).toBeVisible()
+    const gradeOutputs = []
+    for (const variant of ['history', 'current']) {
+      if (variant === 'current') await gradeRecords.getByRole('button', { name: '虚构评分学生 · 10.00分', exact: true }).click()
+      for (const format of ['docx', 'pdf']) {
+        const path = testInfo.outputPath(`grade-${variant}.${format}`)
+        await app.evaluate(({ dialog }, destination) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination }) }, path)
+        await gradeRecords.getByLabel('批改报告格式', { exact: true }).selectOption(format)
+        await gradeRecords.getByRole('button', { name: '下载批改报告', exact: true }).click()
+        await expect.poll(() => existsSync(path)).toBe(true)
+        gradeOutputs.push(path)
+      }
+    }
     await page.reload()
     await page.getByText('教师工作台', { exact: true }).click({ timeout: 90000 })
     await page.getByRole('button', { name: '答卷与成绩', exact: true }).click()
@@ -200,13 +212,18 @@ with sqlite3.connect(Path(sys.argv[1])/'plugin-data/teacher-assistant/teaching.d
     grading_task=conn.execute("SELECT status FROM workflows WHERE kind='grading_generation'").fetchone()[0]
     assert grading_task=='completed'
     assert conn.execute('SELECT COUNT(*) FROM grade_wrong_questions').fetchone()[0]==1
+    assert conn.execute('SELECT COUNT(*) FROM grade_exports').fetchone()[0]==4
     assert not conn.execute('PRAGMA foreign_key_check').fetchall()
-for index,path in enumerate(sys.argv[2:]):
+for index,path in enumerate(sys.argv[2:6]):
     text='\\n'.join(p.text for p in Document(path).paragraphs) if path.endswith('.docx') else '\\n'.join(p.extract_text() for p in PdfReader(path).pages)
     assert ('模拟解析仅教师可见' in text)==(index>=2)
     assert ('评分要点' in text)==(index>=2)
-print(json.dumps({'home':sys.argv[1],'backend':'real Hermes Gateway and Agent loop','model':'loopback scripted test provider','questions':2,'reviewed_paper_versions':2,'manual_reorder':True,'workflow_completed':True,'exports':4,'student_answer_isolation':True,'grade_history_centi':[950,1000],'low_confidence_human_review':True,'grading_workflow_completed':True,'reload_persistence':True},ensure_ascii=False))
-`, home, ...outputs], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+for index,path in enumerate(sys.argv[6:]):
+    text='\\n'.join(p.text for p in Document(path).paragraphs) if path.endswith('.docx') else '\\n'.join(p.extract_text() for p in PdfReader(path).pages)
+    assert '虚构评分学生' in text and 'GRADE-UI-001' in text and '教师复核说明' in text and '北京时间' in text
+    assert ('教师复核得分 9.50分' if index<2 else '教师复核得分 10.00分') in text
+print(json.dumps({'home':sys.argv[1],'backend':'real Hermes Gateway and Agent loop','model':'loopback scripted test provider','questions':2,'reviewed_paper_versions':2,'manual_reorder':True,'workflow_completed':True,'exports':4,'grade_report_exports':4,'student_answer_isolation':True,'grade_history_centi':[950,1000],'low_confidence_human_review':True,'grading_workflow_completed':True,'reload_persistence':True},ensure_ascii=False))
+`, home, ...outputs, ...gradeOutputs], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
     expect(verify.status, verify.stderr).toBe(0)
     writeFileSync(testInfo.outputPath('exam-receipt.json'), verify.stdout)
   } catch (error) {

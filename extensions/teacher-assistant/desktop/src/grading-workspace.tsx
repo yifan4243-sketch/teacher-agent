@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { call, routeKey, type TeacherRecord } from './api'
 import { AnswerEditor } from './answer-editor'
 import type { ExamPaper, ExamSummary } from './exam-api'
-import type { GradeDraft, GradeSummary, PublishedGrade, Submission, SubmissionSummary } from './grading-api'
+import { downloadGradeReport, type GradeDraft, type GradeSummary, type PublishedGrade, type Submission, type SubmissionSummary } from './grading-api'
 import { GradingAgent } from './grading-agent'
 import { GradeReview } from './grade-review'
 import type { Page } from './textbook-api'
@@ -77,13 +77,16 @@ function SubmissionGrading({ route, paper, submission, onPublished }: { route: P
 
 function GradeRecords({ route, courseId, paper, gradeId, onGrade }: { route: PluginProfileRoute; courseId: string; paper: ExamPaper; gradeId: string; onGrade: (id: string) => void }) {
   const [offset, setOffset] = useState(0)
+  const [format, setFormat] = useState('docx')
   const grades = useQuery({ queryKey: [...routeKey(route), 'grades', courseId, paper.id, offset], queryFn: () => call<Page<GradeSummary>>(route, 'grade.list', { course_id: courseId, paper_id: paper.id, offset, limit: 20 }) })
   const grade = useQuery({ queryKey: [...routeKey(route), 'grade', gradeId], queryFn: () => call<PublishedGrade>(route, 'grade.get', { id: gradeId }), enabled: !!gradeId })
+  const download = useMutation({ mutationFn: () => downloadGradeReport(route, gradeId, format) })
   return <section aria-label="正式成绩记录" className="space-y-3"><h3>正式成绩</h3>
     {grades.data?.items.map(item => <Button key={item.id} variant="ghost" onClick={() => onGrade(item.id)}>{item.name} · {(item.total_points_centi / 100).toFixed(2)}分</Button>)}
     {grades.data?.total === 0 && <p>当前试卷尚未发布正式成绩。</p>}
     <div className="flex gap-2"><Button variant="secondary" disabled={offset === 0} onClick={() => setOffset(value => Math.max(0, value - 20))}>上一页成绩</Button><Button variant="secondary" disabled={grades.data?.next_offset == null} onClick={() => setOffset(grades.data?.next_offset ?? 0)}>下一页成绩</Button></div>
     {grade.data && <article className="space-y-2"><p>复核总分 {(grade.data.total_points_centi / 100).toFixed(2)}分 · {grade.data.active ? '当前成绩' : '历史成绩'}</p><p>{grade.data.note} · {grade.data.created_at}</p>{grade.data.scores.map((score, index) => <p key={score.question_id}>第{index + 1}题 · {(score.points_centi / 100).toFixed(2)}分 · {score.comment}</p>)}<h4>错题记录</h4>{grade.data.wrong_questions.map(item => <p key={item.question_id}>{paper.questions.find(question => question.id === item.question_id)?.prompt} · 失分{(item.lost_points_centi / 100).toFixed(2)}分</p>)}{grade.data.previous_id && <Button variant="secondary" onClick={() => onGrade(grade.data!.previous_id!)}>查看前次成绩</Button>}</article>}
-    {[grades.error, grade.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
+    {grade.data && <div className="flex gap-3"><label>批改报告格式<select aria-label="批改报告格式" value={format} onChange={event => setFormat(event.target.value)}><option value="docx">DOCX</option><option value="pdf">PDF</option></select></label><Button disabled={download.isPending} onClick={() => download.mutate()}>下载批改报告</Button></div>}
+    {[grades.error, grade.error, download.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
   </section>
 }

@@ -3,3 +3,4 @@ phase2-evidence/*.log -text whitespace=cr-at-eol
 phase3-evidence/*.log -text whitespace=cr-at-eol
 phase4-evidence/*.log -text whitespace=cr-at-eol
 phase7-evidence/exams/*.pdf binary
+phase7-evidence/grade-reports/*.pdf binary

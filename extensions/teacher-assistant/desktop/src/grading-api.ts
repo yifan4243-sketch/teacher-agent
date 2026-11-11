@@ -1,3 +1,6 @@
+import { captureGatewayFileDownload, type PluginProfileRoute } from '@hermes/plugin-sdk'
+
+import { call } from './api'
 import type { ExamGeneration } from './exam-api'
 import type { QuestionKind } from './question-api'
 
@@ -36,4 +39,10 @@ export function answerText(content: StudentAnswer['content']) {
   if (content.values) return content.values.map((value, index) => `第${index + 1}空 ${value || '未作答'}`).join(' · ')
   if (content.kind === 'true_false') return content.answer == null ? '未作答' : content.answer ? '正确' : '错误'
   return content.text || '未作答'
+}
+
+export async function downloadGradeReport(route: PluginProfileRoute, id: string, format: string) {
+  const save = captureGatewayFileDownload()
+  const exported = await call<{ stored_path: string; filename: string }>(route, 'grade.export', { id, format }, crypto.randomUUID())
+  await save(exported.stored_path, exported.filename)
 }

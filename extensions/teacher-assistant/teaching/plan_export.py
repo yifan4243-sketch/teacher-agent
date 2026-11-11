@@ -2,14 +2,13 @@
 
 from datetime import datetime
 import hashlib
-from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, model_validator
 
 from . import plan_export_formats
 from .database import audit, encode, new_id
-from .files import file_root, store_bytes
+from .files import check_owned_export, store_bytes
 from .knowledge import get_book, get_version
 from .models import DomainError, Identifier
 from .planning import get_plan
@@ -56,7 +55,7 @@ def export(conn, data, actor):
     selection = hashlib.sha256(encode(content).encode()).hexdigest()
     cached = conn.execute("SELECT * FROM plan_exports WHERE plan_id=? AND format=? AND selection_hash=?", (data.id, data.format, selection)).fetchone()
     if cached:
-        return _checked(dict(cached))
+        return check_owned_export(dict(cached), "计划导出")
     output = plan_export_formats.build(content, data.format)
     path, digest = store_bytes(output, "." + data.format)
     identifier = new_id()
@@ -68,16 +67,9 @@ def export(conn, data, actor):
     return result
 
 
-def _checked(result):
-    path = Path(result["stored_path"])
-    if not path.resolve().is_relative_to(file_root().resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != result["sha256"]:
-        raise DomainError("file_integrity_error", "计划导出文件未通过归属及哈希校验")
-    return result
-
-
 def download(conn, data):
     row = conn.execute("SELECT * FROM plan_exports WHERE id=?", (data.id,)).fetchone()
     if row is None:
         raise DomainError("not_found", "计划导出文件不存在")
-    result = _checked(dict(row))
+    result = check_owned_export(dict(row), "计划导出")
     return {"stored_path": result["stored_path"], "filename": result["filename"], "sha256": result["sha256"]}

@@ -80,7 +80,9 @@ def _docx(content):
     document.add_paragraph(content["title"], "Title")
     document.add_paragraph(content["metadata"])
     document.add_paragraph(content["instructions"])
-    document.add_paragraph("班级________________　姓名________________　学号________________")
+    document.add_paragraph(content.get("identity_line", "班级________________　姓名________________　学号________________"))
+    for line in content.get("intro_lines", []):
+        document.add_paragraph(line)
     for item in content["questions"]:
         document.add_paragraph(item["heading"], "Heading 2")
         for text in _paragraphs(item):
@@ -113,7 +115,8 @@ def _pdf(content):
     def paragraph(text, style=body):
         return Paragraph(escape(text).replace("\n", "<br/>"), style)
     flow = [paragraph(content["title"], title), paragraph(content["metadata"]), paragraph(content["instructions"]),
-            paragraph("班级________________　姓名________________　学号________________"), Spacer(1, 10)]
+            paragraph(content.get("identity_line", "班级________________　姓名________________　学号________________")), Spacer(1, 10)]
+    flow.extend(paragraph(line) for line in content.get("intro_lines", []))
     for item in content["questions"]:
         flow.append(paragraph(item["heading"], heading))
         flow.extend(paragraph(text) for text in _paragraphs(item))

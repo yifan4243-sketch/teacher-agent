@@ -4039,6 +4039,20 @@ function readAnswer(form, question) {
   return readers[kind]();
 }
 
+// extensions/teacher-assistant/desktop/src/grading-api.ts
+import { captureGatewayFileDownload as captureGatewayFileDownload7 } from "@hermes/plugin-sdk";
+function answerText(content) {
+  if (content.selected_ids) return content.selected_ids.join("\u3001") || "\u672A\u4F5C\u7B54";
+  if (content.values) return content.values.map((value, index) => `\u7B2C${index + 1}\u7A7A ${value || "\u672A\u4F5C\u7B54"}`).join(" \xB7 ");
+  if (content.kind === "true_false") return content.answer == null ? "\u672A\u4F5C\u7B54" : content.answer ? "\u6B63\u786E" : "\u9519\u8BEF";
+  return content.text || "\u672A\u4F5C\u7B54";
+}
+async function downloadGradeReport(route, id, format) {
+  const save = captureGatewayFileDownload7();
+  const exported = await call(route, "grade.export", { id, format }, crypto.randomUUID());
+  await save(exported.stored_path, exported.filename);
+}
+
 // extensions/teacher-assistant/desktop/src/grading-agent.tsx
 import { Button as Button33, useMutation as useMutation30, useQuery as useQuery28, useQueryClient as useQueryClient25 } from "@hermes/plugin-sdk";
 import { useEffect as useEffect4, useState as useState30 } from "react";
@@ -4079,16 +4093,6 @@ function GradingAgent({ route, draft }) {
 
 // extensions/teacher-assistant/desktop/src/grade-review.tsx
 import { Button as Button34, useMutation as useMutation31, useQueryClient as useQueryClient26 } from "@hermes/plugin-sdk";
-
-// extensions/teacher-assistant/desktop/src/grading-api.ts
-function answerText(content) {
-  if (content.selected_ids) return content.selected_ids.join("\u3001") || "\u672A\u4F5C\u7B54";
-  if (content.values) return content.values.map((value, index) => `\u7B2C${index + 1}\u7A7A ${value || "\u672A\u4F5C\u7B54"}`).join(" \xB7 ");
-  if (content.kind === "true_false") return content.answer == null ? "\u672A\u4F5C\u7B54" : content.answer ? "\u6B63\u786E" : "\u9519\u8BEF";
-  return content.text || "\u672A\u4F5C\u7B54";
-}
-
-// extensions/teacher-assistant/desktop/src/grade-review.tsx
 import { Fragment as Fragment11, jsx as jsx34, jsxs as jsxs34 } from "react/jsx-runtime";
 function GradeReview({ route, paper, submission, draft, onPublished }) {
   const queryClient = useQueryClient26();
@@ -4302,8 +4306,10 @@ function SubmissionGrading({ route, paper, submission, onPublished }) {
 }
 function GradeRecords({ route, courseId, paper, gradeId, onGrade }) {
   const [offset, setOffset] = useState31(0);
+  const [format, setFormat] = useState31("docx");
   const grades = useQuery29({ queryKey: [...routeKey(route), "grades", courseId, paper.id, offset], queryFn: () => call(route, "grade.list", { course_id: courseId, paper_id: paper.id, offset, limit: 20 }) });
   const grade = useQuery29({ queryKey: [...routeKey(route), "grade", gradeId], queryFn: () => call(route, "grade.get", { id: gradeId }), enabled: !!gradeId });
+  const download = useMutation32({ mutationFn: () => downloadGradeReport(route, gradeId, format) });
   return /* @__PURE__ */ jsxs35("section", { "aria-label": "\u6B63\u5F0F\u6210\u7EE9\u8BB0\u5F55", className: "space-y-3", children: [
     /* @__PURE__ */ jsx35("h3", { children: "\u6B63\u5F0F\u6210\u7EE9" }),
     grades.data?.items.map((item) => /* @__PURE__ */ jsxs35(Button35, { variant: "ghost", onClick: () => onGrade(item.id), children: [
@@ -4346,7 +4352,17 @@ function GradeRecords({ route, courseId, paper, gradeId, onGrade }) {
       ] }, item.question_id)),
       grade.data.previous_id && /* @__PURE__ */ jsx35(Button35, { variant: "secondary", onClick: () => onGrade(grade.data.previous_id), children: "\u67E5\u770B\u524D\u6B21\u6210\u7EE9" })
     ] }),
-    [grades.error, grade.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx35("p", { role: "alert", children: error?.message }, index))
+    grade.data && /* @__PURE__ */ jsxs35("div", { className: "flex gap-3", children: [
+      /* @__PURE__ */ jsxs35("label", { children: [
+        "\u6279\u6539\u62A5\u544A\u683C\u5F0F",
+        /* @__PURE__ */ jsxs35("select", { "aria-label": "\u6279\u6539\u62A5\u544A\u683C\u5F0F", value: format, onChange: (event) => setFormat(event.target.value), children: [
+          /* @__PURE__ */ jsx35("option", { value: "docx", children: "DOCX" }),
+          /* @__PURE__ */ jsx35("option", { value: "pdf", children: "PDF" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx35(Button35, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u4E0B\u8F7D\u6279\u6539\u62A5\u544A" })
+    ] }),
+    [grades.error, grade.error, download.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx35("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 

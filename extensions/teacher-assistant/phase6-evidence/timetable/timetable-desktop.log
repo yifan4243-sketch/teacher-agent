@@ -1,0 +1,41 @@
+
+Running 1 test using 1 worker
+
+(node:18148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 (2.1m)
+
+
+  1) ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator: getByRole('region', { name: '教学计划', exact: true }).getByRole('status')
+    Expected: "课次9 · 实际教学640分钟 · 日历占用840分钟 · 考核120分钟"
+    Error: strict mode violation: getByRole('region', { name: '教学计划', exact: true }).getByRole('status') resolved to 2 elements:
+        1) <p role="status">…</p> aka getByText('课次8 · 实际教学560分钟 · 日历占用750')
+        2) <p role="status">…</p> aka getByText('课次9 · 实际教学640分钟 · 日历占用840')
+
+    Call log:
+      - Expect "toHaveText" getByRole('region', { name: '教学计划', exact: true }).getByRole('status') with timeout 30000ms
+      - waiting for getByRole('region', { name: '教学计划', exact: true }).getByRole('status')
+
+
+      536 |     await planning.getByRole('button', { name: '重新计算并保存新版本', exact: true }).click()
+      537 |     await expect(planning.getByRole('heading', { name: 'UI实际日期测试学期 · v2', exact: true })).toBeVisible()
+    > 538 |     await expect(planning.getByRole('status')).toHaveText('课次9 · 实际教学640分钟 · 日历占用840分钟 · 考核120分钟')
+          |                                                ^
+      539 |     await planning.getByLabel('计划版本', { exact: true }).selectOption(planV1)
+      540 |     await expect(planning.getByRole('status')).toHaveText('课次8 · 实际教学560分钟 · 日历占用750分钟 · 考核120分钟')
+      541 |     await page.screenshot({ path: testInfo.outputPath('teacher-planning.jpg'), type: 'jpeg', quality: 85 })
+        at C:\Users\yifan\Desktop\teacher_Agent_dev\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:538:48
+
+    Error Context: ..\..\extensions\teacher-assistant\desktop\test-results\workspace-教师工作台通过原生-Gateway-操作教学数据库并审批任务\error-context.md
+
+  1 failed
+    ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 
+Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL
+
+  × "pnpm recursive exec" failed in C:
+  │ \Users\yifan\Desktop\teacher_Agent_dev\apps\desktop
+

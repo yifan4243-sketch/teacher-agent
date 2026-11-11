@@ -95,6 +95,9 @@ def get_plan(conn, data):
     if row is None:
         raise DomainError("not_found", "学期计划不存在")
     result = dict(row)
+    publication = conn.execute("SELECT id,plan_id FROM timetable_publications WHERE root_id=? AND active=1", (result["root_id"],)).fetchone()
+    result["publication"] = dict(publication) if publication else None
+    result["latest_version"] = conn.execute("SELECT MAX(version) FROM semester_plans WHERE root_id=?", (result["root_id"],)).fetchone()[0]
     result["config"] = json.loads(result.pop("config_json"))
     result["sessions"] = [dict(row) for row in conn.execute("SELECT * FROM planned_sessions WHERE plan_id=? ORDER BY ordinal", (data.id,))]
     weeks, months = defaultdict(list), defaultdict(list)

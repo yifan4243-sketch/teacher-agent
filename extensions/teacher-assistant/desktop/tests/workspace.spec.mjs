@@ -535,6 +535,7 @@ print(json.dumps({'reference_id':reference['id'],'sha256':reference['sha256'],'a
     await planning.getByLabel('停课日期', { exact: true }).fill('')
     await planning.getByRole('button', { name: '重新计算并保存新版本', exact: true }).click()
     await expect(planning.getByRole('heading', { name: 'UI实际日期测试学期 · v2', exact: true })).toBeVisible()
+    await expect(planning.getByRole('heading', { name: 'UI实际日期测试学期 · v1', exact: true })).toHaveCount(0)
     await expect(planning.getByRole('status')).toHaveText('课次9 · 实际教学640分钟 · 日历占用840分钟 · 考核120分钟')
     await planning.getByLabel('计划版本', { exact: true }).selectOption(planV1)
     await expect(planning.getByRole('status')).toHaveText('课次8 · 实际教学560分钟 · 日历占用750分钟 · 考核120分钟')
@@ -551,6 +552,62 @@ print(json.dumps({'versions':versions,'session_totals':totals,'basis':'actual co
 `, home], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
     expect(planningProbe.status, planningProbe.stderr).toBe(0)
     writeFileSync(testInfo.outputPath('planning-receipt.json'), planningProbe.stdout)
+    const latestPlan = await planning.getByLabel('计划版本', { exact: true }).locator('option').filter({ hasText: 'UI实际日期测试学期 · v2' }).getAttribute('value')
+    await planning.getByLabel('计划版本', { exact: true }).selectOption(latestPlan)
+    const publicationPanel = planning.getByRole('region', { name: '计划发布与课表', exact: true })
+    await publicationPanel.getByLabel(/已核对实际日期、章节与课时/).check()
+    await publicationPanel.getByLabel('发布审核说明', { exact: true }).fill('核对虚构校历并发布到实际测试课表')
+    await publicationPanel.getByRole('button', { name: '审核并发布到课表', exact: true }).click()
+    await expect(publicationPanel.getByText('当前计划版本已发布到实际课表', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: '课表与进度', exact: true }).click()
+    const calendar = page.getByRole('region', { name: '实际课表与教学进度', exact: true })
+    await calendar.getByLabel('课表日期', { exact: true }).fill('2026-11-02')
+    await calendar.getByLabel('课表视图', { exact: true }).selectOption('month')
+    await expect(calendar.getByRole('status')).toContainText('本范围9课次')
+    const monday = calendar.getByRole('article', { name: '课表日期 2026-11-02', exact: true })
+    await monday.getByRole('button').filter({ hasText: 'UI虚构测试课程' }).click()
+    const eventEditor = calendar.getByRole('region', { name: '课次调课与进度', exact: true })
+    await eventEditor.getByLabel('调课开始时间', { exact: true }).fill('2026-11-03T10:00')
+    await eventEditor.getByLabel('调课原因', { exact: true }).fill('测试教师调课并保留40+10+40')
+    await eventEditor.getByRole('button', { name: '保存调课', exact: true }).click()
+    await expect(eventEditor.getByText('教学 10:00–10:40 · 休息 10:40–10:50 · 教学 10:50–11:30', { exact: true })).toBeVisible()
+    await eventEditor.getByLabel('授课进度状态', { exact: true }).selectOption('completed')
+    await eventEditor.getByLabel('实际完成分钟', { exact: true }).fill('70')
+    await eventEditor.getByLabel('关联备课课次', { exact: true }).selectOption({ label: 'UI备课测试课次' })
+    await eventEditor.getByLabel('授课进度说明', { exact: true }).fill('教师记录测试课次实际教学70分钟')
+    await eventEditor.getByRole('button', { name: '保存授课进度', exact: true }).click()
+    await expect(calendar.getByRole('status')).toContainText('实际教学70分钟 · 已完成课次教学偏差-10分钟')
+    await eventEditor.getByRole('button', { name: '查看课次修改记录', exact: true }).click()
+    await expect(eventEditor.getByText('说明：测试教师调课并保留40+10+40', { exact: true })).toBeVisible()
+    await expect(eventEditor.getByText('说明：教师记录测试课次实际教学70分钟', { exact: true })).toBeVisible()
+    await calendar.getByLabel('课表视图', { exact: true }).selectOption('day')
+    await expect(calendar.getByRole('status')).toContainText('本范围1课次 · 已完成1')
+    await page.screenshot({ path: testInfo.outputPath('teacher-timetable.jpg'), type: 'jpeg', quality: 85 })
+    await page.reload()
+    await page.getByText('教师工作台', { exact: true }).click({ timeout: 90000 })
+    await page.getByRole('button', { name: '课表与进度', exact: true }).click()
+    await calendar.getByLabel('课表日期', { exact: true }).fill('2026-11-03')
+    await calendar.getByLabel('课表视图', { exact: true }).selectOption('day')
+    await expect(calendar.getByRole('status')).toContainText('本范围1课次 · 已完成1')
+    const calendarProbe = spawnSync(python, ['-c', `
+import json,sqlite3,sys
+from pathlib import Path
+with sqlite3.connect(Path(sys.argv[1])/'plugin-data/teacher-assistant/teaching.db') as conn:
+    conn.row_factory=sqlite3.Row
+    publication=dict(conn.execute('SELECT * FROM timetable_publications').fetchone())
+    events=[dict(row) for row in conn.execute('SELECT * FROM timetable_events')]
+    completed=next(event for event in events if event['status']=='completed')
+    history=conn.execute("SELECT COUNT(*) FROM audit_events WHERE entity_type='calendar_event'").fetchone()[0]
+    assert not conn.execute('PRAGMA foreign_key_check').fetchall()
+assert publication['active']==1 and len(events)==9
+assert completed['starts_at']=='2026-11-03T10:00:00' and completed['ends_at']=='2026-11-03T11:30:00'
+assert completed['actual_minutes']==70 and completed['lesson_id'] and completed['version']==3 and history==2
+parts=json.loads(completed['timing_json'])
+assert [part['kind'] for part in parts]==['teaching','break','teaching']
+print(json.dumps({'events':len(events),'actual_instruction_minutes':completed['actual_minutes'],'variance_minutes':-10,'starts_at':completed['starts_at'],'ends_at':completed['ends_at'],'periods':parts,'history':history,'reload_persistence':True}))
+`, home], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(calendarProbe.status, calendarProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('timetable-receipt.json'), calendarProbe.stdout)
     writeFileSync(testInfo.outputPath('receipt.json'), JSON.stringify({ home, backend: 'real Hermes Gateway', database: 'real SQLite', model: 'loopback scripted test provider', operations_verified: ['course.create', 'course.update', 'class.create', 'student.create', 'course.assign_class', 'enrollment.create', 'task.create', 'task.run', 'task.review', 'reload persistence'] }, null, 2))
   } catch (error) {
     if (app) {

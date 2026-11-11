@@ -12,6 +12,7 @@ from .database import database, encode
 from . import template_slides
 from . import slide_references
 from . import planning, planning_models
+from . import publication, timetable, timetable_models
 
 
 READS = {
@@ -47,6 +48,10 @@ READS = {
     "slide.render.list": (rendering.RenderList, rendering.list_jobs),
     "plan.get": (models.Identifier, planning.get_plan),
     "plan.list": (models.CourseFilter, planning.list_plans),
+    "calendar.list": (timetable_models.CalendarRange, timetable.list_calendar),
+    "calendar.get": (models.Identifier, timetable.get_event),
+    "calendar.history": (models.Identifier, timetable.history),
+    "calendar.publication": (models.Identifier, timetable.get_publication),
 }
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
@@ -99,6 +104,9 @@ class TeachingService:
                                 "slide.render.run": (models.Identifier, rendering.execute)}
         self.human_writes = {
             "task.review": (models.TaskReview, workflows.review_task),
+            "plan.publish": (timetable_models.PlanPublish, publication.publish),
+            "calendar.move": (timetable_models.EventMove, timetable.move),
+            "calendar.progress": (timetable_models.ProgressRecord, timetable.record_progress),
             "document.review": (document_models.DocumentReview, documents.review_document),
             "document.generation.begin": (document_models.GenerationStart, partial(preparation.begin_generation, ctx=ctx)),
             "document.generation.claim": (document_models.GenerationClaim, preparation.claim_generation),

@@ -51,6 +51,10 @@ response, and use a new ID for a changed command.
   Reference real chapters from the chosen textbook version. Omitted chapters
   use top-level chapters, while an explicit selection must contain at least one.
   Recalculation passes the latest plan ID as parent_id and preserves old versions.
+- `calendar.list` reads the published day/week/month range; `calendar.get`,
+  `calendar.publication` and `calendar.history` expose actual scheduled events,
+  recorded progress and audit history. Publishing, rescheduling and progress
+  corrections require the teacher Desktop; Agent tools cannot perform them.
 
 ## Procedure
 
@@ -71,6 +75,11 @@ response, and use a new ID for a changed command.
    and independent exam duration. Plan calculation does not activate reminders
    or publish a calendar. Never describe this calculation step as a completed
    scheduling and notification workflow.
+10. After the teacher publishes a plan, use the actual calendar times rather
+    than the immutable plan times when a lesson has moved. A completed event
+    means the teacher recorded it; never infer completion from a past date.
+    Report instruction and assessment minutes separately, and preserve the
+    difference between original source ordinal and the current plan ordinal.
 
 ## Pitfalls
 

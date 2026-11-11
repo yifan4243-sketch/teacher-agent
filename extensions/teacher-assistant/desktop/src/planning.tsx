@@ -3,6 +3,8 @@ import { useState, type FormEvent } from 'react'
 
 import { call, routeKey, type TeacherRecord } from './api'
 import type { BookVersion, Textbook } from './textbook-api'
+import { PlanPublication } from './plan-publication'
+import type { PublicationLink } from './timetable-api'
 
 interface Slot { weekday: number; start_time: string }
 interface ChapterWeight { chapter_id: string; difficulty: number }
@@ -16,6 +18,7 @@ interface Session {
 }
 interface Plan {
   id: string; title: string; version: number; textbook_version_id: string; config: Config; sessions: Session[]
+  latest_version: number; publication: PublicationLink | null
   weeks: Record<string, string[]>; months: Record<string, string[]>
   totals: { sessions: number; instruction_minutes: number; assessment_minutes: number; calendar_minutes: number }
 }
@@ -87,13 +90,14 @@ export function Planning({ route }: PlanningProps) {
   async function saved(updated: Plan) { await queryClient.invalidateQueries({ queryKey: [...routeKey(route), 'semester-plans'] }); setPlanId(updated.id) }
   return <section aria-label="教学计划" className="space-y-4">
     <h2 className="text-xl font-semibold">学期、月度与每周教学计划</h2>
-    <p>依据实际日期与停课安排计算，课程教学和课间分开计时。重新计算保留旧版本；当前计算结果尚未发布至提醒和日历。</p>
+    <p>依据实际日期与停课安排计算，课程教学和课间分开计时。重新计算保留旧版本，核对发布后进入实际课表。</p>
     <label>计划所属课程<select aria-label="计划所属课程" value={courseId} onChange={event => { setCourseId(event.target.value); setBookId(''); setPlanId('') }}><option value="">选择课程</option>{courses.data?.items.map(course => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label>
     <label>计划版本<select aria-label="计划版本" value={planId} onChange={event => selectPlan(event.target.value)}><option value="">建立新计划</option>{plans.data?.items.map(item => <option value={item.id} key={item.id}>{item.title} · v{item.version}</option>)}</select></label>
     <label>计划教材版本<select aria-label="计划教材版本" value={bookId} onChange={event => setBookId(event.target.value)}><option value="">选择教材版本</option>{books.data?.items.flatMap(book => book.versions.map(version => <option key={version.id} value={version.id}>{book.title} · v{version.version}</option>))}</select></label>
     {planId && plan.isPending && <p role="status">正在读取计划版本</p>}
     {book.data && (!planId || plan.data) && <PlanForm key={`${planId}:${bookId}`} route={route} courseId={courseId} book={book.data} plan={plan.data} onSaved={saved} />}
-    {plan.data && <PlanResults key={planId} plan={plan.data} />}
+    {plan.data && <PlanResults key={`results:${planId}`} plan={plan.data} />}
+    {plan.data && <PlanPublication key={`publication:${planId}`} route={route} planId={planId} latest={plan.data.version === plan.data.latest_version} current={plan.data.publication} />}
     {[courses.error, books.error, plans.error, plan.error, book.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
   </section>
 }

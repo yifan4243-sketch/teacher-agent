@@ -1,0 +1,39 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 13 test files (~52 tests) under ['tests\\extensions']; running with -j 8
+[  5.8% |     3/~52 | ✓3 | ✗0] ✓ tests\extensions\test_teacher_layout_repair.py (3✓, 33.0s)
+[ 11.5% |     6/~52 | ✓6 | ✗0] ✓ tests\extensions\test_teacher_rendering.py (3✓, 37.1s)
+[ 17.3% |     9/~52 | ✓9 | ✗0] ✓ tests\extensions\test_teacher_documents.py (3✓, 37.4s)
+[ 23.1% |    12/~52 | ✓12 | ✗ 0] ✓ tests\extensions\test_teacher_templates.py (3✓, 41.1s)
+[ 30.8% |    16/~52 | ✓16 | ✗ 0] ✓ tests\extensions\test_teacher_reconstruction.py (4✓, 51.0s)
+[ 34.6% |    18/~52 | ✓18 | ✗ 0] ✓ tests\extensions\test_teacher_blueprints.py (2✓, 19.4s)
+[ 38.5% |    20/~52 | ✓20 | ✗ 0] ✓ tests\extensions\test_teacher_slides.py (2✓, 17.9s)
+[ 50.0% |    26/~52 | ✓26 | ✗ 0] ✓ tests\extensions\test_teacher_images.py (6✓, 58.8s)
+[ 53.8% |    28/~52 | ✓28 | ✗ 0] ✓ tests\extensions\test_teacher_references.py (2✓, 24.3s)
+[ 59.6% |    31/~52 | ✓31 | ✗ 0] ✓ tests\extensions\test_teacher_timetable.py (3✓, 25.1s)
+[ 63.5% |    33/~52 | ✓33 | ✗ 0] ✓ tests\extensions\test_teacher_planning.py (2✓, 17.2s)
+[ 78.8% |    41/~52 | ✓44 | ✗ 0] ✓ tests\extensions\test_teacher_knowledge.py (11✓, 72.7s)
+[100.0% |    52/~52 | ✓55 | ✗ 0] ✓ tests\extensions\test_teacher_foundation.py (11✓, 86.8s)
+
+=== Summary: 13 files, 55 tests passed, 0 failed (100% complete) in 87.1s (8 workers) ===
+  Durations cached to test_durations.json (13 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   13
+  Total subprocess CPU-wall: 521.7s  (runner wall: 87.1s, parallelism: 8x)
+  P50: 37.07s  P90: 72.73s  P95: 86.80s  P99: 86.80s  Max: 86.80s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     86.80s  tests\extensions\test_teacher_foundation.py
+     72.73s  tests\extensions\test_teacher_knowledge.py
+     58.78s  tests\extensions\test_teacher_images.py
+     51.00s  tests\extensions\test_teacher_reconstruction.py
+     41.06s  tests\extensions\test_teacher_templates.py
+     37.39s  tests\extensions\test_teacher_documents.py
+     37.07s  tests\extensions\test_teacher_rendering.py
+     33.01s  tests\extensions\test_teacher_layout_repair.py
+     25.10s  tests\extensions\test_teacher_timetable.py
+     24.26s  tests\extensions\test_teacher_references.py

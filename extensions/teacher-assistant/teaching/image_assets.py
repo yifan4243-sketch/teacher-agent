@@ -81,9 +81,13 @@ def download(conn, data):
 
 
 def preview(conn, data):
+    _, content = read_asset(conn, data)
+    return thumbnail(content)
+
+
+def thumbnail(content):
     from PIL import Image
 
-    _, content = read_asset(conn, data)
     with Image.open(BytesIO(content)) as image:
         image.thumbnail((1280, 720))
         output = BytesIO()

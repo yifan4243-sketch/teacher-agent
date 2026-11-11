@@ -1,8 +1,8 @@
 // Generated from desktop/src by scripts/build_desktop.mjs.
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { Button as Button15, host as host4, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery15, useValue } from "@hermes/plugin-sdk";
-import { useState as useState14 } from "react";
+import { Button as Button16, host as host5, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery16, useValue } from "@hermes/plugin-sdk";
+import { useState as useState15 } from "react";
 
 // extensions/teacher-assistant/desktop/src/records.tsx
 import { Button, Input, useMutation, useQuery, useQueryClient } from "@hermes/plugin-sdk";
@@ -1015,12 +1015,12 @@ function Preparation({ route }) {
 }
 
 // extensions/teacher-assistant/desktop/src/slides-workspace.tsx
-import { Button as Button14, useMutation as useMutation14, useQuery as useQuery14, useQueryClient as useQueryClient13 } from "@hermes/plugin-sdk";
-import { useEffect as useEffect2, useState as useState13 } from "react";
+import { Button as Button15, useMutation as useMutation15, useQuery as useQuery15, useQueryClient as useQueryClient14 } from "@hermes/plugin-sdk";
+import { useEffect as useEffect2, useState as useState14 } from "react";
 
 // extensions/teacher-assistant/desktop/src/blueprint-editor.tsx
-import { Button as Button13, useMutation as useMutation13, useQuery as useQuery13, useQueryClient as useQueryClient12 } from "@hermes/plugin-sdk";
-import { useState as useState12 } from "react";
+import { Button as Button14, useMutation as useMutation14, useQuery as useQuery14, useQueryClient as useQueryClient13 } from "@hermes/plugin-sdk";
+import { useState as useState13 } from "react";
 
 // extensions/teacher-assistant/desktop/src/slide-images.tsx
 import { Button as Button10, useMutation as useMutation10, useQuery as useQuery10, useQueryClient as useQueryClient9 } from "@hermes/plugin-sdk";
@@ -1310,12 +1310,12 @@ function SlideImages({ route, blueprint }) {
 }
 
 // extensions/teacher-assistant/desktop/src/reconstruction-workspace.tsx
-import { Button as Button12, useMutation as useMutation12, useQuery as useQuery12, useQueryClient as useQueryClient11 } from "@hermes/plugin-sdk";
-import { useState as useState11 } from "react";
+import { Button as Button13, useMutation as useMutation13, useQuery as useQuery13, useQueryClient as useQueryClient12 } from "@hermes/plugin-sdk";
+import { useState as useState12 } from "react";
 
 // extensions/teacher-assistant/desktop/src/editable-slide.tsx
-import { Button as Button11, useMutation as useMutation11, useQuery as useQuery11, useQueryClient as useQueryClient10 } from "@hermes/plugin-sdk";
-import { useState as useState10 } from "react";
+import { Button as Button12, useMutation as useMutation12, useQuery as useQuery12, useQueryClient as useQueryClient11 } from "@hermes/plugin-sdk";
+import { useState as useState11 } from "react";
 
 // extensions/teacher-assistant/desktop/src/reconstruction-api.ts
 import { captureGatewayFileDownload as captureGatewayFileDownload3 } from "@hermes/plugin-sdk";
@@ -1327,27 +1327,150 @@ async function downloadSlides(route, operation, id) {
   await save(file.stored_path, file.filename);
 }
 
-// extensions/teacher-assistant/desktop/src/editable-slide.tsx
-import { Fragment as Fragment7, jsx as jsx11, jsxs as jsxs11 } from "react/jsx-runtime";
-function EditableSlide({ route, pageId, onVersion }) {
+// extensions/teacher-assistant/desktop/src/slide-render-preview.tsx
+import { Button as Button11, useMutation as useMutation11, useQuery as useQuery11, useQueryClient as useQueryClient10 } from "@hermes/plugin-sdk";
+import { useState as useState10 } from "react";
+
+// extensions/teacher-assistant/desktop/src/render-api.ts
+import { captureGatewayFileDownload as captureGatewayFileDownload4, host as host4 } from "@hermes/plugin-sdk";
+async function generateRender(route, pageId, renderer, forceNew, onQueued) {
+  const release = await host4.retainProfile(route, { spawnPriority: "foreground" });
+  try {
+    const job = await call(route, "slide.render.begin", { id: pageId, renderer, force_new: forceNew }, crypto.randomUUID());
+    await onQueued();
+    const result = await host4.requestProfile(route, "plugin.teacher-assistant.call", {
+      operation: "slide.render.run",
+      data: { id: job.id },
+      request_id: job.id
+    }, 12e4);
+    if (!result.ok) throw new Error(result.error?.message ?? "\u672C\u5730\u6E32\u67D3\u4EFB\u52A1\u672A\u80FD\u5B8C\u6210");
+    return result.data;
+  } finally {
+    release();
+  }
+}
+async function downloadRender(route, id, variant) {
+  const save = captureGatewayFileDownload4();
+  const file = await call(route, "slide.render.file", { id, variant });
+  await save(file.stored_path, file.filename);
+}
+
+// extensions/teacher-assistant/desktop/src/slide-render-preview.tsx
+import { jsx as jsx11, jsxs as jsxs11 } from "react/jsx-runtime";
+function RenderComparison({ route, job, assetId }) {
+  const [visible, setVisible] = useState10(false);
+  const previews = useQuery11({
+    queryKey: [...routeKey(route), "render-comparison", job.id, assetId],
+    queryFn: async () => {
+      const [reference, rendered, difference] = await Promise.all([
+        call(route, "slide.image.preview", { id: assetId }),
+        call(route, "slide.render.preview", { id: job.id, variant: "rendered" }),
+        call(route, "slide.render.preview", { id: job.id, variant: "difference" })
+      ]);
+      return [{ label: "\u539F\u59CB\u8BBE\u8BA1\u56FE", ...reference }, { label: "PPTX\u5B9E\u9645\u6E32\u67D3\u56FE", ...rendered }, { label: "\u50CF\u7D20\u5DEE\u5F02\u56FE", ...difference }];
+    },
+    enabled: visible,
+    staleTime: Infinity
+  });
+  const download = useMutation11({ mutationFn: (variant) => downloadRender(route, job.id, variant) });
+  return /* @__PURE__ */ jsxs11("div", { className: "space-y-3", children: [
+    /* @__PURE__ */ jsxs11("p", { children: [
+      "RGB\u5E73\u5747\u7EDD\u5BF9\u5DEE ",
+      job.comparison.mean_absolute_rgb_error?.toFixed(2),
+      " \xB7 \u901A\u9053\u5DEE\u503C\u5927\u4E8E32\u7684\u50CF\u7D20\u5360\u6BD4 ",
+      new Intl.NumberFormat("zh-CN", { style: "percent", maximumFractionDigits: 2 }).format(job.comparison.pixels_above_32_fraction)
+    ] }),
+    /* @__PURE__ */ jsx11("p", { children: job.comparison.review_note }),
+    /* @__PURE__ */ jsx11(Button11, { variant: "secondary", onClick: () => setVisible((value) => !value), children: visible ? "\u6536\u8D77\u6E32\u67D3\u5BF9\u7167" : "\u67E5\u770B\u6E32\u67D3\u5BF9\u7167" }),
+    visible && previews.isPending && /* @__PURE__ */ jsx11("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5B9E\u9645\u6E32\u67D3\u56FE" }),
+    visible && previews.data && /* @__PURE__ */ jsx11("div", { className: "grid gap-3", style: { gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" }, children: previews.data.map((preview) => /* @__PURE__ */ jsxs11("figure", { children: [
+      /* @__PURE__ */ jsx11("figcaption", { children: preview.label }),
+      /* @__PURE__ */ jsx11("img", { className: "w-full rounded", alt: preview.label, src: `data:${preview.mime_type};base64,${preview.content_base64}` })
+    ] }, preview.label)) }),
+    /* @__PURE__ */ jsxs11("div", { className: "flex flex-wrap gap-2", children: [
+      /* @__PURE__ */ jsx11(Button11, { variant: "secondary", disabled: download.isPending, onClick: () => download.mutate("rendered"), children: "\u4E0B\u8F7D\u5B9E\u9645\u6E32\u67D3PNG" }),
+      /* @__PURE__ */ jsx11(Button11, { variant: "secondary", disabled: download.isPending, onClick: () => download.mutate("difference"), children: "\u4E0B\u8F7D\u50CF\u7D20\u5DEE\u5F02PNG" })
+    ] }),
+    [previews.error, download.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx11("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+function SlideRenderPreview({ route, pageId, assetId }) {
   const queryClient = useQueryClient10();
-  const [index, setIndex] = useState10(0);
-  const [confirmed, setConfirmed] = useState10(false);
-  const page = useQuery11({ queryKey: [...routeKey(route), "editable-page", pageId], queryFn: () => call(route, "slide.page.get", { id: pageId }) });
+  const [offset, setOffset] = useState10(0);
+  const key = [...routeKey(route), "slide-renders", pageId];
+  const jobs = useQuery11({
+    queryKey: [...key, offset],
+    queryFn: () => call(route, "slide.render.list", { id: pageId, offset }),
+    refetchInterval: (query) => query.state.data?.items.some((job) => ["queued", "running"].includes(job.state)) ? 3e3 : false
+  });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: key });
+  const generate = useMutation11({ mutationFn: ({ renderer, force }) => generateRender(route, pageId, renderer, force, refresh), retry: false, onSettled: refresh });
+  function render(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    generate.mutate({ renderer: String(form.get("renderer")), force: form.has("force") });
+  }
+  const states = { queued: "\u5F85\u6E32\u67D3", running: "\u6E32\u67D3\u4E2D", succeeded: "\u6E32\u67D3\u5B8C\u6210", failed: "\u6E32\u67D3\u5931\u8D25" };
+  const engines = { wps: "WPS\u6F14\u793A", powerpoint: "Microsoft PowerPoint" };
+  const errors = { office_unavailable: "\u6240\u9009\u529E\u516C\u8F6F\u4EF6\u672A\u80FD\u542F\u52A8", office_render_failed: "\u529E\u516C\u8F6F\u4EF6\u6E32\u67D3\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u8F6F\u4EF6\u72B6\u6001", render_timeout: "\u6E32\u67D3\u8D85\u65F6\uFF0C\u8BF7\u68C0\u67E5\u529E\u516C\u8F6F\u4EF6\u72B6\u6001", render_file_access_failed: "\u9884\u89C8\u6587\u4EF6\u65E0\u6CD5\u4FDD\u5B58\uFF0C\u8BF7\u68C0\u67E5\u78C1\u76D8\u548C\u6743\u9650", render_response_invalid: "\u529E\u516C\u8F6F\u4EF6\u672A\u8FD4\u56DE\u6709\u6548\u9884\u89C8\uFF0C\u8BF7\u67E5\u770B\u8FD0\u884C\u65E5\u5FD7", file_integrity_error: "\u6E32\u67D3\u6240\u9700\u6587\u4EF6\u672A\u901A\u8FC7\u5B8C\u6574\u6027\u6821\u9A8C", render_execution_failed: "\u6E32\u67D3\u6267\u884C\u5931\u8D25\uFF0C\u8BF7\u67E5\u770B\u8FD0\u884C\u65E5\u5FD7" };
+  return /* @__PURE__ */ jsxs11("section", { "aria-label": "\u5B9E\u9645\u6E32\u67D3\u4E0E\u8BBE\u8BA1\u56FE\u5BF9\u7167", className: "space-y-4", children: [
+    /* @__PURE__ */ jsx11("h4", { className: "font-semibold", children: "\u5B9E\u9645\u6E32\u67D3\u4E0E\u8BBE\u8BA1\u56FE\u5BF9\u7167" }),
+    /* @__PURE__ */ jsx11("p", { children: "\u4F7F\u7528\u8FD0\u884CHermes\u7684Windows\u4E3B\u673A\u4E0A\u5DF2\u5B89\u88C5\u7684\u529E\u516C\u8F6F\u4EF6\u751F\u6210\u9884\u89C8\uFF0C\u7ED1\u5B9A\u5F53\u524D\u9875\u9762\u7248\u672C\u3002\u53EF\u5728\u8349\u7A3F\u9636\u6BB5\u68C0\u67E5\u6392\u7248\u3002" }),
+    /* @__PURE__ */ jsxs11("form", { onSubmit: render, className: "grid gap-2", children: [
+      /* @__PURE__ */ jsxs11("label", { children: [
+        "\u672C\u5730\u6E32\u67D3\u8F6F\u4EF6",
+        /* @__PURE__ */ jsxs11("select", { name: "renderer", "aria-label": "\u672C\u5730\u6E32\u67D3\u8F6F\u4EF6", children: [
+          /* @__PURE__ */ jsx11("option", { value: "wps", children: "WPS\u6F14\u793A" }),
+          /* @__PURE__ */ jsx11("option", { value: "powerpoint", children: "Microsoft PowerPoint" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs11("label", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsx11("input", { type: "checkbox", name: "force" }),
+        "\u65B0\u5EFA\u672C\u9875\u6E32\u67D3\u4EFB\u52A1\uFF0C\u4FDD\u7559\u6B64\u524D\u9884\u89C8"
+      ] }),
+      /* @__PURE__ */ jsx11(Button11, { type: "submit", disabled: generate.isPending, children: "\u751F\u6210\u5B9E\u9645\u9875\u9762\u9884\u89C8" })
+    ] }),
+    /* @__PURE__ */ jsx11(Button11, { variant: "secondary", onClick: () => void refresh(), children: "\u5237\u65B0\u6E32\u67D3\u4EFB\u52A1" }),
+    jobs.data?.items.map((job) => /* @__PURE__ */ jsxs11("article", { className: "space-y-3 rounded border border-(--ui-border) p-3", children: [
+      /* @__PURE__ */ jsxs11("p", { children: [
+        states[job.state],
+        " \xB7 ",
+        engines[job.renderer],
+        " ",
+        job.renderer_version ?? ""
+      ] }),
+      job.error_code && /* @__PURE__ */ jsx11("p", { role: "alert", children: errors[job.error_code] ?? job.error_code }),
+      job.state === "succeeded" && /* @__PURE__ */ jsx11(RenderComparison, { route, job, assetId })
+    ] }, job.id)),
+    /* @__PURE__ */ jsxs11("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx11(Button11, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset(Math.max(0, offset - 20)), children: "\u4E0A\u4E00\u7EC4\u6E32\u67D3\u8BB0\u5F55" }),
+      /* @__PURE__ */ jsx11(Button11, { variant: "secondary", disabled: jobs.data?.next_offset == null, onClick: () => setOffset(jobs.data?.next_offset ?? offset), children: "\u4E0B\u4E00\u7EC4\u6E32\u67D3\u8BB0\u5F55" })
+    ] }),
+    [jobs.error, generate.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx11("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+
+// extensions/teacher-assistant/desktop/src/editable-slide.tsx
+import { Fragment as Fragment7, jsx as jsx12, jsxs as jsxs12 } from "react/jsx-runtime";
+function EditableSlide({ route, pageId, onVersion }) {
+  const queryClient = useQueryClient11();
+  const [index, setIndex] = useState11(0);
+  const [confirmed, setConfirmed] = useState11(false);
+  const page = useQuery12({ queryKey: [...routeKey(route), "editable-page", pageId], queryFn: () => call(route, "slide.page.get", { id: pageId }) });
   const saved = page.data;
   const element = saved?.layout.elements[index];
-  const revise = useMutation11({
+  const revise = useMutation12({
     mutationFn: (layout) => call(route, "slide.page.revise", { id: pageId, layout }, crypto.randomUUID()),
     onSuccess: async (updated) => {
       await queryClient.invalidateQueries({ queryKey: [...routeKey(route), "slide-pages"] });
       onVersion(updated.id);
     }
   });
-  const review = useMutation11({
+  const review = useMutation12({
     mutationFn: (data) => call(route, "slide.page.review", { id: pageId, ...data }, crypto.randomUUID()),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) })
   });
-  const download = useMutation11({ mutationFn: () => downloadSlides(route, saved?.status === "approved" ? "slide.page.export" : "slide.page.preview_export", pageId) });
+  const download = useMutation12({ mutationFn: () => downloadSlides(route, saved?.status === "approved" ? "slide.page.export" : "slide.page.preview_export", pageId) });
   function saveElement(event) {
     event.preventDefault();
     if (!saved || !element) return;
@@ -1384,9 +1507,9 @@ function EditableSlide({ route, pageId, onVersion }) {
     const form = new FormData(event.currentTarget);
     review.mutate({ note: String(form.get("note")), decision: form.get("decision") });
   }
-  return /* @__PURE__ */ jsxs11("article", { className: "space-y-3", "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u5BF9\u8C61", children: [
-    saved && /* @__PURE__ */ jsxs11(Fragment7, { children: [
-      /* @__PURE__ */ jsxs11("h4", { children: [
+  return /* @__PURE__ */ jsxs12("article", { className: "space-y-3", "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u5BF9\u8C61", children: [
+    saved && /* @__PURE__ */ jsxs12(Fragment7, { children: [
+      /* @__PURE__ */ jsxs12("h4", { children: [
         "\u53EF\u7F16\u8F91\u7B2C",
         saved.page_number,
         "\u9875 \xB7 v",
@@ -1394,110 +1517,111 @@ function EditableSlide({ route, pageId, onVersion }) {
         " \xB7 ",
         PAGE_LABELS[saved.status]
       ] }),
-      /* @__PURE__ */ jsxs11("p", { children: [
+      /* @__PURE__ */ jsxs12("p", { children: [
         "\u9875\u9762\u5BF9\u8C61 ",
         Object.entries(saved.object_counts).map(([kind, count]) => `${OBJECT_LABELS[kind]} ${count}`).join(" \xB7 ")
       ] }),
-      /* @__PURE__ */ jsx11("p", { children: "\u6587\u5B57\u3001\u5F62\u72B6\u3001\u8FDE\u63A5\u7EBF\u4E0E\u8868\u683C\u4E3A\u539F\u751F\u5BF9\u8C61\u3002\u7167\u7247\u548C\u590D\u6742\u63D2\u753B\u4FDD\u5B58\u4E3A\u72EC\u7ACB\u88C1\u5207\u56FE\u7247\uFF0C\u652F\u6301\u79FB\u52A8\u3001\u7F29\u653E\u548C\u88C1\u5207\u3002\u5750\u6807\u4E0E\u5C3A\u5BF8\u91C7\u7528\u539F\u56FE\u50CF\u7D20\u3002" }),
-      saved.text_check.missing_text.map((text, i) => /* @__PURE__ */ jsxs11("p", { role: "alert", children: [
+      /* @__PURE__ */ jsx12("p", { children: "\u6587\u5B57\u3001\u5F62\u72B6\u3001\u8FDE\u63A5\u7EBF\u4E0E\u8868\u683C\u4E3A\u539F\u751F\u5BF9\u8C61\u3002\u7167\u7247\u548C\u590D\u6742\u63D2\u753B\u4FDD\u5B58\u4E3A\u72EC\u7ACB\u88C1\u5207\u56FE\u7247\uFF0C\u652F\u6301\u79FB\u52A8\u3001\u7F29\u653E\u548C\u88C1\u5207\u3002\u5750\u6807\u4E0E\u5C3A\u5BF8\u91C7\u7528\u539F\u56FE\u50CF\u7D20\u3002" }),
+      saved.text_check.missing_text.map((text, i) => /* @__PURE__ */ jsxs12("p", { role: "alert", children: [
         "\u9875\u9762\u7F3A\u5C11\u84DD\u56FE\u6587\u5B57 ",
         text
       ] }, i)),
-      /* @__PURE__ */ jsxs11("label", { children: [
+      /* @__PURE__ */ jsxs12("label", { children: [
         "\u7F16\u8F91\u9875\u9762\u5BF9\u8C61",
-        /* @__PURE__ */ jsx11("select", { "aria-label": "\u7F16\u8F91\u9875\u9762\u5BF9\u8C61", value: index, onChange: (event) => setIndex(Number(event.target.value)), children: saved.layout.elements.map((element2, i) => /* @__PURE__ */ jsxs11("option", { value: i, children: [
+        /* @__PURE__ */ jsx12("select", { "aria-label": "\u7F16\u8F91\u9875\u9762\u5BF9\u8C61", value: index, onChange: (event) => setIndex(Number(event.target.value)), children: saved.layout.elements.map((element2, i) => /* @__PURE__ */ jsxs12("option", { value: i, children: [
           element2.name,
           " \xB7 ",
           OBJECT_LABELS[element2.kind]
         ] }, element2.name)) })
       ] }),
-      element && /* @__PURE__ */ jsxs11("form", { onSubmit: saveElement, className: "grid max-w-3xl gap-2", children: [
-        [["x", "\u6C34\u5E73\u4F4D\u7F6E"], ["y", "\u5782\u76F4\u4F4D\u7F6E"], ["width", "\u5BBD\u5EA6"], ["height", "\u9AD8\u5EA6"]].map(([key, label]) => /* @__PURE__ */ jsxs11("label", { children: [
+      element && /* @__PURE__ */ jsxs12("form", { onSubmit: saveElement, className: "grid max-w-3xl gap-2", children: [
+        [["x", "\u6C34\u5E73\u4F4D\u7F6E"], ["y", "\u5782\u76F4\u4F4D\u7F6E"], ["width", "\u5BBD\u5EA6"], ["height", "\u9AD8\u5EA6"]].map(([key, label]) => /* @__PURE__ */ jsxs12("label", { children: [
           label,
-          /* @__PURE__ */ jsx11("input", { "aria-label": `\u5BF9\u8C61${label}`, type: "number", name: key, min: key === "x" || key === "y" ? 0 : 0.01, step: "0.01", defaultValue: element[key], required: true })
+          /* @__PURE__ */ jsx12("input", { "aria-label": `\u5BF9\u8C61${label}`, type: "number", name: key, min: key === "x" || key === "y" ? 0 : 0.01, step: "0.01", defaultValue: element[key], required: true })
         ] }, key)),
-        element.kind === "text" && /* @__PURE__ */ jsxs11("label", { children: [
+        element.kind === "text" && /* @__PURE__ */ jsxs12("label", { children: [
           "\u5BF9\u8C61\u6587\u5B57",
-          /* @__PURE__ */ jsx11("textarea", { "aria-label": "\u5BF9\u8C61\u6587\u5B57", name: "text", defaultValue: element.text, maxLength: 5e3, className: "min-h-28 w-full rounded border border-(--ui-border) p-3", required: true })
+          /* @__PURE__ */ jsx12("textarea", { "aria-label": "\u5BF9\u8C61\u6587\u5B57", name: "text", defaultValue: element.text, maxLength: 5e3, className: "min-h-28 w-full rounded border border-(--ui-border) p-3", required: true })
         ] }),
-        element.kind === "table" && /* @__PURE__ */ jsxs11("fieldset", { className: "grid gap-2", children: [
-          /* @__PURE__ */ jsx11("legend", { children: "\u8868\u683C\u5355\u5143\u683C" }),
-          element.rows.map((row, rowIndex) => /* @__PURE__ */ jsx11("div", { className: "flex flex-wrap gap-2", children: row.map((cell, columnIndex) => /* @__PURE__ */ jsxs11("label", { children: [
+        element.kind === "table" && /* @__PURE__ */ jsxs12("fieldset", { className: "grid gap-2", children: [
+          /* @__PURE__ */ jsx12("legend", { children: "\u8868\u683C\u5355\u5143\u683C" }),
+          element.rows.map((row, rowIndex) => /* @__PURE__ */ jsx12("div", { className: "flex flex-wrap gap-2", children: row.map((cell, columnIndex) => /* @__PURE__ */ jsxs12("label", { children: [
             "\u7B2C",
             rowIndex + 1,
             "\u884C\u7B2C",
             columnIndex + 1,
             "\u5217",
-            /* @__PURE__ */ jsx11("input", { "aria-label": `\u8868\u683C\u7B2C${rowIndex + 1}\u884C\u7B2C${columnIndex + 1}\u5217`, name: `cell-${rowIndex}-${columnIndex}`, defaultValue: cell, maxLength: 2e3 })
+            /* @__PURE__ */ jsx12("input", { "aria-label": `\u8868\u683C\u7B2C${rowIndex + 1}\u884C\u7B2C${columnIndex + 1}\u5217`, name: `cell-${rowIndex}-${columnIndex}`, defaultValue: cell, maxLength: 2e3 })
           ] }, columnIndex)) }, rowIndex))
         ] }),
-        (element.kind === "text" || element.kind === "table") && /* @__PURE__ */ jsxs11(Fragment7, { children: [
-          /* @__PURE__ */ jsxs11("label", { children: [
+        (element.kind === "text" || element.kind === "table") && /* @__PURE__ */ jsxs12(Fragment7, { children: [
+          /* @__PURE__ */ jsxs12("label", { children: [
             "\u5BF9\u8C61\u5B57\u53F7",
-            /* @__PURE__ */ jsx11("input", { "aria-label": "\u5BF9\u8C61\u5B57\u53F7", name: "font_size", type: "number", min: "8", max: element.kind === "table" ? 100 : 160, step: "0.1", defaultValue: element.font_size, required: true })
+            /* @__PURE__ */ jsx12("input", { "aria-label": "\u5BF9\u8C61\u5B57\u53F7", name: "font_size", type: "number", min: "8", max: element.kind === "table" ? 100 : 160, step: "0.1", defaultValue: element.font_size, required: true })
           ] }),
-          /* @__PURE__ */ jsxs11("label", { children: [
+          /* @__PURE__ */ jsxs12("label", { children: [
             "\u5BF9\u8C61\u6587\u5B57\u989C\u8272",
-            /* @__PURE__ */ jsx11("input", { "aria-label": "\u5BF9\u8C61\u6587\u5B57\u989C\u8272", name: "color", pattern: "[0-9A-Fa-f]{6}", defaultValue: element.color, required: true })
+            /* @__PURE__ */ jsx12("input", { "aria-label": "\u5BF9\u8C61\u6587\u5B57\u989C\u8272", name: "color", pattern: "[0-9A-Fa-f]{6}", defaultValue: element.color, required: true })
           ] })
         ] }),
-        element.kind === "shape" && /* @__PURE__ */ jsxs11(Fragment7, { children: [
-          /* @__PURE__ */ jsxs11("label", { children: [
+        element.kind === "shape" && /* @__PURE__ */ jsxs12(Fragment7, { children: [
+          /* @__PURE__ */ jsxs12("label", { children: [
             "\u5BF9\u8C61\u586B\u5145\u989C\u8272",
-            /* @__PURE__ */ jsx11("input", { "aria-label": "\u5BF9\u8C61\u586B\u5145\u989C\u8272", name: "fill", pattern: "[0-9A-Fa-f]{6}", defaultValue: element.fill ?? "" })
+            /* @__PURE__ */ jsx12("input", { "aria-label": "\u5BF9\u8C61\u586B\u5145\u989C\u8272", name: "fill", pattern: "[0-9A-Fa-f]{6}", defaultValue: element.fill ?? "" })
           ] }),
-          /* @__PURE__ */ jsxs11("label", { children: [
+          /* @__PURE__ */ jsxs12("label", { children: [
             "\u5BF9\u8C61\u8FB9\u7EBF\u989C\u8272",
-            /* @__PURE__ */ jsx11("input", { "aria-label": "\u5BF9\u8C61\u8FB9\u7EBF\u989C\u8272", name: "line_color", pattern: "[0-9A-Fa-f]{6}", defaultValue: element.line_color ?? "" })
+            /* @__PURE__ */ jsx12("input", { "aria-label": "\u5BF9\u8C61\u8FB9\u7EBF\u989C\u8272", name: "line_color", pattern: "[0-9A-Fa-f]{6}", defaultValue: element.line_color ?? "" })
           ] })
         ] }),
-        element.kind === "image" && /* @__PURE__ */ jsxs11("fieldset", { className: "grid gap-2", children: [
-          /* @__PURE__ */ jsx11("legend", { children: "\u539F\u56FE\u88C1\u5207\u533A\u57DF" }),
-          [["source_x", "\u88C1\u5207\u6C34\u5E73\u4F4D\u7F6E"], ["source_y", "\u88C1\u5207\u5782\u76F4\u4F4D\u7F6E"], ["source_width", "\u88C1\u5207\u5BBD\u5EA6"], ["source_height", "\u88C1\u5207\u9AD8\u5EA6"]].map(([key, label]) => /* @__PURE__ */ jsxs11("label", { children: [
+        element.kind === "image" && /* @__PURE__ */ jsxs12("fieldset", { className: "grid gap-2", children: [
+          /* @__PURE__ */ jsx12("legend", { children: "\u539F\u56FE\u88C1\u5207\u533A\u57DF" }),
+          [["source_x", "\u88C1\u5207\u6C34\u5E73\u4F4D\u7F6E"], ["source_y", "\u88C1\u5207\u5782\u76F4\u4F4D\u7F6E"], ["source_width", "\u88C1\u5207\u5BBD\u5EA6"], ["source_height", "\u88C1\u5207\u9AD8\u5EA6"]].map(([key, label]) => /* @__PURE__ */ jsxs12("label", { children: [
             label,
-            /* @__PURE__ */ jsx11("input", { "aria-label": label, name: key, type: "number", min: key === "source_x" || key === "source_y" ? 0 : 1, step: "0.01", defaultValue: element[key], required: true })
+            /* @__PURE__ */ jsx12("input", { "aria-label": label, name: key, type: "number", min: key === "source_x" || key === "source_y" ? 0 : 1, step: "0.01", defaultValue: element[key], required: true })
           ] }, key)),
-          /* @__PURE__ */ jsxs11("label", { children: [
+          /* @__PURE__ */ jsxs12("label", { children: [
             "\u56FE\u7247\u8BF4\u660E",
-            /* @__PURE__ */ jsx11("input", { "aria-label": "\u56FE\u7247\u8BF4\u660E", name: "description", defaultValue: element.description, maxLength: 500, required: true })
+            /* @__PURE__ */ jsx12("input", { "aria-label": "\u56FE\u7247\u8BF4\u660E", name: "description", defaultValue: element.description, maxLength: 500, required: true })
           ] })
         ] }),
-        /* @__PURE__ */ jsx11(Button11, { type: "submit", disabled: revise.isPending, children: "\u4FDD\u5B58\u9875\u9762\u5BF9\u8C61\u4E3A\u65B0\u7248\u672C" })
+        /* @__PURE__ */ jsx12(Button12, { type: "submit", disabled: revise.isPending, children: "\u4FDD\u5B58\u9875\u9762\u5BF9\u8C61\u4E3A\u65B0\u7248\u672C" })
       ] }, `${pageId}:${element.name}`),
-      /* @__PURE__ */ jsx11(Button11, { variant: "secondary", disabled: download.isPending, onClick: () => download.mutate(), children: saved.status === "approved" ? "\u4E0B\u8F7D\u5355\u9875\u53EF\u7F16\u8F91PPTX" : "\u4E0B\u8F7D\u5355\u9875\u8349\u7A3FPPTX" }),
-      saved.status === "draft" && /* @__PURE__ */ jsxs11("form", { onSubmit: approve, className: "grid max-w-3xl gap-2", children: [
-        /* @__PURE__ */ jsxs11("label", { className: "flex gap-2", children: [
-          /* @__PURE__ */ jsx11("input", { type: "checkbox", checked: confirmed, onChange: (event) => setConfirmed(event.target.checked), required: true }),
+      /* @__PURE__ */ jsx12(Button12, { variant: "secondary", disabled: download.isPending, onClick: () => download.mutate(), children: saved.status === "approved" ? "\u4E0B\u8F7D\u5355\u9875\u53EF\u7F16\u8F91PPTX" : "\u4E0B\u8F7D\u5355\u9875\u8349\u7A3FPPTX" }),
+      /* @__PURE__ */ jsx12(SlideRenderPreview, { route, pageId, assetId: saved.asset_id }),
+      saved.status === "draft" && /* @__PURE__ */ jsxs12("form", { onSubmit: approve, className: "grid max-w-3xl gap-2", children: [
+        /* @__PURE__ */ jsxs12("label", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsx12("input", { type: "checkbox", checked: confirmed, onChange: (event) => setConfirmed(event.target.checked), required: true }),
           "\u5DF2\u6838\u5BF9\u539F\u751F\u6587\u5B57\u3001\u56FE\u5F62\u3001\u8868\u683C\u3001\u4F4D\u7F6E\u53CA\u6559\u6750\u5185\u5BB9"
         ] }),
-        /* @__PURE__ */ jsxs11("label", { children: [
+        /* @__PURE__ */ jsxs12("label", { children: [
           "\u53EF\u7F16\u8F91\u9875\u9762\u5BA1\u6838\u7ED3\u679C",
-          /* @__PURE__ */ jsxs11("select", { name: "decision", "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u5BA1\u6838\u7ED3\u679C", children: [
-            /* @__PURE__ */ jsx11("option", { value: "approved", children: "\u901A\u8FC7" }),
-            /* @__PURE__ */ jsx11("option", { value: "rejected", children: "\u9000\u56DE\u4FEE\u8BA2" })
+          /* @__PURE__ */ jsxs12("select", { name: "decision", "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u5BA1\u6838\u7ED3\u679C", children: [
+            /* @__PURE__ */ jsx12("option", { value: "approved", children: "\u901A\u8FC7" }),
+            /* @__PURE__ */ jsx12("option", { value: "rejected", children: "\u9000\u56DE\u4FEE\u8BA2" })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs11("label", { children: [
+        /* @__PURE__ */ jsxs12("label", { children: [
           "\u53EF\u7F16\u8F91\u9875\u9762\u5BA1\u6838\u610F\u89C1",
-          /* @__PURE__ */ jsx11("input", { "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u5BA1\u6838\u610F\u89C1", name: "note", maxLength: 2e3, required: true })
+          /* @__PURE__ */ jsx12("input", { "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u5BA1\u6838\u610F\u89C1", name: "note", maxLength: 2e3, required: true })
         ] }),
-        /* @__PURE__ */ jsx11(Button11, { type: "submit", disabled: !confirmed || review.isPending, children: "\u5BA1\u6838\u901A\u8FC7\u53EF\u7F16\u8F91\u9875\u9762" })
+        /* @__PURE__ */ jsx12(Button12, { type: "submit", disabled: !confirmed || review.isPending, children: "\u5BA1\u6838\u901A\u8FC7\u53EF\u7F16\u8F91\u9875\u9762" })
       ] })
     ] }),
-    [page.error, revise.error, review.error, download.error].filter(Boolean).map((error, i) => /* @__PURE__ */ jsx11("p", { role: "alert", children: error?.message }, i))
+    [page.error, revise.error, review.error, download.error].filter(Boolean).map((error, i) => /* @__PURE__ */ jsx12("p", { role: "alert", children: error?.message }, i))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/reconstruction-workspace.tsx
-import { jsx as jsx12, jsxs as jsxs12 } from "react/jsx-runtime";
+import { jsx as jsx13, jsxs as jsxs13 } from "react/jsx-runtime";
 function ReconstructionWorkspace({ route, blueprintId }) {
-  const queryClient = useQueryClient11();
-  const [analysisId, setAnalysisId] = useState11("");
-  const [pageId, setPageId] = useState11("");
-  const [offset, setOffset] = useState11(0);
-  const analyses = useQuery12({ queryKey: [...routeKey(route), "images", blueprintId, "layout-analyses", offset], queryFn: () => call(route, "slide.image.list", { blueprint_id: blueprintId, limit: 100, offset }), refetchInterval: 3e3 });
-  const pages = useQuery12({ queryKey: [...routeKey(route), "slide-pages", blueprintId], queryFn: () => call(route, "slide.page.list", { blueprint_id: blueprintId, limit: 100 }) });
-  const create = useMutation12({
+  const queryClient = useQueryClient12();
+  const [analysisId, setAnalysisId] = useState12("");
+  const [pageId, setPageId] = useState12("");
+  const [offset, setOffset] = useState12(0);
+  const analyses = useQuery13({ queryKey: [...routeKey(route), "images", blueprintId, "layout-analyses", offset], queryFn: () => call(route, "slide.image.list", { blueprint_id: blueprintId, limit: 100, offset }), refetchInterval: 3e3 });
+  const pages = useQuery13({ queryKey: [...routeKey(route), "slide-pages", blueprintId], queryFn: () => call(route, "slide.page.list", { blueprint_id: blueprintId, limit: 100 }) });
+  const create = useMutation13({
     mutationFn: async () => {
       const job = analyses.data?.items.find((item) => item.id === analysisId);
       if (!job) throw new Error("\u8BF7\u5148\u9009\u62E9\u5DF2\u5B8C\u6210\u7684\u8BC6\u522B\u4EFB\u52A1");
@@ -1510,15 +1634,15 @@ function ReconstructionWorkspace({ route, blueprintId }) {
       setPageId(page.id);
     }
   });
-  const download = useMutation12({ mutationFn: () => downloadSlides(route, "slide.deck.export", blueprintId) });
-  return /* @__PURE__ */ jsxs12("section", { "aria-label": "\u56FE\u7247\u8F6C\u53EF\u7F16\u8F91\u8BFE\u4EF6", className: "space-y-4", children: [
-    /* @__PURE__ */ jsx12("h3", { className: "text-lg font-semibold", children: "\u56FE\u7247\u8F6C\u53EF\u7F16\u8F91\u8BFE\u4EF6" }),
-    /* @__PURE__ */ jsx12("p", { children: "\u590D\u7528\u5DF2\u5B8C\u6210\u7684\u89C6\u89C9\u5E03\u5C40\u8BC6\u522B\uFF0C\u6559\u5E08\u5148\u5BA1\u6838\u8BBE\u8BA1\u56FE\uFF0C\u518D\u5EFA\u7ACB\u53EF\u7F16\u8F91\u9875\u9762\u3002\u5B8C\u6574\u5BFC\u51FA\u9010\u9875\u9009\u62E9\u6700\u65B0\u5DF2\u5BA1\u6838\u7248\u672C\u3002" }),
-    /* @__PURE__ */ jsxs12("label", { children: [
+  const download = useMutation13({ mutationFn: () => downloadSlides(route, "slide.deck.export", blueprintId) });
+  return /* @__PURE__ */ jsxs13("section", { "aria-label": "\u56FE\u7247\u8F6C\u53EF\u7F16\u8F91\u8BFE\u4EF6", className: "space-y-4", children: [
+    /* @__PURE__ */ jsx13("h3", { className: "text-lg font-semibold", children: "\u56FE\u7247\u8F6C\u53EF\u7F16\u8F91\u8BFE\u4EF6" }),
+    /* @__PURE__ */ jsx13("p", { children: "\u590D\u7528\u5DF2\u5B8C\u6210\u7684\u89C6\u89C9\u5E03\u5C40\u8BC6\u522B\uFF0C\u6559\u5E08\u5148\u5BA1\u6838\u8BBE\u8BA1\u56FE\uFF0C\u518D\u5EFA\u7ACB\u53EF\u7F16\u8F91\u9875\u9762\u3002\u5B8C\u6574\u5BFC\u51FA\u9010\u9875\u9009\u62E9\u6700\u65B0\u5DF2\u5BA1\u6838\u7248\u672C\u3002" }),
+    /* @__PURE__ */ jsxs13("label", { children: [
       "\u89C6\u89C9\u5E03\u5C40\u4EFB\u52A1",
-      /* @__PURE__ */ jsxs12("select", { "aria-label": "\u89C6\u89C9\u5E03\u5C40\u4EFB\u52A1", value: analysisId, onChange: (event) => setAnalysisId(event.target.value), children: [
-        /* @__PURE__ */ jsx12("option", { value: "", children: "\u9009\u62E9\u5DF2\u5B8C\u6210\u7684\u8BC6\u522B\u4EFB\u52A1" }),
-        analyses.data?.items.filter((job) => job.kind === "analysis" && job.state === "succeeded").map((job) => /* @__PURE__ */ jsxs12("option", { value: job.id, children: [
+      /* @__PURE__ */ jsxs13("select", { "aria-label": "\u89C6\u89C9\u5E03\u5C40\u4EFB\u52A1", value: analysisId, onChange: (event) => setAnalysisId(event.target.value), children: [
+        /* @__PURE__ */ jsx13("option", { value: "", children: "\u9009\u62E9\u5DF2\u5B8C\u6210\u7684\u8BC6\u522B\u4EFB\u52A1" }),
+        analyses.data?.items.filter((job) => job.kind === "analysis" && job.state === "succeeded").map((job) => /* @__PURE__ */ jsxs13("option", { value: job.id, children: [
           "\u7B2C",
           job.page_number,
           "\u9875 \xB7 ",
@@ -1526,22 +1650,22 @@ function ReconstructionWorkspace({ route, blueprintId }) {
         ] }, job.id))
       ] })
     ] }),
-    /* @__PURE__ */ jsxs12("div", { className: "flex gap-2", children: [
-      /* @__PURE__ */ jsx12(Button12, { variant: "secondary", disabled: offset === 0, onClick: () => {
+    /* @__PURE__ */ jsxs13("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx13(Button13, { variant: "secondary", disabled: offset === 0, onClick: () => {
         setOffset(Math.max(0, offset - 100));
         setAnalysisId("");
       }, children: "\u4E0A\u4E00\u7EC4\u8BC6\u522B\u8BB0\u5F55" }),
-      /* @__PURE__ */ jsx12(Button12, { variant: "secondary", disabled: analyses.data?.next_offset == null, onClick: () => {
+      /* @__PURE__ */ jsx13(Button13, { variant: "secondary", disabled: analyses.data?.next_offset == null, onClick: () => {
         setOffset(analyses.data?.next_offset ?? offset);
         setAnalysisId("");
       }, children: "\u4E0B\u4E00\u7EC4\u8BC6\u522B\u8BB0\u5F55" })
     ] }),
-    /* @__PURE__ */ jsx12(Button12, { disabled: !analysisId || create.isPending, onClick: () => create.mutate(), children: "\u4ECE\u8BC6\u522B\u5E03\u5C40\u5EFA\u7ACB\u53EF\u7F16\u8F91\u9875\u9762" }),
-    /* @__PURE__ */ jsxs12("label", { children: [
+    /* @__PURE__ */ jsx13(Button13, { disabled: !analysisId || create.isPending, onClick: () => create.mutate(), children: "\u4ECE\u8BC6\u522B\u5E03\u5C40\u5EFA\u7ACB\u53EF\u7F16\u8F91\u9875\u9762" }),
+    /* @__PURE__ */ jsxs13("label", { children: [
       "\u53EF\u7F16\u8F91\u9875\u9762\u7248\u672C",
-      /* @__PURE__ */ jsxs12("select", { "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u7248\u672C", value: pageId, onChange: (event) => setPageId(event.target.value), children: [
-        /* @__PURE__ */ jsx12("option", { value: "", children: "\u9009\u62E9\u53EF\u7F16\u8F91\u9875\u9762" }),
-        pages.data?.items.map((page) => /* @__PURE__ */ jsxs12("option", { value: page.id, children: [
+      /* @__PURE__ */ jsxs13("select", { "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u7248\u672C", value: pageId, onChange: (event) => setPageId(event.target.value), children: [
+        /* @__PURE__ */ jsx13("option", { value: "", children: "\u9009\u62E9\u53EF\u7F16\u8F91\u9875\u9762" }),
+        pages.data?.items.map((page) => /* @__PURE__ */ jsxs13("option", { value: page.id, children: [
           "\u7B2C",
           page.page_number,
           "\u9875 \xB7 v",
@@ -1551,23 +1675,23 @@ function ReconstructionWorkspace({ route, blueprintId }) {
         ] }, page.id))
       ] })
     ] }),
-    pageId && /* @__PURE__ */ jsx12(EditableSlide, { route, pageId, onVersion: setPageId }, pageId),
-    /* @__PURE__ */ jsx12(Button12, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u4E0B\u8F7D\u5B8C\u6574\u53EF\u7F16\u8F91PPTX" }),
-    [analyses.error, pages.error, create.error, download.error].filter(Boolean).map((error, i) => /* @__PURE__ */ jsx12("p", { role: "alert", children: error?.message }, i))
+    pageId && /* @__PURE__ */ jsx13(EditableSlide, { route, pageId, onVersion: setPageId }, pageId),
+    /* @__PURE__ */ jsx13(Button13, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u4E0B\u8F7D\u5B8C\u6574\u53EF\u7F16\u8F91PPTX" }),
+    [analyses.error, pages.error, create.error, download.error].filter(Boolean).map((error, i) => /* @__PURE__ */ jsx13("p", { role: "alert", children: error?.message }, i))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/blueprint-editor.tsx
-import { Fragment as Fragment8, jsx as jsx13, jsxs as jsxs13 } from "react/jsx-runtime";
+import { Fragment as Fragment8, jsx as jsx14, jsxs as jsxs14 } from "react/jsx-runtime";
 var LAYOUTS = [["single_column", "\u5355\u680F"], ["two_column", "\u53CC\u680F"], ["three_column", "\u4E09\u680F"], ["comparison", "\u5BF9\u6BD4"], ["timeline", "\u65F6\u95F4\u7EBF"], ["table", "\u8868\u683C"]];
 function BlueprintEditor({ route, documentId, onVersion }) {
-  const queryClient = useQueryClient12();
-  const [pageNumber, setPageNumber] = useState12(1);
-  const [confirmed, setConfirmed] = useState12(false);
-  const document = useQuery13({ queryKey: [...routeKey(route), "blueprint", documentId], queryFn: () => call(route, "document.get", { id: documentId }) });
-  const themes = useQuery13({ queryKey: [...routeKey(route), "slide-themes"], queryFn: () => call(route, "slide.themes") });
-  const prompt = useMutation13({ mutationFn: () => call(route, "slide.prompt", { id: documentId, page_number: pageNumber }) });
-  const write = useMutation13({
+  const queryClient = useQueryClient13();
+  const [pageNumber, setPageNumber] = useState13(1);
+  const [confirmed, setConfirmed] = useState13(false);
+  const document = useQuery14({ queryKey: [...routeKey(route), "blueprint", documentId], queryFn: () => call(route, "document.get", { id: documentId }) });
+  const themes = useQuery14({ queryKey: [...routeKey(route), "slide-themes"], queryFn: () => call(route, "slide.themes") });
+  const prompt = useMutation14({ mutationFn: () => call(route, "slide.prompt", { id: documentId, page_number: pageNumber }) });
+  const write = useMutation14({
     mutationFn: ({ operation, data }) => call(route, operation, data, crypto.randomUUID()),
     onSuccess: async (saved2) => {
       await queryClient.invalidateQueries({ queryKey: routeKey(route) });
@@ -1600,22 +1724,22 @@ function BlueprintEditor({ route, documentId, onVersion }) {
       content
     } });
   }
-  return /* @__PURE__ */ jsxs13("article", { className: "space-y-4", "aria-label": "\u8BFE\u4EF6\u84DD\u56FE\u7F16\u8F91\u4E0E\u5BA1\u6838", children: [
-    saved && /* @__PURE__ */ jsxs13(Fragment8, { children: [
-      /* @__PURE__ */ jsxs13("h3", { className: "text-lg font-semibold", children: [
+  return /* @__PURE__ */ jsxs14("article", { className: "space-y-4", "aria-label": "\u8BFE\u4EF6\u84DD\u56FE\u7F16\u8F91\u4E0E\u5BA1\u6838", children: [
+    saved && /* @__PURE__ */ jsxs14(Fragment8, { children: [
+      /* @__PURE__ */ jsxs14("h3", { className: "text-lg font-semibold", children: [
         saved.content.title,
         " \xB7 v",
         saved.version,
         " \xB7 ",
         saved.status === "approved" ? "\u5DF2\u5BA1\u6838" : saved.status === "rejected" ? "\u5DF2\u9000\u56DE" : "\u8349\u7A3F"
       ] }),
-      /* @__PURE__ */ jsxs13("p", { children: [
+      /* @__PURE__ */ jsxs14("p", { children: [
         "\u5173\u8054\u6388\u8BFE\u7A3F ",
         saved.script_id,
         " \xB7 \u6559\u6848 ",
         saved.plan_id
       ] }),
-      /* @__PURE__ */ jsx13("ol", { className: "space-y-2", children: saved.content.pages.map((page2) => /* @__PURE__ */ jsx13("li", { children: /* @__PURE__ */ jsxs13(Button13, { variant: page2.number === pageNumber ? "secondary" : "ghost", onClick: () => {
+      /* @__PURE__ */ jsx14("ol", { className: "space-y-2", children: saved.content.pages.map((page2) => /* @__PURE__ */ jsx14("li", { children: /* @__PURE__ */ jsxs14(Button14, { variant: page2.number === pageNumber ? "secondary" : "ghost", onClick: () => {
         setPageNumber(page2.number);
         prompt.reset();
       }, children: [
@@ -1630,79 +1754,79 @@ function BlueprintEditor({ route, documentId, onVersion }) {
         "\u5206\u949F"
       ] }) }, page2.number)) })
     ] }),
-    saved && page && themes.data && /* @__PURE__ */ jsxs13("form", { onSubmit: savePage, className: "grid max-w-4xl gap-3", children: [
-      /* @__PURE__ */ jsxs13("label", { children: [
+    saved && page && themes.data && /* @__PURE__ */ jsxs14("form", { onSubmit: savePage, className: "grid max-w-4xl gap-3", children: [
+      /* @__PURE__ */ jsxs14("label", { children: [
         "\u8BFE\u4EF6\u4E3B\u9898",
-        /* @__PURE__ */ jsx13("select", { "aria-label": "\u8BFE\u4EF6\u4E3B\u9898", name: "theme", defaultValue: saved.content.theme, children: themes.data?.items.map((theme) => /* @__PURE__ */ jsx13("option", { value: theme.id, children: theme.name }, theme.id)) })
+        /* @__PURE__ */ jsx14("select", { "aria-label": "\u8BFE\u4EF6\u4E3B\u9898", name: "theme", defaultValue: saved.content.theme, children: themes.data?.items.map((theme) => /* @__PURE__ */ jsx14("option", { value: theme.id, children: theme.name }, theme.id)) })
       ] }),
-      /* @__PURE__ */ jsxs13("label", { children: [
+      /* @__PURE__ */ jsxs14("label", { children: [
         "\u9875\u9762\u6807\u9898",
-        /* @__PURE__ */ jsx13("input", { "aria-label": "\u9875\u9762\u6807\u9898", name: "title", defaultValue: page.title, maxLength: 60, required: true })
+        /* @__PURE__ */ jsx14("input", { "aria-label": "\u9875\u9762\u6807\u9898", name: "title", defaultValue: page.title, maxLength: 60, required: true })
       ] }),
-      /* @__PURE__ */ jsxs13("label", { children: [
+      /* @__PURE__ */ jsxs14("label", { children: [
         "\u51C6\u786E\u53EF\u89C1\u6587\u5B57",
-        /* @__PURE__ */ jsx13("textarea", { "aria-label": "\u51C6\u786E\u53EF\u89C1\u6587\u5B57", name: "messages", defaultValue: page.key_messages.join("\n"), className: "min-h-32 w-full rounded border border-(--ui-border) p-3", required: true })
+        /* @__PURE__ */ jsx14("textarea", { "aria-label": "\u51C6\u786E\u53EF\u89C1\u6587\u5B57", name: "messages", defaultValue: page.key_messages.join("\n"), className: "min-h-32 w-full rounded border border-(--ui-border) p-3", required: true })
       ] }),
-      /* @__PURE__ */ jsxs13("label", { children: [
+      /* @__PURE__ */ jsxs14("label", { children: [
         "\u9875\u9762\u6559\u5B66\u5206\u949F",
-        /* @__PURE__ */ jsx13("input", { "aria-label": "\u9875\u9762\u6559\u5B66\u5206\u949F", name: "minutes", type: "number", min: 0.1, max: 40, step: 0.1, defaultValue: page.duration_minutes, required: true })
+        /* @__PURE__ */ jsx14("input", { "aria-label": "\u9875\u9762\u6559\u5B66\u5206\u949F", name: "minutes", type: "number", min: 0.1, max: 40, step: 0.1, defaultValue: page.duration_minutes, required: true })
       ] }),
-      /* @__PURE__ */ jsxs13("label", { children: [
+      /* @__PURE__ */ jsxs14("label", { children: [
         "\u9875\u9762\u5E03\u5C40",
-        /* @__PURE__ */ jsx13("select", { "aria-label": "\u9875\u9762\u5E03\u5C40", name: "layout", defaultValue: page.layout, children: LAYOUTS.map(([key, label]) => /* @__PURE__ */ jsx13("option", { value: key, children: label }, key)) })
+        /* @__PURE__ */ jsx14("select", { "aria-label": "\u9875\u9762\u5E03\u5C40", name: "layout", defaultValue: page.layout, children: LAYOUTS.map(([key, label]) => /* @__PURE__ */ jsx14("option", { value: key, children: label }, key)) })
       ] }),
-      /* @__PURE__ */ jsxs13("label", { children: [
+      /* @__PURE__ */ jsxs14("label", { children: [
         "\u6559\u5E08\u5907\u6CE8",
-        /* @__PURE__ */ jsx13("textarea", { "aria-label": "\u9875\u9762\u6559\u5E08\u5907\u6CE8", name: "notes", defaultValue: page.teacher_notes, className: "w-full rounded border border-(--ui-border) p-3", required: true })
+        /* @__PURE__ */ jsx14("textarea", { "aria-label": "\u9875\u9762\u6559\u5E08\u5907\u6CE8", name: "notes", defaultValue: page.teacher_notes, className: "w-full rounded border border-(--ui-border) p-3", required: true })
       ] }),
-      /* @__PURE__ */ jsxs13("label", { children: [
+      /* @__PURE__ */ jsxs14("label", { children: [
         "\u89C6\u89C9\u8981\u6C42",
-        /* @__PURE__ */ jsx13("textarea", { "aria-label": "\u9875\u9762\u89C6\u89C9\u8981\u6C42", name: "visual_requirements", defaultValue: page.visual_requirements, className: "w-full rounded border border-(--ui-border) p-3" })
+        /* @__PURE__ */ jsx14("textarea", { "aria-label": "\u9875\u9762\u89C6\u89C9\u8981\u6C42", name: "visual_requirements", defaultValue: page.visual_requirements, className: "w-full rounded border border-(--ui-border) p-3" })
       ] }),
-      /* @__PURE__ */ jsxs13("p", { children: [
+      /* @__PURE__ */ jsxs14("p", { children: [
         "\u6559\u6750\u6765\u6E90 ",
         page.source_ids.join("\u3001")
       ] }),
-      /* @__PURE__ */ jsxs13("p", { children: [
+      /* @__PURE__ */ jsxs14("p", { children: [
         "\u77E5\u8BC6\u70B9 ",
         page.knowledge_point_ids.join("\u3001")
       ] }),
-      /* @__PURE__ */ jsxs13("p", { children: [
+      /* @__PURE__ */ jsxs14("p", { children: [
         "\u6388\u8BFE\u7A3F\u73AF\u8282 ",
         page.script_references.map((reference) => `${reference.unit_index + 1}\u5355\u5143${reference.segment_index + 1}\u73AF\u8282`).join("\u3001")
       ] }),
-      page.visuals.map((visual, index) => /* @__PURE__ */ jsxs13("p", { children: [
+      page.visuals.map((visual, index) => /* @__PURE__ */ jsxs14("p", { children: [
         "\u56FE\u89E3\u8981\u6C42 ",
         visual.description
       ] }, index)),
-      /* @__PURE__ */ jsx13(Button13, { type: "submit", disabled: write.isPending, children: "\u4FDD\u5B58\u9875\u9762\u4E3A\u84DD\u56FE\u65B0\u7248\u672C" })
+      /* @__PURE__ */ jsx14(Button14, { type: "submit", disabled: write.isPending, children: "\u4FDD\u5B58\u9875\u9762\u4E3A\u84DD\u56FE\u65B0\u7248\u672C" })
     ] }, `${saved.id}:${page.number}`),
-    page && /* @__PURE__ */ jsx13(Button13, { disabled: prompt.isPending, onClick: () => prompt.mutate(), children: "\u67E5\u770B\u81EA\u52A8\u751F\u56FE\u63D0\u793A\u8BCD" }),
-    prompt.data && /* @__PURE__ */ jsx13("textarea", { "aria-label": "\u81EA\u52A8\u751F\u56FE\u63D0\u793A\u8BCD", readOnly: true, value: prompt.data.prompt, className: "min-h-64 w-full rounded border border-(--ui-border) p-3" }),
-    saved?.status === "draft" && /* @__PURE__ */ jsxs13("div", { className: "space-y-3", children: [
-      /* @__PURE__ */ jsxs13("label", { className: "flex gap-2", children: [
-        /* @__PURE__ */ jsx13("input", { type: "checkbox", checked: confirmed, onChange: (event) => setConfirmed(event.target.checked) }),
+    page && /* @__PURE__ */ jsx14(Button14, { disabled: prompt.isPending, onClick: () => prompt.mutate(), children: "\u67E5\u770B\u81EA\u52A8\u751F\u56FE\u63D0\u793A\u8BCD" }),
+    prompt.data && /* @__PURE__ */ jsx14("textarea", { "aria-label": "\u81EA\u52A8\u751F\u56FE\u63D0\u793A\u8BCD", readOnly: true, value: prompt.data.prompt, className: "min-h-64 w-full rounded border border-(--ui-border) p-3" }),
+    saved?.status === "draft" && /* @__PURE__ */ jsxs14("div", { className: "space-y-3", children: [
+      /* @__PURE__ */ jsxs14("label", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsx14("input", { type: "checkbox", checked: confirmed, onChange: (event) => setConfirmed(event.target.checked) }),
         "\u5DF2\u6838\u5BF9\u5168\u90E8\u9875\u9762\u7684\u6587\u5B57\u3001\u6765\u6E90\u548C\u6559\u5B66\u73AF\u8282"
       ] }),
-      /* @__PURE__ */ jsx13(Button13, { disabled: !confirmed || write.isPending, onClick: () => write.mutate({ operation: "document.review", data: { id: documentId, decision: "approved" } }), children: "\u5BA1\u6838\u901A\u8FC7\u84DD\u56FE\u7248\u672C" })
+      /* @__PURE__ */ jsx14(Button14, { disabled: !confirmed || write.isPending, onClick: () => write.mutate({ operation: "document.review", data: { id: documentId, decision: "approved" } }), children: "\u5BA1\u6838\u901A\u8FC7\u84DD\u56FE\u7248\u672C" })
     ] }),
-    saved?.status === "approved" && /* @__PURE__ */ jsx13(SlideImages, { route, blueprint: saved }, saved.id),
-    saved?.status === "approved" && /* @__PURE__ */ jsx13(ReconstructionWorkspace, { route, blueprintId: saved.id }, `reconstruction:${saved.id}`),
-    [document.error, themes.error, prompt.error, write.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx13("p", { role: "alert", children: error?.message }, index))
+    saved?.status === "approved" && /* @__PURE__ */ jsx14(SlideImages, { route, blueprint: saved }, saved.id),
+    saved?.status === "approved" && /* @__PURE__ */ jsx14(ReconstructionWorkspace, { route, blueprintId: saved.id }, `reconstruction:${saved.id}`),
+    [document.error, themes.error, prompt.error, write.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx14("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/slides-workspace.tsx
-import { Fragment as Fragment9, jsx as jsx14, jsxs as jsxs14 } from "react/jsx-runtime";
+import { Fragment as Fragment9, jsx as jsx15, jsxs as jsxs15 } from "react/jsx-runtime";
 function SlidesWorkspace({ route }) {
-  const queryClient = useQueryClient13();
-  const [courseId, setCourseId] = useState13("");
-  const [lessonId, setLessonId] = useState13("");
-  const [blueprintId, setBlueprintId] = useState13("");
-  const courses = useQuery14({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
-  const lessons = useQuery14({ queryKey: [...routeKey(route), "lessons", courseId], queryFn: () => call(route, "lesson.list", { course_id: courseId }), enabled: !!courseId });
-  const documents = useQuery14({ queryKey: [...routeKey(route), "documents", lessonId], queryFn: () => call(route, "document.list", { lesson_id: lessonId }), enabled: !!lessonId });
-  const generations = useQuery14({
+  const queryClient = useQueryClient14();
+  const [courseId, setCourseId] = useState14("");
+  const [lessonId, setLessonId] = useState14("");
+  const [blueprintId, setBlueprintId] = useState14("");
+  const courses = useQuery15({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
+  const lessons = useQuery15({ queryKey: [...routeKey(route), "lessons", courseId], queryFn: () => call(route, "lesson.list", { course_id: courseId }), enabled: !!courseId });
+  const documents = useQuery15({ queryKey: [...routeKey(route), "documents", lessonId], queryFn: () => call(route, "document.list", { lesson_id: lessonId }), enabled: !!lessonId });
+  const generations = useQuery15({
     queryKey: [...routeKey(route), "generations", lessonId],
     queryFn: () => call(route, "document.generation.list", { lesson_id: lessonId }),
     enabled: !!lessonId,
@@ -1712,7 +1836,7 @@ function SlidesWorkspace({ route }) {
   useEffect2(() => {
     if (lessonId) void queryClient.invalidateQueries({ queryKey: [...routeKey(route), "documents", lessonId] });
   }, [generationState, lessonId, queryClient, route]);
-  const generate = useMutation14({
+  const generate = useMutation15({
     mutationFn: async () => {
       const task = await call(route, "document.generation.begin", { lesson_id: lessonId, kind: "slide_blueprint", allow_model_call: true }, crypto.randomUUID());
       await queryClient.invalidateQueries({ queryKey: routeKey(route) });
@@ -1720,53 +1844,53 @@ function SlidesWorkspace({ route }) {
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: routeKey(route) })
   });
-  const reopen = useMutation14({ mutationFn: (generation) => openGeneration(route, generation) });
+  const reopen = useMutation15({ mutationFn: (generation) => openGeneration(route, generation) });
   function start(event) {
     event.preventDefault();
     generate.mutate();
   }
-  return /* @__PURE__ */ jsxs14("section", { className: "space-y-5", "aria-label": "\u6559\u5B66\u8BFE\u4EF6\u9875\u9762\u89C4\u5212", children: [
-    /* @__PURE__ */ jsx14("h2", { className: "text-lg font-semibold", children: "\u8BFE\u4EF6\u9875\u9762\u84DD\u56FE" }),
-    /* @__PURE__ */ jsx14("p", { children: "\u6309\u6559\u6750\u3001\u5DF2\u5BA1\u6838\u6388\u8BFE\u7A3F\u4E0E\u6559\u6848\u89C4\u5212\u9010\u9875\u6559\u5B66\u5185\u5BB9\uFF0C\u53EF\u9009\u4E3B\u9898\u65E0\u9700\u4EBA\u5DE5\u53C2\u8003\u56FE\u3002" }),
-    /* @__PURE__ */ jsxs14("label", { className: "grid max-w-xl gap-2", children: [
+  return /* @__PURE__ */ jsxs15("section", { className: "space-y-5", "aria-label": "\u6559\u5B66\u8BFE\u4EF6\u9875\u9762\u89C4\u5212", children: [
+    /* @__PURE__ */ jsx15("h2", { className: "text-lg font-semibold", children: "\u8BFE\u4EF6\u9875\u9762\u84DD\u56FE" }),
+    /* @__PURE__ */ jsx15("p", { children: "\u6309\u6559\u6750\u3001\u5DF2\u5BA1\u6838\u6388\u8BFE\u7A3F\u4E0E\u6559\u6848\u89C4\u5212\u9010\u9875\u6559\u5B66\u5185\u5BB9\uFF0C\u53EF\u9009\u4E3B\u9898\u65E0\u9700\u4EBA\u5DE5\u53C2\u8003\u56FE\u3002" }),
+    /* @__PURE__ */ jsxs15("label", { className: "grid max-w-xl gap-2", children: [
       "\u8BFE\u4EF6\u8BFE\u7A0B",
-      /* @__PURE__ */ jsxs14("select", { "aria-label": "\u8BFE\u4EF6\u8BFE\u7A0B", value: courseId, onChange: (event) => {
+      /* @__PURE__ */ jsxs15("select", { "aria-label": "\u8BFE\u4EF6\u8BFE\u7A0B", value: courseId, onChange: (event) => {
         setCourseId(event.target.value);
         setLessonId("");
         setBlueprintId("");
       }, children: [
-        /* @__PURE__ */ jsx14("option", { value: "", children: "\u9009\u62E9\u8BFE\u7A0B" }),
-        courses.data?.items.map((course) => /* @__PURE__ */ jsx14("option", { value: course.id, children: course.title }, course.id))
+        /* @__PURE__ */ jsx15("option", { value: "", children: "\u9009\u62E9\u8BFE\u7A0B" }),
+        courses.data?.items.map((course) => /* @__PURE__ */ jsx15("option", { value: course.id, children: course.title }, course.id))
       ] })
     ] }),
-    courseId && /* @__PURE__ */ jsxs14("label", { className: "grid max-w-xl gap-2", children: [
+    courseId && /* @__PURE__ */ jsxs15("label", { className: "grid max-w-xl gap-2", children: [
       "\u8BFE\u4EF6\u8BFE\u6B21",
-      /* @__PURE__ */ jsxs14("select", { "aria-label": "\u8BFE\u4EF6\u8BFE\u6B21", value: lessonId, onChange: (event) => {
+      /* @__PURE__ */ jsxs15("select", { "aria-label": "\u8BFE\u4EF6\u8BFE\u6B21", value: lessonId, onChange: (event) => {
         setLessonId(event.target.value);
         setBlueprintId("");
       }, children: [
-        /* @__PURE__ */ jsx14("option", { value: "", children: "\u9009\u62E9\u8BFE\u6B21" }),
-        lessons.data?.items.map((lesson) => /* @__PURE__ */ jsx14("option", { value: lesson.id, children: lesson.title }, lesson.id))
+        /* @__PURE__ */ jsx15("option", { value: "", children: "\u9009\u62E9\u8BFE\u6B21" }),
+        lessons.data?.items.map((lesson) => /* @__PURE__ */ jsx15("option", { value: lesson.id, children: lesson.title }, lesson.id))
       ] })
     ] }),
-    lessonId && /* @__PURE__ */ jsxs14(Fragment9, { children: [
-      /* @__PURE__ */ jsxs14("form", { onSubmit: start, className: "grid max-w-xl gap-3", children: [
-        /* @__PURE__ */ jsxs14("label", { className: "flex gap-2", children: [
-          /* @__PURE__ */ jsx14("input", { type: "checkbox", required: true }),
+    lessonId && /* @__PURE__ */ jsxs15(Fragment9, { children: [
+      /* @__PURE__ */ jsxs15("form", { onSubmit: start, className: "grid max-w-xl gap-3", children: [
+        /* @__PURE__ */ jsxs15("label", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsx15("input", { type: "checkbox", required: true }),
           "\u5141\u8BB8\u672C\u6B21\u7531\u539F\u751FAgent\u89C4\u5212\u8BFE\u4EF6\uFF0C\u4F7F\u7528\u8BFE\u4EF6\u9636\u6BB5\u6A21\u578B\u6216\u5F53\u524D\u6A21\u578B\uFF0C\u53EF\u80FD\u4EA7\u751F\u8D39\u7528"
         ] }),
-        /* @__PURE__ */ jsx14(Button14, { type: "submit", disabled: generate.isPending, children: "\u751F\u6210\u8BFE\u4EF6\u9875\u9762\u84DD\u56FE" })
+        /* @__PURE__ */ jsx15(Button15, { type: "submit", disabled: generate.isPending, children: "\u751F\u6210\u8BFE\u4EF6\u9875\u9762\u84DD\u56FE" })
       ] }),
-      generations.data?.items.filter((item) => item.kind === "slide_blueprint").map((item) => /* @__PURE__ */ jsxs14("p", { children: [
+      generations.data?.items.filter((item) => item.kind === "slide_blueprint").map((item) => /* @__PURE__ */ jsxs15("p", { children: [
         item.task.input.title,
         " ",
-        /* @__PURE__ */ jsx14(Button14, { variant: "secondary", disabled: reopen.isPending, onClick: () => reopen.mutate(item), children: "\u6253\u5F00\u84DD\u56FEAgent\u4F1A\u8BDD" })
+        /* @__PURE__ */ jsx15(Button15, { variant: "secondary", disabled: reopen.isPending, onClick: () => reopen.mutate(item), children: "\u6253\u5F00\u84DD\u56FEAgent\u4F1A\u8BDD" })
       ] }, item.workflow_id)),
-      /* @__PURE__ */ jsxs14("label", { className: "grid max-w-xl gap-2", children: [
+      /* @__PURE__ */ jsxs15("label", { className: "grid max-w-xl gap-2", children: [
         "\u8BFE\u4EF6\u84DD\u56FE\u7248\u672C",
-        /* @__PURE__ */ jsxs14("select", { "aria-label": "\u8BFE\u4EF6\u84DD\u56FE\u7248\u672C", value: blueprintId, onChange: (event) => setBlueprintId(event.target.value), children: [
-          /* @__PURE__ */ jsx14("option", { value: "", children: "\u9009\u62E9\u9875\u9762\u84DD\u56FE" }),
-          documents.data?.items.filter((document) => document.kind === "slide_blueprint").map((document) => /* @__PURE__ */ jsxs14("option", { value: document.id, children: [
+        /* @__PURE__ */ jsxs15("select", { "aria-label": "\u8BFE\u4EF6\u84DD\u56FE\u7248\u672C", value: blueprintId, onChange: (event) => setBlueprintId(event.target.value), children: [
+          /* @__PURE__ */ jsx15("option", { value: "", children: "\u9009\u62E9\u9875\u9762\u84DD\u56FE" }),
+          documents.data?.items.filter((document) => document.kind === "slide_blueprint").map((document) => /* @__PURE__ */ jsxs15("option", { value: document.id, children: [
             "\u9875\u9762\u84DD\u56FE \xB7 v",
             document.version,
             " \xB7 ",
@@ -1774,15 +1898,15 @@ function SlidesWorkspace({ route }) {
           ] }, document.id))
         ] })
       ] }),
-      /* @__PURE__ */ jsx14(Button14, { variant: "secondary", onClick: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }), children: "\u5237\u65B0\u8BFE\u4EF6\u8BB0\u5F55" }),
-      blueprintId && /* @__PURE__ */ jsx14(BlueprintEditor, { route, documentId: blueprintId, onVersion: setBlueprintId }, blueprintId)
+      /* @__PURE__ */ jsx15(Button15, { variant: "secondary", onClick: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }), children: "\u5237\u65B0\u8BFE\u4EF6\u8BB0\u5F55" }),
+      blueprintId && /* @__PURE__ */ jsx15(BlueprintEditor, { route, documentId: blueprintId, onVersion: setBlueprintId }, blueprintId)
     ] }),
-    [courses.error, lessons.error, documents.error, generations.error, generate.error, reopen.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx14("p", { role: "alert", children: error?.message }, index))
+    [courses.error, lessons.error, documents.error, generations.error, generate.error, reopen.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx15("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { jsx as jsx15, jsxs as jsxs15 } from "react/jsx-runtime";
+import { jsx as jsx16, jsxs as jsxs16 } from "react/jsx-runtime";
 var PAGES = [
   ["course", "\u6211\u7684\u8BFE\u7A0B"],
   ["class", "\u73ED\u7EA7"],
@@ -1795,39 +1919,39 @@ var PAGES = [
   ["settings", "\u6A21\u578B\u4E0E\u6743\u9650"]
 ];
 function TeacherWorkspace() {
-  const profile = useValue(host4.state.profile);
-  const connectionId = useValue(host4.state.connectionId);
-  const [page, setPage] = useState14("course");
-  const routing = useQuery15({
+  const profile = useValue(host5.state.profile);
+  const connectionId = useValue(host5.state.connectionId);
+  const [page, setPage] = useState15("course");
+  const routing = useQuery16({
     queryKey: ["teacher-route", connectionId, profile],
     queryFn: async () => {
-      const routes = await host4.profileRoutes();
+      const routes = await host5.profileRoutes();
       const route2 = routes.find((item) => item.connectionId === connectionId && item.profile === profile);
       if (!route2) throw new Error("\u5F53\u524D\u6559\u5E08\u914D\u7F6E\u7684 Gateway \u8DEF\u7531\u5C1A\u672A\u5C31\u7EEA");
       return route2;
     }
   });
   const route = routing.data;
-  return /* @__PURE__ */ jsxs15("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
-    /* @__PURE__ */ jsxs15("header", { className: "mb-6 space-y-2", children: [
-      /* @__PURE__ */ jsx15("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
-      /* @__PURE__ */ jsxs15("p", { children: [
+  return /* @__PURE__ */ jsxs16("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
+    /* @__PURE__ */ jsxs16("header", { className: "mb-6 space-y-2", children: [
+      /* @__PURE__ */ jsx16("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
+      /* @__PURE__ */ jsxs16("p", { children: [
         "\u5F53\u524D\u914D\u7F6E \xB7 ",
         profile,
         " \xB7 \u672C\u5730\u6559\u5B66\u6570\u636E\u4E0E Hermes \u4F1A\u8BDD\u5206\u5F00\u4FDD\u5B58"
       ] })
     ] }),
-    /* @__PURE__ */ jsx15("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx15(Button15, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
-    routing.isPending && /* @__PURE__ */ jsx15("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
-    routing.error && /* @__PURE__ */ jsx15("p", { role: "alert", children: routing.error.message }),
-    route && /* @__PURE__ */ jsxs15("div", { children: [
-      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx15(RecordEditor, { route, entity: page }),
-      page === "roster" && /* @__PURE__ */ jsx15(CourseRoster, { route }),
-      page === "tasks" && /* @__PURE__ */ jsx15(Tasks, { route }),
-      page === "textbooks" && /* @__PURE__ */ jsx15(Textbooks, { route }),
-      page === "preparation" && /* @__PURE__ */ jsx15(Preparation, { route }),
-      page === "slides" && /* @__PURE__ */ jsx15(SlidesWorkspace, { route }),
-      page === "settings" && /* @__PURE__ */ jsx15(Settings, { route })
+    /* @__PURE__ */ jsx16("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx16(Button16, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
+    routing.isPending && /* @__PURE__ */ jsx16("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
+    routing.error && /* @__PURE__ */ jsx16("p", { role: "alert", children: routing.error.message }),
+    route && /* @__PURE__ */ jsxs16("div", { children: [
+      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx16(RecordEditor, { route, entity: page }),
+      page === "roster" && /* @__PURE__ */ jsx16(CourseRoster, { route }),
+      page === "tasks" && /* @__PURE__ */ jsx16(Tasks, { route }),
+      page === "textbooks" && /* @__PURE__ */ jsx16(Textbooks, { route }),
+      page === "preparation" && /* @__PURE__ */ jsx16(Preparation, { route }),
+      page === "slides" && /* @__PURE__ */ jsx16(SlidesWorkspace, { route }),
+      page === "settings" && /* @__PURE__ */ jsx16(Settings, { route })
     ] }, `${route.connectionId}:${route.profile}:${route.targetProfile}:${page}`)
   ] });
 }
@@ -1836,7 +1960,7 @@ var plugin_default = {
   name: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0",
   register(ctx) {
     ctx.registerMany([
-      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx15(TeacherWorkspace, {}) },
+      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx16(TeacherWorkspace, {}) },
       { id: "navigation", area: SIDEBAR_NAV_AREA, data: { path: "/teacher", label: "\u6559\u5E08\u5DE5\u4F5C\u53F0", codicon: "mortar-board" } }
     ]);
   }

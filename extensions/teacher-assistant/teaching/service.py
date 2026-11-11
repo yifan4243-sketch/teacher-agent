@@ -7,7 +7,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
-from . import blueprint_models, blueprints, document_models, documents, image_analysis, image_assets, image_models, images, knowledge, knowledge_models, lessons, models, preparation, reconstruction, records, semantic, workflows
+from . import blueprint_models, blueprints, document_models, documents, image_analysis, image_assets, image_models, images, knowledge, knowledge_models, lessons, models, preparation, reconstruction, records, rendering, semantic, workflows
 from .database import database, encode
 
 
@@ -39,6 +39,8 @@ READS = {
     "slide.image.budget": (image_models.BlueprintFilter, images.budget),
     "slide.page.get": (models.Identifier, reconstruction.get_page),
     "slide.page.list": (reconstruction.PageList, reconstruction.list_pages),
+    "slide.render.get": (models.Identifier, rendering.get_job),
+    "slide.render.list": (rendering.RenderList, rendering.list_jobs),
 }
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
@@ -84,7 +86,8 @@ class TeachingService:
     def __init__(self, ctx):
         self.ctx = ctx
         self.reads = {**READS, "knowledge.semantic": (knowledge_models.SemanticSearch, partial(semantic.search, ctx=ctx))}
-        self.external_writes = {"slide.image.run": (models.Identifier, partial(images.execute, ctx=ctx))}
+        self.external_writes = {"slide.image.run": (models.Identifier, partial(images.execute, ctx=ctx)),
+                                "slide.render.run": (models.Identifier, rendering.execute)}
         self.human_writes = {
             "task.review": (models.TaskReview, workflows.review_task),
             "document.review": (document_models.DocumentReview, documents.review_document),
@@ -96,6 +99,7 @@ class TeachingService:
             "slide.image.review": (image_assets.ImageReview, image_assets.review),
             "slide.image.reserve_analysis": (image_analysis.AnalysisReserve, image_analysis.reserve),
             "slide.page.review": (reconstruction.PageReview, reconstruction.review),
+            "slide.render.begin": (rendering.RenderBegin, rendering.begin),
         }
 
     def call(self, operation, data=None, request_id=None, *, human=False, session_id=None):
@@ -121,7 +125,9 @@ class TeachingService:
         writes = {**WRITES, **self.external_writes, **(self.human_writes if human else {})}
         reads = {**self.reads, "document.file": (models.Identifier, documents.read_export),
                  "slide.image.preview": (models.Identifier, image_assets.preview),
-                 "slide.image.file": (models.Identifier, image_assets.download)} if human else self.reads
+                 "slide.image.file": (models.Identifier, image_assets.download),
+                 "slide.render.preview": (rendering.RenderAsset, rendering.preview),
+                 "slide.render.file": (rendering.RenderAsset, rendering.download)} if human else self.reads
         schema, handler = ({**reads, **writes}).get(operation, (None, None))
         if schema is None:
             raise models.DomainError("unknown_operation", "不支持的操作")

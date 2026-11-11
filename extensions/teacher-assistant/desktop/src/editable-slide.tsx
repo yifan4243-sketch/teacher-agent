@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 
 import { call, routeKey } from './api'
 import { downloadSlides, OBJECT_LABELS, PAGE_LABELS, type EditablePage } from './reconstruction-api'
+import { SlideRenderPreview } from './slide-render-preview'
 
 interface Props {
   route: PluginProfileRoute
@@ -90,6 +91,7 @@ export function EditableSlide({ route, pageId, onVersion }: Props) {
         <Button type="submit" disabled={revise.isPending}>保存页面对象为新版本</Button>
       </form>}
       <Button variant="secondary" disabled={download.isPending} onClick={() => download.mutate()}>{saved.status === 'approved' ? '下载单页可编辑PPTX' : '下载单页草稿PPTX'}</Button>
+      <SlideRenderPreview route={route} pageId={pageId} assetId={saved.asset_id} />
       {saved.status === 'draft' && <form onSubmit={approve} className="grid max-w-3xl gap-2">
         <label className="flex gap-2"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} required />已核对原生文字、图形、表格、位置及教材内容</label>
         <label>可编辑页面审核结果<select name="decision" aria-label="可编辑页面审核结果"><option value="approved">通过</option><option value="rejected">退回修订</option></select></label>

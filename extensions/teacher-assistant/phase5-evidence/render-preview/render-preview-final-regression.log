@@ -1,0 +1,32 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 8 test files (~39 tests) under ['tests\\extensions']; running with -j 8
+[  5.1% |     2/~39 | ✓2 | ✗0] ✓ tests\extensions\test_teacher_slides.py (2✓, 12.2s)
+[ 10.3% |     4/~39 | ✓4 | ✗0] ✓ tests\extensions\test_teacher_blueprints.py (2✓, 12.9s)
+[ 17.9% |     7/~39 | ✓7 | ✗0] ✓ tests\extensions\test_teacher_documents.py (3✓, 17.5s)
+[ 25.6% |    10/~39 | ✓10 | ✗ 0] ✓ tests\extensions\test_teacher_rendering.py (3✓, 19.8s)
+[ 35.9% |    14/~39 | ✓14 | ✗ 0] ✓ tests\extensions\test_teacher_reconstruction.py (4✓, 23.8s)
+[ 51.3% |    20/~39 | ✓20 | ✗ 0] ✓ tests\extensions\test_teacher_images.py (6✓, 25.3s)
+[ 71.8% |    28/~39 | ✓31 | ✗ 0] ✓ tests\extensions\test_teacher_knowledge.py (11✓, 32.4s)
+[100.0% |    39/~39 | ✓42 | ✗ 0] ✓ tests\extensions\test_teacher_foundation.py (11✓, 42.2s)
+
+=== Summary: 8 files, 42 tests passed, 0 failed (100% complete) in 42.4s (8 workers) ===
+  Durations cached to test_durations.json (8 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   8
+  Total subprocess CPU-wall: 186.1s  (runner wall: 42.4s, parallelism: 8x)
+  P50: 23.79s  P90: 42.21s  P95: 42.21s  P99: 42.21s  Max: 42.21s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     42.21s  tests\extensions\test_teacher_foundation.py
+     32.39s  tests\extensions\test_teacher_knowledge.py
+     25.34s  tests\extensions\test_teacher_images.py
+     23.79s  tests\extensions\test_teacher_reconstruction.py
+     19.85s  tests\extensions\test_teacher_rendering.py
+     17.50s  tests\extensions\test_teacher_documents.py
+     12.88s  tests\extensions\test_teacher_blueprints.py
+     12.16s  tests\extensions\test_teacher_slides.py

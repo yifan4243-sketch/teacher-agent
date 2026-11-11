@@ -312,6 +312,39 @@ print(json.dumps({'pages': 1, 'objects': len(slide.shapes), 'independent_image_c
 `, home, pptxPath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
     expect(pptxProbe.status, pptxProbe.stderr).toBe(0)
     writeFileSync(testInfo.outputPath('pptx-receipt.json'), pptxProbe.stdout)
+    const renderPanel = reconstruction.getByRole('region', { name: '实际渲染与设计图对照', exact: true })
+    await renderPanel.getByRole('button', { name: '生成实际页面预览', exact: true }).click()
+    await expect(renderPanel.getByText(/渲染完成 · WPS演示/)).toBeVisible({ timeout: 120000 })
+    await renderPanel.getByRole('button', { name: '查看渲染对照', exact: true }).click()
+    await expect(renderPanel.getByAltText('原始设计图', { exact: true })).toBeVisible()
+    await expect(renderPanel.getByAltText('PPTX实际渲染图', { exact: true })).toBeVisible()
+    await expect(renderPanel.getByAltText('像素差异图', { exact: true })).toBeVisible()
+    const renderedPath = testInfo.outputPath('actual-render.png')
+    await app.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }) }, renderedPath)
+    await renderPanel.getByRole('button', { name: '下载实际渲染PNG', exact: true }).click()
+    await expect.poll(() => existsSync(renderedPath)).toBe(true)
+    const renderProbe = spawnSync(python, ['-c', `
+import hashlib, json, sqlite3, sys
+from pathlib import Path
+from PIL import Image
+home, output = map(Path, sys.argv[1:])
+with sqlite3.connect(home / 'plugin-data/teacher-assistant/teaching.db') as conn:
+    conn.row_factory = sqlite3.Row
+    row = dict(conn.execute('SELECT * FROM slide_render_jobs').fetchone())
+    export = dict(conn.execute('SELECT * FROM slide_deck_exports WHERE id=?', (row['export_id'],)).fetchone())
+assert row['state'] == 'succeeded'
+assert hashlib.sha256(output.read_bytes()).hexdigest() == row['sha256']
+with Image.open(output) as image:
+    assert image.size == (1600,900) and image.format == 'PNG'
+comparison = json.loads(row['comparison_json'])
+assert comparison['pptx_sha256'] == export['sha256']
+assert hashlib.sha256(Path(export['stored_path']).read_bytes()).hexdigest() == export['sha256']
+assert 0 <= comparison['mean_absolute_rgb_error'] <= 255
+print(json.dumps({'renderer': row['renderer'], 'renderer_version': row['renderer_version'], 'sha256': row['sha256'], 'comparison': comparison, 'input_unchanged': True}, ensure_ascii=False))
+`, home, renderedPath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(renderProbe.status, renderProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('render-receipt.json'), renderProbe.stdout)
+    await page.screenshot({ path: testInfo.outputPath('teacher-render-comparison.jpg'), type: 'jpeg', quality: 85 })
     await reconstruction.getByRole('button', { name: '下载完整可编辑PPTX', exact: true }).click()
     await expect(reconstruction.getByRole('alert').filter({ hasText: '第2页尚无已审核的可编辑版本' })).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('teacher-editable-page.png') })

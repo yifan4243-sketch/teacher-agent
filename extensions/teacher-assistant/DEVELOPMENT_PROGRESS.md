@@ -37,6 +37,8 @@ Phase 4图片模块已接入原生image_generate、预算预留、持久认领�
 
 独立图片区域现已接入元素模型和Desktop。导出核对真实设计图来源，仅嵌入指定裁切区域，可修改原图裁切和目标位置、大小。已有四类元素布局继续支持，重新识别可由教师显式另计费用。图片面积采用小于90%的当前实现约束，见PHASE5_IMAGE_REGIONS_CHECKPOINT.md。渲染预览、差异、修复和结构化备用路线继续实施。
 
+schema 9已接入实际办公软件渲染任务、历史记录、三图对照、RGB绝对差指标和PNG下载。WPS 12.0已通过原生Desktop完整链路验证，使用独立PPTX副本保持输入文件哈希。公开入口查找PowerShell，PowerPoint适配器待对应环境验证。自动修复、结构化备用路线和真实模型质量继续实施。
+
 ## 最近成功测试
 
 Phase 2 的 `teacher-regression-final.log` 为24通过、0失败。`desktop-knowledge-retry.log` 为1项真实Electron、Gateway与SQLite端到端测试通过，包含上传、检索、教师复核、章节修订及刷新持久性。TypeScript成功退出。原始日志位于 `E:\TeacherAgentData\phase2-evidence`。Phase 1 的59通过、1平台跳过记录继续保留。
@@ -48,6 +50,8 @@ Phase 4首个模块的蓝图与文档测试5项通过。Desktop蓝图集成1项�
 图片任务模块加入后，完整教师插件35项通过。TypeScript、插件校验和仓库15项检查通过。最终Desktop回归通过批量生图分发、独立视觉提取、差异提示、高清下载与哈希、教师复核、缓存和取消，输入为系统曾实际生成的图片，服务响应来自离线测试提供者。完整记录见 `PHASE4_IMAGES_CHECKPOINT.md`。
 
 可编辑集成模块加入后，完整教师插件38项通过。Desktop已通过布局导入、v2文字修订、页面审核、真实PPTX下载、32个原生对象与0位图核验，以及完整课件缺页拦截。WPS进一步验证标题、圆形和表格的实际编辑与另存，证据见 `PHASE5_RECONSTRUCTION_CHECKPOINT.md`。
+
+加入独立图片与实际渲染后，完整教师插件42项通过。Desktop通过含裁切图片的v3页面、WPS真实渲染、原图与差异对照、原生PNG下载和哈希核验，详见PHASE5_IMAGE_REGIONS_CHECKPOINT.md及PHASE5_RENDER_PREVIEW_CHECKPOINT.md。
 
 ## 恢复入口
 

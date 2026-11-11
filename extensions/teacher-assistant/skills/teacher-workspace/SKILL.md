@@ -45,6 +45,12 @@ response, and use a new ID for a changed command.
   `objectives`, `period_minutes`, `period_count` and `break_minutes`.
 - A `course.update` payload requires `id`, current `version` and changed fields.
 - A `task.create` payload has `kind="course_setup"` and a `course` object.
+- `plan.save`, `plan.get` and `plan.list` calculate and persist actual semester
+  dates. Read the schema for dates, weekly slots, exclusions and chapter weights.
+  Weekdays use Monday=0, Sunday=6; local times currently use Asia/Shanghai.
+  Reference real chapters from the chosen textbook version. Omitted chapters
+  use top-level chapters, while an explicit selection must contain at least one.
+  Recalculation passes the latest plan ID as parent_id and preserves old versions.
 
 ## Procedure
 
@@ -60,6 +66,11 @@ response, and use a new ID for a changed command.
 7. On a failed task, inspect the error before using `task.retry`.
 8. Student access is disabled for Agent tools by default. The teacher must
    grant it explicitly. Keep student information local.
+9. Calculate plans only from the teacher's actual semester dates, weekly slots
+   and school closures. Distinguish teaching minutes, break time, calendar span
+   and independent exam duration. Plan calculation does not activate reminders
+   or publish a calendar. Never describe this calculation step as a completed
+   scheduling and notification workflow.
 
 ## Pitfalls
 

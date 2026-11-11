@@ -67,7 +67,6 @@ def test_template_render_has_no_fake_reference_or_pixel_difference(render_worksp
 
 def test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports(render_workspace, monkeypatch):
     call, page, adapter, _, _, rendered = render_workspace
-    module = importlib.import_module(adapter.__package__ + ".reconstruction_schema")
     database = importlib.import_module(adapter.__package__ + ".database")
     saved(call, "slide.page.review", {"id": page["id"], "decision": "approved", "note": "legacy approval"})
     monkeypatch.setattr(adapter, "render", lambda *args: (rendered, {"version": "fixture", "measurements": [{
@@ -82,24 +81,34 @@ def test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports(
         snapshot = {table: [tuple(row) for row in conn.execute(f"SELECT * FROM {table}")] for table in tables}
         before_pages = [dict(row) for row in conn.execute("SELECT * FROM slide_pages ORDER BY version")]
         hashes = {row["stored_path"]: row["sha256"] for row in conn.execute("SELECT * FROM slide_deck_exports")}
-    # Recreate the actual schema-10 table while retaining the surrounding populated database.
-    with sqlite3.connect(path) as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute("DROP TABLE slide_job_references")
-        conn.execute("DROP TABLE slide_references")
-        conn.execute(module.SCHEMA[0].replace("CREATE TABLE slide_pages (", "CREATE TABLE slide_pages_legacy ("))
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(slide_pages_legacy)")]
-        names = ",".join(columns)
-        conn.execute(f"INSERT INTO slide_pages_legacy({names}) SELECT {names} FROM slide_pages")
-        conn.execute("DROP TABLE slide_pages")
-        conn.execute("ALTER TABLE slide_pages_legacy RENAME TO slide_pages")
+    # Build the real legacy schema, copying only its columns from the populated modern database.
+    legacy = Path(path).with_name("schema-10-fixture.db")
+    with sqlite3.connect(legacy) as conn:
+        for migration in (database.SCHEMA, database.KNOWLEDGE_SCHEMA, database.DOCUMENT_SCHEMA, database.SLIDE_SCHEMA,
+                          database.IMAGE_SCHEMA, database.IMAGE_ASSET_SCHEMA, database.IMAGE_ANALYSIS_SCHEMA,
+                          database.RECONSTRUCTION_SCHEMA, database.RENDER_SCHEMA, database.REPAIR_SCHEMA):
+            for statement in migration:
+                conn.execute(statement)
+        conn.execute("ATTACH DATABASE ? AS modern", (path,))
+        tables_to_copy = [row[0] for row in conn.execute("SELECT name FROM main.sqlite_master WHERE type='table'")
+                          if not row[0].startswith(("sqlite_", "source_fts_"))]
+        for table in tables_to_copy:
+            columns = ",".join(row[1] for row in conn.execute(f'PRAGMA main.table_info("{table}")'))
+            conn.execute(f'INSERT INTO main."{table}"({columns}) SELECT {columns} FROM modern."{table}"')
         conn.execute("PRAGMA user_version=10")
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
+
+    def legacy_connection(*_args):
+        conn = sqlite3.connect(legacy)
+        conn.execute("PRAGMA foreign_keys=ON")
+        return conn
+
+    monkeypatch.setattr(database, "plugin_db", legacy_connection)
     original_migration = database.TEMPLATE_SCHEMA
     monkeypatch.setattr(database, "TEMPLATE_SCHEMA", (*original_migration, "SELECT nonexistent_migration_table.id FROM nonexistent_migration_table"))
     with pytest.raises(sqlite3.OperationalError):
         call("slide.page.get", {"id": repaired["id"]})
-    with sqlite3.connect(path) as conn:
+    with sqlite3.connect(legacy) as conn:
         assert conn.execute("PRAGMA user_version").fetchone()[0] == 10
         assert "source_mode" not in {row[1] for row in conn.execute("PRAGMA table_info(slide_pages)")}
         assert conn.execute("SELECT COUNT(*) FROM slide_pages").fetchone()[0] == len(before_pages)

@@ -11,6 +11,7 @@ from . import blueprint_models, blueprints, document_models, documents, image_an
 from .database import database, encode
 from . import template_slides
 from . import slide_references
+from . import planning, planning_models
 
 
 READS = {
@@ -44,9 +45,12 @@ READS = {
     "slide.page.list": (reconstruction.PageList, reconstruction.list_pages),
     "slide.render.get": (models.Identifier, rendering.get_job),
     "slide.render.list": (rendering.RenderList, rendering.list_jobs),
+    "plan.get": (models.Identifier, planning.get_plan),
+    "plan.list": (models.CourseFilter, planning.list_plans),
 }
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
+    "plan.save": (planning_models.PlanSave, planning.save),
     "course.update": (models.CourseUpdate, partial(records.update_record, entity="course")),
     "class.create": (models.ClassCreate, partial(records.create_record, entity="class")),
     "class.update": (models.ClassUpdate, partial(records.update_record, entity="class")),
@@ -157,7 +161,7 @@ class TeachingService:
                 raise models.DomainError("permission_denied", "课程创建权限已禁用，任务不能代为创建课程")
             if not isinstance(request_id, str) or not 1 <= len(request_id) <= 128:
                 raise models.DomainError("invalid_request_id", "写操作需要 1–128 字符的 request_id")
-            fingerprint = hashlib.sha256(encode(payload.model_dump()).encode("utf-8")).hexdigest()
+            fingerprint = hashlib.sha256(encode(payload.model_dump(mode="json")).encode("utf-8")).hexdigest()
             conn.execute("BEGIN IMMEDIATE")
             receipt = conn.execute("SELECT * FROM command_receipts WHERE request_id=?", (request_id,)).fetchone()
             if receipt:

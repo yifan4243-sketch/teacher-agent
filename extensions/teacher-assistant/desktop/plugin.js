@@ -1,8 +1,8 @@
 // Generated from desktop/src by scripts/build_desktop.mjs.
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { Button as Button17, host as host6, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery17, useValue } from "@hermes/plugin-sdk";
-import { useState as useState16 } from "react";
+import { Button as Button18, host as host6, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery18, useValue } from "@hermes/plugin-sdk";
+import { useState as useState17 } from "react";
 
 // extensions/teacher-assistant/desktop/src/records.tsx
 import { Button, Input, useMutation, useQuery, useQueryClient } from "@hermes/plugin-sdk";
@@ -2093,8 +2093,221 @@ function SlidesWorkspace({ route }) {
   ] });
 }
 
-// extensions/teacher-assistant/desktop/src/plugin.tsx
+// extensions/teacher-assistant/desktop/src/planning.tsx
+import { Button as Button17, useMutation as useMutation17, useQuery as useQuery17, useQueryClient as useQueryClient16 } from "@hermes/plugin-sdk";
+import { useState as useState16 } from "react";
 import { jsx as jsx17, jsxs as jsxs17 } from "react/jsx-runtime";
+var KINDS = { teaching: "\u6559\u5B66", practice: "\u7EC3\u4E60", review: "\u590D\u4E60", exam: "\u8003\u6838", assessment: "\u8003\u6838", break: "\u4F11\u606F" };
+function PlanForm({ route, courseId, book, plan, onSaved }) {
+  const config = plan?.config;
+  const [slots, setSlots] = useState16(config?.weekly_slots ?? [{ weekday: 0, start_time: "" }]);
+  const save = useMutation17({ mutationFn: (data) => call(route, "plan.save", data, crypto.randomUUID()), onSuccess: onSaved });
+  function submit(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    save.mutate({
+      course_id: courseId,
+      textbook_version_id: book.id,
+      title: String(form.get("title")),
+      start_date: form.get("start_date"),
+      end_date: form.get("end_date"),
+      weekly_slots: slots,
+      excluded_dates: String(form.get("excluded_dates")).split(/[\s,，]+/).filter(Boolean),
+      chapters: book.chapters.filter((chapter) => form.has(`chapter-${chapter.id}`)).map((chapter) => ({ chapter_id: chapter.id, difficulty: Number(form.get(`weight-${chapter.id}`)) })),
+      practice_sessions: Number(form.get("practice_sessions")),
+      review_sessions: Number(form.get("review_sessions")),
+      exam_sessions: Number(form.get("exam_sessions")),
+      exam_minutes: Number(form.get("exam_minutes")),
+      parent_id: plan?.id ?? null
+    });
+  }
+  return /* @__PURE__ */ jsxs17("form", { onSubmit: submit, className: "grid max-w-4xl gap-3", children: [
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u5B66\u671F\u8BA1\u5212\u540D\u79F0",
+      /* @__PURE__ */ jsx17("input", { name: "title", "aria-label": "\u5B66\u671F\u8BA1\u5212\u540D\u79F0", defaultValue: config?.title, maxLength: 200, required: true })
+    ] }),
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u5B66\u671F\u5F00\u59CB\u65E5\u671F",
+      /* @__PURE__ */ jsx17("input", { type: "date", name: "start_date", "aria-label": "\u5B66\u671F\u5F00\u59CB\u65E5\u671F", defaultValue: config?.start_date, required: true })
+    ] }),
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u5B66\u671F\u7ED3\u675F\u65E5\u671F",
+      /* @__PURE__ */ jsx17("input", { type: "date", name: "end_date", "aria-label": "\u5B66\u671F\u7ED3\u675F\u65E5\u671F", defaultValue: config?.end_date, required: true })
+    ] }),
+    /* @__PURE__ */ jsxs17("fieldset", { className: "grid gap-2", children: [
+      /* @__PURE__ */ jsx17("legend", { children: "\u6BCF\u5468\u6388\u8BFE\u65F6\u6BB5 \xB7 \u5317\u4EAC\u65F6\u95F4" }),
+      slots.map((slot, index) => /* @__PURE__ */ jsxs17("div", { className: "flex flex-wrap gap-2", children: [
+        /* @__PURE__ */ jsxs17("label", { children: [
+          "\u661F\u671F",
+          /* @__PURE__ */ jsx17("select", { "aria-label": `\u6388\u8BFE\u661F\u671F ${index + 1}`, value: slot.weekday, onChange: (event) => setSlots(slots.map((item, i) => i === index ? { ...item, weekday: Number(event.target.value) } : item)), children: ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"].map((day, i) => /* @__PURE__ */ jsxs17("option", { value: i, children: [
+            "\u661F\u671F",
+            day
+          ] }, i)) })
+        ] }),
+        /* @__PURE__ */ jsxs17("label", { children: [
+          "\u5F00\u59CB\u65F6\u95F4",
+          /* @__PURE__ */ jsx17("input", { type: "time", "aria-label": `\u6388\u8BFE\u5F00\u59CB\u65F6\u95F4 ${index + 1}`, value: slot.start_time, onChange: (event) => setSlots(slots.map((item, i) => i === index ? { ...item, start_time: event.target.value } : item)), required: true })
+        ] }),
+        /* @__PURE__ */ jsx17(Button17, { type: "button", variant: "secondary", disabled: slots.length === 1, onClick: () => setSlots(slots.filter((_, i) => i !== index)), children: "\u79FB\u9664\u6B64\u6388\u8BFE\u65F6\u6BB5" })
+      ] }, index)),
+      /* @__PURE__ */ jsx17(Button17, { type: "button", variant: "secondary", disabled: slots.length >= 30, onClick: () => setSlots([...slots, { weekday: 0, start_time: "" }]), children: "\u589E\u52A0\u6BCF\u5468\u6388\u8BFE\u65F6\u6BB5" })
+    ] }),
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u505C\u8BFE\u65E5\u671F\uFF08\u6BCF\u884C\u4E00\u4E2AYYYY-MM-DD\uFF09",
+      /* @__PURE__ */ jsx17("textarea", { name: "excluded_dates", "aria-label": "\u505C\u8BFE\u65E5\u671F", defaultValue: config?.excluded_dates.join("\n") })
+    ] }),
+    /* @__PURE__ */ jsxs17("fieldset", { className: "grid gap-2", children: [
+      /* @__PURE__ */ jsx17("legend", { children: "\u7AE0\u8282\u4E0E\u96BE\u5EA6\u6743\u91CD \xB7 \u8BF7\u52FF\u540C\u65F6\u9009\u7236\u7AE0\u8282\u548C\u5B50\u7AE0\u8282" }),
+      book.chapters.map((chapter) => /* @__PURE__ */ jsxs17("div", { className: "flex flex-wrap gap-2", children: [
+        /* @__PURE__ */ jsxs17("label", { children: [
+          /* @__PURE__ */ jsx17("input", { type: "checkbox", name: `chapter-${chapter.id}`, defaultChecked: config?.chapters.length ? config.chapters.some((item) => item.chapter_id === chapter.id) : !chapter.parent_id }),
+          chapter.title
+        ] }),
+        /* @__PURE__ */ jsxs17("label", { children: [
+          "\u96BE\u5EA6",
+          /* @__PURE__ */ jsx17("input", { type: "number", "aria-label": `\u7AE0\u8282\u96BE\u5EA6 ${chapter.title}`, name: `weight-${chapter.id}`, min: "1", max: "10", defaultValue: config?.chapters.find((item) => item.chapter_id === chapter.id)?.difficulty ?? 1, required: true })
+        ] })
+      ] }, chapter.id))
+    ] }),
+    [["practice_sessions", "\u7EFC\u5408\u7EC3\u4E60\u8BFE\u6B21"], ["review_sessions", "\u590D\u4E60\u8BFE\u6B21"], ["exam_sessions", "\u8003\u6838\u8BFE\u6B21"]].map(([field, label]) => /* @__PURE__ */ jsxs17("label", { children: [
+      label,
+      /* @__PURE__ */ jsx17("input", { type: "number", name: field, "aria-label": label, min: "0", max: field === "exam_sessions" ? 20 : 100, defaultValue: config?.[field] ?? 0, required: true })
+    ] }, field)),
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u6BCF\u6B21\u8003\u6838\u65F6\u957F\uFF08\u5206\u949F\uFF09",
+      /* @__PURE__ */ jsx17("input", { type: "number", name: "exam_minutes", "aria-label": "\u6BCF\u6B21\u8003\u6838\u65F6\u957F\uFF08\u5206\u949F\uFF09", min: "1", max: "480", defaultValue: config?.exam_minutes ?? 90, required: true })
+    ] }),
+    /* @__PURE__ */ jsx17(Button17, { type: "submit", disabled: save.isPending, children: plan ? "\u91CD\u65B0\u8BA1\u7B97\u5E76\u4FDD\u5B58\u65B0\u7248\u672C" : "\u8BA1\u7B97\u5E76\u4FDD\u5B58\u5B66\u671F\u8BA1\u5212" }),
+    save.error && /* @__PURE__ */ jsx17("p", { role: "alert", children: save.error.message })
+  ] });
+}
+function PlanResults({ plan }) {
+  const [group, setGroup] = useState16("all");
+  const allowed = group === "all" ? null : group.startsWith("month:") ? plan.months[group.slice(6)] : plan.weeks[group.slice(5)];
+  return /* @__PURE__ */ jsxs17("section", { "aria-label": "\u5B66\u671F\u8BA1\u5212\u8BA1\u7B97\u7ED3\u679C", className: "space-y-3", children: [
+    /* @__PURE__ */ jsxs17("h3", { children: [
+      plan.title,
+      " \xB7 v",
+      plan.version
+    ] }),
+    /* @__PURE__ */ jsxs17("p", { role: "status", children: [
+      "\u8BFE\u6B21",
+      plan.totals.sessions,
+      " \xB7 \u5B9E\u9645\u6559\u5B66",
+      plan.totals.instruction_minutes,
+      "\u5206\u949F \xB7 \u65E5\u5386\u5360\u7528",
+      plan.totals.calendar_minutes,
+      "\u5206\u949F \xB7 \u8003\u6838",
+      plan.totals.assessment_minutes,
+      "\u5206\u949F"
+    ] }),
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u8BA1\u5212\u8303\u56F4",
+      /* @__PURE__ */ jsxs17("select", { "aria-label": "\u8BA1\u5212\u8303\u56F4", value: group, onChange: (event) => setGroup(event.target.value), children: [
+        /* @__PURE__ */ jsx17("option", { value: "all", children: "\u5168\u5B66\u671F" }),
+        Object.keys(plan.months).map((month) => /* @__PURE__ */ jsxs17("option", { value: `month:${month}`, children: [
+          "\u6708\u5EA6 ",
+          month
+        ] }, month)),
+        Object.keys(plan.weeks).map((week) => /* @__PURE__ */ jsxs17("option", { value: `week:${week}`, children: [
+          "\u6BCF\u5468 ",
+          week
+        ] }, week))
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs17("table", { children: [
+      /* @__PURE__ */ jsx17("thead", { children: /* @__PURE__ */ jsxs17("tr", { children: [
+        /* @__PURE__ */ jsx17("th", { children: "\u8BFE\u6B21" }),
+        /* @__PURE__ */ jsx17("th", { children: "\u5F00\u59CB/\u7ED3\u675F" }),
+        /* @__PURE__ */ jsx17("th", { children: "\u5185\u5BB9" }),
+        /* @__PURE__ */ jsx17("th", { children: "\u6559\u5B66\u4E0E\u4F11\u606F" })
+      ] }) }),
+      /* @__PURE__ */ jsx17("tbody", { children: plan.sessions.filter((session) => !allowed || allowed.includes(session.id)).map((session) => /* @__PURE__ */ jsxs17("tr", { children: [
+        /* @__PURE__ */ jsx17("td", { children: session.ordinal }),
+        /* @__PURE__ */ jsxs17("td", { children: [
+          session.starts_at.replace("T", " "),
+          /* @__PURE__ */ jsx17("br", {}),
+          session.ends_at.replace("T", " ")
+        ] }),
+        /* @__PURE__ */ jsxs17("td", { children: [
+          KINDS[session.kind],
+          " \xB7 ",
+          session.title
+        ] }),
+        /* @__PURE__ */ jsx17("td", { children: session.periods.map((part, index) => /* @__PURE__ */ jsxs17("p", { children: [
+          KINDS[part.kind],
+          " ",
+          part.start.slice(11, 16),
+          "\u2013",
+          part.end.slice(11, 16)
+        ] }, index)) })
+      ] }, session.id)) })
+    ] })
+  ] });
+}
+function Planning({ route }) {
+  const queryClient = useQueryClient16();
+  const [courseId, setCourseId] = useState16("");
+  const [bookId, setBookId] = useState16("");
+  const [planId, setPlanId] = useState16("");
+  const courses = useQuery17({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
+  const books = useQuery17({ queryKey: [...routeKey(route), "books", courseId], queryFn: () => call(route, "textbook.list", { course_id: courseId }), enabled: !!courseId });
+  const plans = useQuery17({ queryKey: [...routeKey(route), "semester-plans", courseId], queryFn: () => call(route, "plan.list", { course_id: courseId }), enabled: !!courseId });
+  const plan = useQuery17({ queryKey: [...routeKey(route), "semester-plan", planId], queryFn: () => call(route, "plan.get", { id: planId }), enabled: !!planId });
+  const book = useQuery17({ queryKey: [...routeKey(route), "book-version", bookId], queryFn: () => call(route, "textbook.version", { id: bookId }), enabled: !!bookId });
+  function selectPlan(id) {
+    setPlanId(id);
+    if (id) setBookId(plans.data?.items.find((item) => item.id === id)?.textbook_version_id ?? "");
+  }
+  async function saved(updated) {
+    await queryClient.invalidateQueries({ queryKey: [...routeKey(route), "semester-plans"] });
+    setPlanId(updated.id);
+  }
+  return /* @__PURE__ */ jsxs17("section", { "aria-label": "\u6559\u5B66\u8BA1\u5212", className: "space-y-4", children: [
+    /* @__PURE__ */ jsx17("h2", { className: "text-xl font-semibold", children: "\u5B66\u671F\u3001\u6708\u5EA6\u4E0E\u6BCF\u5468\u6559\u5B66\u8BA1\u5212" }),
+    /* @__PURE__ */ jsx17("p", { children: "\u4F9D\u636E\u5B9E\u9645\u65E5\u671F\u4E0E\u505C\u8BFE\u5B89\u6392\u8BA1\u7B97\uFF0C\u8BFE\u7A0B\u6559\u5B66\u548C\u8BFE\u95F4\u5206\u5F00\u8BA1\u65F6\u3002\u91CD\u65B0\u8BA1\u7B97\u4FDD\u7559\u65E7\u7248\u672C\uFF1B\u5F53\u524D\u8BA1\u7B97\u7ED3\u679C\u5C1A\u672A\u53D1\u5E03\u81F3\u63D0\u9192\u548C\u65E5\u5386\u3002" }),
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u8BA1\u5212\u6240\u5C5E\u8BFE\u7A0B",
+      /* @__PURE__ */ jsxs17("select", { "aria-label": "\u8BA1\u5212\u6240\u5C5E\u8BFE\u7A0B", value: courseId, onChange: (event) => {
+        setCourseId(event.target.value);
+        setBookId("");
+        setPlanId("");
+      }, children: [
+        /* @__PURE__ */ jsx17("option", { value: "", children: "\u9009\u62E9\u8BFE\u7A0B" }),
+        courses.data?.items.map((course) => /* @__PURE__ */ jsx17("option", { value: course.id, children: course.title }, course.id))
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u8BA1\u5212\u7248\u672C",
+      /* @__PURE__ */ jsxs17("select", { "aria-label": "\u8BA1\u5212\u7248\u672C", value: planId, onChange: (event) => selectPlan(event.target.value), children: [
+        /* @__PURE__ */ jsx17("option", { value: "", children: "\u5EFA\u7ACB\u65B0\u8BA1\u5212" }),
+        plans.data?.items.map((item) => /* @__PURE__ */ jsxs17("option", { value: item.id, children: [
+          item.title,
+          " \xB7 v",
+          item.version
+        ] }, item.id))
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs17("label", { children: [
+      "\u8BA1\u5212\u6559\u6750\u7248\u672C",
+      /* @__PURE__ */ jsxs17("select", { "aria-label": "\u8BA1\u5212\u6559\u6750\u7248\u672C", value: bookId, onChange: (event) => setBookId(event.target.value), children: [
+        /* @__PURE__ */ jsx17("option", { value: "", children: "\u9009\u62E9\u6559\u6750\u7248\u672C" }),
+        books.data?.items.flatMap((book2) => book2.versions.map((version) => /* @__PURE__ */ jsxs17("option", { value: version.id, children: [
+          book2.title,
+          " \xB7 v",
+          version.version
+        ] }, version.id)))
+      ] })
+    ] }),
+    planId && plan.isPending && /* @__PURE__ */ jsx17("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u8BA1\u5212\u7248\u672C" }),
+    book.data && (!planId || plan.data) && /* @__PURE__ */ jsx17(PlanForm, { route, courseId, book: book.data, plan: plan.data, onSaved: saved }, `${planId}:${bookId}`),
+    plan.data && /* @__PURE__ */ jsx17(PlanResults, { plan: plan.data }, planId),
+    [courses.error, books.error, plans.error, plan.error, book.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx17("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+
+// extensions/teacher-assistant/desktop/src/plugin.tsx
+import { jsx as jsx18, jsxs as jsxs18 } from "react/jsx-runtime";
 var PAGES = [
   ["course", "\u6211\u7684\u8BFE\u7A0B"],
   ["class", "\u73ED\u7EA7"],
@@ -2103,14 +2316,15 @@ var PAGES = [
   ["textbooks", "\u6559\u6750\u77E5\u8BC6\u5E93"],
   ["preparation", "\u6388\u8BFE\u7A3F\u4E0E\u6559\u6848"],
   ["slides", "\u8BFE\u4EF6\u9875\u9762\u84DD\u56FE"],
+  ["planning", "\u6559\u5B66\u8BA1\u5212"],
   ["tasks", "\u4EFB\u52A1\u4E0E\u5BA1\u6279"],
   ["settings", "\u6A21\u578B\u4E0E\u6743\u9650"]
 ];
 function TeacherWorkspace() {
   const profile = useValue(host6.state.profile);
   const connectionId = useValue(host6.state.connectionId);
-  const [page, setPage] = useState16("course");
-  const routing = useQuery17({
+  const [page, setPage] = useState17("course");
+  const routing = useQuery18({
     queryKey: ["teacher-route", connectionId, profile],
     queryFn: async () => {
       const routes = await host6.profileRoutes();
@@ -2120,26 +2334,27 @@ function TeacherWorkspace() {
     }
   });
   const route = routing.data;
-  return /* @__PURE__ */ jsxs17("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
-    /* @__PURE__ */ jsxs17("header", { className: "mb-6 space-y-2", children: [
-      /* @__PURE__ */ jsx17("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
-      /* @__PURE__ */ jsxs17("p", { children: [
+  return /* @__PURE__ */ jsxs18("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
+    /* @__PURE__ */ jsxs18("header", { className: "mb-6 space-y-2", children: [
+      /* @__PURE__ */ jsx18("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
+      /* @__PURE__ */ jsxs18("p", { children: [
         "\u5F53\u524D\u914D\u7F6E \xB7 ",
         profile,
         " \xB7 \u672C\u5730\u6559\u5B66\u6570\u636E\u4E0E Hermes \u4F1A\u8BDD\u5206\u5F00\u4FDD\u5B58"
       ] })
     ] }),
-    /* @__PURE__ */ jsx17("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx17(Button17, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
-    routing.isPending && /* @__PURE__ */ jsx17("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
-    routing.error && /* @__PURE__ */ jsx17("p", { role: "alert", children: routing.error.message }),
-    route && /* @__PURE__ */ jsxs17("div", { children: [
-      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx17(RecordEditor, { route, entity: page }),
-      page === "roster" && /* @__PURE__ */ jsx17(CourseRoster, { route }),
-      page === "tasks" && /* @__PURE__ */ jsx17(Tasks, { route }),
-      page === "textbooks" && /* @__PURE__ */ jsx17(Textbooks, { route }),
-      page === "preparation" && /* @__PURE__ */ jsx17(Preparation, { route }),
-      page === "slides" && /* @__PURE__ */ jsx17(SlidesWorkspace, { route }),
-      page === "settings" && /* @__PURE__ */ jsx17(Settings, { route })
+    /* @__PURE__ */ jsx18("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx18(Button18, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
+    routing.isPending && /* @__PURE__ */ jsx18("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
+    routing.error && /* @__PURE__ */ jsx18("p", { role: "alert", children: routing.error.message }),
+    route && /* @__PURE__ */ jsxs18("div", { children: [
+      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx18(RecordEditor, { route, entity: page }),
+      page === "roster" && /* @__PURE__ */ jsx18(CourseRoster, { route }),
+      page === "tasks" && /* @__PURE__ */ jsx18(Tasks, { route }),
+      page === "textbooks" && /* @__PURE__ */ jsx18(Textbooks, { route }),
+      page === "preparation" && /* @__PURE__ */ jsx18(Preparation, { route }),
+      page === "slides" && /* @__PURE__ */ jsx18(SlidesWorkspace, { route }),
+      page === "planning" && /* @__PURE__ */ jsx18(Planning, { route }),
+      page === "settings" && /* @__PURE__ */ jsx18(Settings, { route })
     ] }, `${route.connectionId}:${route.profile}:${route.targetProfile}:${page}`)
   ] });
 }
@@ -2148,7 +2363,7 @@ var plugin_default = {
   name: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0",
   register(ctx) {
     ctx.registerMany([
-      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx17(TeacherWorkspace, {}) },
+      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx18(TeacherWorkspace, {}) },
       { id: "navigation", area: SIDEBAR_NAV_AREA, data: { path: "/teacher", label: "\u6559\u5E08\u5DE5\u4F5C\u53F0", codicon: "mortar-board" } }
     ]);
   }

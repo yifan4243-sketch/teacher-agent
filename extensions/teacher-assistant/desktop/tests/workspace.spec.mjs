@@ -508,6 +508,49 @@ print(json.dumps({'reference_id':reference['id'],'sha256':reference['sha256'],'a
     await page.getByLabel('教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v1 · UI教材.txt' })
     await expect(page.getByLabel('章节名称 1.1 已复核技术参数', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: '更新确认', exact: true })).toHaveCount(1)
+    await page.getByRole('button', { name: '教学计划', exact: true }).click()
+    const planning = page.getByRole('region', { name: '教学计划', exact: true })
+    await planning.getByLabel('计划所属课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
+    await planning.getByLabel('计划教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v1' })
+    await planning.getByLabel('学期计划名称', { exact: true }).fill('UI实际日期测试学期')
+    await planning.getByLabel('学期开始日期', { exact: true }).fill('2026-11-02')
+    await planning.getByLabel('学期结束日期', { exact: true }).fill('2026-11-30')
+    await planning.getByLabel('授课开始时间 1', { exact: true }).fill('08:20')
+    await planning.getByRole('button', { name: '增加每周授课时段', exact: true }).click()
+    await planning.getByLabel('授课星期 2', { exact: true }).selectOption('2')
+    await planning.getByLabel('授课开始时间 2', { exact: true }).fill('14:00')
+    await planning.getByLabel('停课日期', { exact: true }).fill('2026-11-11')
+    await planning.getByLabel('综合练习课次', { exact: true }).fill('1')
+    await planning.getByLabel('复习课次', { exact: true }).fill('1')
+    await planning.getByLabel('考核课次', { exact: true }).fill('1')
+    await planning.getByLabel('每次考核时长（分钟）', { exact: true }).fill('120')
+    await planning.getByRole('button', { name: '计算并保存学期计划', exact: true }).click()
+    await expect(planning.getByRole('heading', { name: 'UI实际日期测试学期 · v1', exact: true })).toBeVisible()
+    await expect(planning.getByRole('status')).toHaveText('课次8 · 实际教学560分钟 · 日历占用750分钟 · 考核120分钟')
+    const planV1 = await planning.getByLabel('计划版本', { exact: true }).inputValue()
+    await planning.getByLabel('计划范围', { exact: true }).selectOption('week:2026-W45')
+    await expect(planning.getByRole('row')).toHaveCount(3)
+    await planning.getByLabel('计划范围', { exact: true }).selectOption('month:2026-11')
+    await expect(planning.getByRole('row')).toHaveCount(9)
+    await planning.getByLabel('停课日期', { exact: true }).fill('')
+    await planning.getByRole('button', { name: '重新计算并保存新版本', exact: true }).click()
+    await expect(planning.getByRole('heading', { name: 'UI实际日期测试学期 · v2', exact: true })).toBeVisible()
+    await expect(planning.getByRole('status')).toHaveText('课次9 · 实际教学640分钟 · 日历占用840分钟 · 考核120分钟')
+    await planning.getByLabel('计划版本', { exact: true }).selectOption(planV1)
+    await expect(planning.getByRole('status')).toHaveText('课次8 · 实际教学560分钟 · 日历占用750分钟 · 考核120分钟')
+    await page.screenshot({ path: testInfo.outputPath('teacher-planning.jpg'), type: 'jpeg', quality: 85 })
+    const planningProbe = spawnSync(python, ['-c', `
+import json,sqlite3,sys
+from pathlib import Path
+with sqlite3.connect(Path(sys.argv[1])/'plugin-data/teacher-assistant/teaching.db') as conn:
+    versions=conn.execute('SELECT id,version,root_id FROM semester_plans ORDER BY version').fetchall()
+    totals=[conn.execute('SELECT COUNT(*),SUM(instruction_minutes),SUM(assessment_minutes) FROM planned_sessions WHERE plan_id=?',(row[0],)).fetchone() for row in versions]
+assert len(versions)==2 and versions[1][2]==versions[0][0]
+assert totals==[(8,560,120),(9,640,120)]
+print(json.dumps({'versions':versions,'session_totals':totals,'basis':'actual configured dates, weekly slots and exclusions','models_used_for_planning':0}))
+`, home], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(planningProbe.status, planningProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('planning-receipt.json'), planningProbe.stdout)
     writeFileSync(testInfo.outputPath('receipt.json'), JSON.stringify({ home, backend: 'real Hermes Gateway', database: 'real SQLite', model: 'loopback scripted test provider', operations_verified: ['course.create', 'course.update', 'class.create', 'student.create', 'course.assign_class', 'enrollment.create', 'task.create', 'task.run', 'task.review', 'reload persistence'] }, null, 2))
   } catch (error) {
     if (app) {

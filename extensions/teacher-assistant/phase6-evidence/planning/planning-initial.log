@@ -1,0 +1,192 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 2 test files (~5 tests) under ['tests\\extensions\\test_teacher_planning.py', 'tests\\extensions\\test_teacher_templates.py']; running with -j 8
+[ 60.0% |     3/~5 | ✓3 | ✗0] ✓ tests\extensions\test_teacher_templates.py (3✓, 10.8s)
+[100.0% |     5/~5 | ✓3 | ✗2] ✗ tests\extensions\test_teacher_planning.py (2✗, 15.2s)
+
+  ╔╍ Failed: tests\extensions\test_teacher_planning.py ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+  ║ 
+  ║     def default(self, o):
+  ║         """Implement this method in a subclass such that it returns
+  ║         a serializable object for ``o``, or calls the base implementation
+  ║         (to raise a ``TypeError``).
+  ║     
+  ║         For example, to support arbitrary iterators, you could
+  ║         implement default like this::
+  ║     
+  ║             def default(self, o):
+  ║                 try:
+  ║                     iterable = iter(o)
+  ║                 except TypeError:
+  ║                     pass
+  ║                 else:
+  ║                     return list(iterable)
+  ║                 # Let the base class default method raise the TypeError
+  ║                 return super().default(o)
+  ║     
+  ║         """
+  ║ >       raise TypeError(f'Object of type {o.__class__.__name__} '
+  ║                         f'is not JSON serializable')
+  ║ E       TypeError: Object of type date is not JSON serializable
+  ║ E       when serializing dict item 'end_date'
+  ║ 
+  ║ E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\encoder.py:182: TypeError
+  ║ =========================== short test summary info ===========================
+  ║ FAILED tests/extensions/test_teacher_planning.py::test_semester_dates_holidays_periods_exam_and_immutable_recalculation
+  ║ FAILED tests/extensions/test_teacher_planning.py::test_planning_rejects_overlapping_slots_wrong_sources_and_insufficient_calendar
+  ║ 2 failed in 5.73s
+  ║
+  ║  Repro: python -m pytest tests\extensions\test_teacher_planning.py -q
+  ╚╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+
+
+=== Summary: 2 files, 3 tests passed, 2 failed; FAILED: 1 of 2 files (100% complete) in 15.3s (8 workers) ===
+  Durations cached to test_durations.json (1 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   2
+  Total subprocess CPU-wall: 26.0s  (runner wall: 15.3s, parallelism: 8x)
+  P50: 15.16s  P90: 15.16s  P95: 15.16s  P99: 15.16s  Max: 15.16s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     15.16s  tests\extensions\test_teacher_planning.py
+     10.81s  tests\extensions\test_teacher_templates.py
+
+=== Failure output ===
+
+--- tests\extensions\test_teacher_planning.py ---
+FF                                                                       [100%]
+================================== FAILURES ===================================
+____ test_semester_dates_holidays_periods_exam_and_immutable_recalculation ____
+
+teacher = (WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-11g2y5c8/pytest-of-unknown/pytest-0/test_semester_date...hermes_cli.plugins.PluginManager object at 0x000002399D590AD0>, <function teacher.<locals>.call at 0x000002399E947E20>)
+tmp_path = WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-11g2y5c8/pytest-of-unknown/pytest-0/test_semester_dates_holidays_p0')
+
+    def test_semester_dates_holidays_periods_exam_and_immutable_recalculation(teacher, tmp_path):
+        _, _, call = teacher
+        lesson = lesson_fixture(call, tmp_path)
+        book = call("textbook.version", {"id": lesson["version_id"]})["data"]
+        chapters = [chapter for chapter in book["chapters"] if chapter["parent_id"] is None]
+        params = {"course_id": lesson["course_id"], "textbook_version_id": lesson["version_id"], "title": "虚构测试学期",
+            "start_date": "2026-11-02", "end_date": "2026-11-30", "weekly_slots": [{"weekday": 0, "start_time": "08:20"}, {"weekday": 2, "start_time": "14:00"}],
+            "excluded_dates": ["2026-11-11"], "chapters": [{"chapter_id": chapter["id"], "difficulty": index + 1} for index, chapter in enumerate(chapters)],
+            "review_sessions": 1, "practice_sessions": 1, "exam_sessions": 1, "exam_minutes": 120}
+        response = tool("plan.save", params, "semester-once")
+>       assert response["ok"], response
+               ^^^^^^^^^^^^^^
+E       KeyError: 'ok'
+
+tests\extensions\test_teacher_planning.py:22: KeyError
+------------------------------ Captured log call ------------------------------
+ERROR    tools.registry:registry.py:992 Tool teacher_records dispatch error: Object of type date is not JSON serializable
+Traceback (most recent call last):
+  File "C:\Users\yifan\Desktop\teacher_Agent_dev\tools\registry.py", line 988, in dispatch
+    result = entry.handler(args, **kwargs)
+  File "c:\users\yifan\appdata\local\temp\hermes-pytest\r-11g2y5c8\pytest-of-unknown\pytest-0\test_semester_dates_holidays_p0\teacher-home\plugins\teacher-assistant\__init__.py", line 26, in handle
+    return json.dumps(service.call(args.get("operation"), args.get("data"), args.get("request_id"),
+                      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                   session_id=task_id), ensure_ascii=False)
+                                   ^^^^^^^^^^^^^^^^^^^
+  File "c:\users\yifan\appdata\local\temp\hermes-pytest\r-11g2y5c8\pytest-of-unknown\pytest-0\test_semester_dates_holidays_p0\teacher-home\plugins\teacher-assistant\teaching\service.py", line 120, in call
+    return {"ok": True, "data": self._call(command.operation, command.data, command.request_id, human, session_id)}
+                                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\users\yifan\appdata\local\temp\hermes-pytest\r-11g2y5c8\pytest-of-unknown\pytest-0\test_semester_dates_holidays_p0\teacher-home\plugins\teacher-assistant\teaching\service.py", line 164, in _call
+    fingerprint = hashlib.sha256(encode(payload.model_dump()).encode("utf-8")).hexdigest()
+                                 ~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\users\yifan\appdata\local\temp\hermes-pytest\r-11g2y5c8\pytest-of-unknown\pytest-0\test_semester_dates_holidays_p0\teacher-home\plugins\teacher-assistant\teaching\database.py", line 122, in encode
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, allow_nan=False)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\__init__.py", line 242, in dumps
+    **kw).encode(obj)
+          ~~~~~~^^^^^
+  File "E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\encoder.py", line 202, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+  File "E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\encoder.py", line 263, in iterencode
+    return _iterencode(o, 0)
+  File "E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\encoder.py", line 182, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+                    f'is not JSON serializable')
+TypeError: Object of type date is not JSON serializable
+when serializing dict item 'end_date'
+_ test_planning_rejects_overlapping_slots_wrong_sources_and_insufficient_calendar _
+
+teacher = (WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-11g2y5c8/pytest-of-unknown/pytest-0/test_planning_reje...hermes_cli.plugins.PluginManager object at 0x000002399D702E40>, <function teacher.<locals>.call at 0x00000239A1C52B90>)
+tmp_path = WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-11g2y5c8/pytest-of-unknown/pytest-0/test_planning_rejects_overlapp0')
+
+    def test_planning_rejects_overlapping_slots_wrong_sources_and_insufficient_calendar(teacher, tmp_path):
+        _, _, call = teacher
+        lesson = lesson_fixture(call, tmp_path)
+        params = {"course_id": lesson["course_id"], "textbook_version_id": lesson["version_id"], "title": "约束测试",
+            "start_date": "2026-11-02", "end_date": "2026-11-30", "weekly_slots": [{"weekday": 0, "start_time": "08:20"}]}
+        duplicate = deepcopy(params)
+        duplicate["weekly_slots"] *= 2
+        assert call("plan.save", duplicate, "duplicate-slots")["error"]["code"] == "invalid_input"
+        overlap = {**params, "weekly_slots": [*params["weekly_slots"], {"weekday": 0, "start_time": "09:00"}]}
+>       assert call("plan.save", overlap, "overlapping-slots")["error"]["code"] == "schedule_conflict"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\extensions\test_teacher_planning.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\extensions\test_teacher_foundation.py:35: in call
+    return rpc({"operation": operation, "data": data, "request_id": request_id}, session_id=None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-11g2y5c8\pytest-of-unknown\pytest-0\test_planning_rejects_overlapp0\teacher-home\plugins\teacher-assistant\__init__.py:41: in rpc
+    return service.call(params.get("operation"), params.get("data"), params.get("request_id"),
+..\..\appdata\local\temp\hermes-pytest\r-11g2y5c8\pytest-of-unknown\pytest-0\test_planning_rejects_overlapp0\teacher-home\plugins\teacher-assistant\teaching\service.py:120: in call
+    return {"ok": True, "data": self._call(command.operation, command.data, command.request_id, human, session_id)}
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-11g2y5c8\pytest-of-unknown\pytest-0\test_planning_rejects_overlapp0\teacher-home\plugins\teacher-assistant\teaching\service.py:164: in _call
+    fingerprint = hashlib.sha256(encode(payload.model_dump()).encode("utf-8")).hexdigest()
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-11g2y5c8\pytest-of-unknown\pytest-0\test_planning_rejects_overlapp0\teacher-home\plugins\teacher-assistant\teaching\database.py:122: in encode
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, allow_nan=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\__init__.py:242: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\encoder.py:202: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\encoder.py:263: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <json.encoder.JSONEncoder object at 0x00000239A1D8F070>
+o = datetime.date(2026, 11, 30)
+
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+    
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+    
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return super().default(o)
+    
+        """
+>       raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
+E       TypeError: Object of type date is not JSON serializable
+E       when serializing dict item 'end_date'
+
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\json\encoder.py:182: TypeError
+=========================== short test summary info ===========================
+FAILED tests/extensions/test_teacher_planning.py::test_semester_dates_holidays_periods_exam_and_immutable_recalculation
+FAILED tests/extensions/test_teacher_planning.py::test_planning_rejects_overlapping_slots_wrong_sources_and_insufficient_calendar
+2 failed in 5.73s
+
+=== 1 file with test failures ===
+  tests\extensions\test_teacher_planning.py  (2 tests failed)

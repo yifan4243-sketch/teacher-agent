@@ -54,9 +54,14 @@ def exam_responder(home):
 def document_responder(home):
     stages = {}
     exam = exam_responder(home)
+    grading = grading_responder(home)
 
     def respond(record):
         messages = record["body"]["messages"]
+        grading_match = next((re.search(r"批改任务ID ([0-9a-f-]+)", str(message.get("content", "")))
+                              for message in reversed(messages) if message["role"] == "user"), None)
+        if grading_match:
+            return grading(grading_match.group(1))
         exam_match = next((re.search(r"生成任务ID ([0-9a-f-]+)", str(message.get("content", "")))
                            for message in reversed(messages) if message["role"] == "user"), None)
         if exam_match:
@@ -105,6 +110,38 @@ def document_responder(home):
             name, arguments = calls[stage - 1]
             return ToolCall("tool_call", {"calls": [{"name": name, "arguments": arguments}]})
         return Text("本地模拟模型已保存教学草稿，请教师审核。")
+
+    return respond
+
+
+def grading_responder(home):
+    stages = {}
+
+    def respond(identifier):
+        with sqlite3.connect(home / "plugin-data/teacher-assistant/teaching.db") as conn:
+            conn.row_factory = sqlite3.Row
+            questions = conn.execute("""SELECT q.id,q.content_json FROM grading_generations g
+                JOIN grade_drafts d ON d.id=g.base_draft_id JOIN answer_submissions a ON a.id=d.submission_id
+                JOIN exam_questions eq ON eq.paper_id=a.paper_id JOIN question_versions q ON q.id=eq.question_id
+                WHERE g.workflow_id=? AND q.kind='short_answer' ORDER BY eq.ordinal""", (identifier,)).fetchall()
+        scores = []
+        for row in questions:
+            content = json.loads(row["content_json"])
+            awards = [item["points_centi"] for item in content["rubric"]]
+            awards[-1] = max(0, awards[-1] - 100)
+            scores.append({"question_id": row["id"], "points_centi": sum(awards), "rubric_awards": awards,
+                "comment": "模拟评分建议，第二要点解释不足，请教师核对。", "confidence": 0.4})
+        calls = [("teacher_assessment", {"operation": "grading.assist.schema"}),
+                 ("teacher_assessment", {"operation": "grading.context", "data": {"id": identifier}}),
+                 ("teacher_assessment", {"operation": "grading.assist.save", "data": {"id": identifier, "scores": scores}, "request_id": identifier + ":assist"})]
+        stage = stages.get(identifier, 0)
+        stages[identifier] = stage + 1
+        if stage == 0:
+            return ToolCall("skill_view", {"name": "teacher-assistant:teacher-grading"})
+        if stage <= len(calls):
+            name, arguments = calls[stage - 1]
+            return ToolCall("tool_call", {"calls": [{"name": name, "arguments": arguments}]})
+        return Text("本地模拟模型已保存主观题评分建议，请教师逐题复核。")
 
     return respond
 

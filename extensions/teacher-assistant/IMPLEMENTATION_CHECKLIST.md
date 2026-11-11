@@ -76,14 +76,15 @@
 
 ## Phase 7
 
-题库与命题模块已具备五类题型、真实来源、答案/解析/Rubric、不可变方案与试卷版本、约束校验、审核及四种导出组合。原生Tool/Skill/Agent和实际Desktop链路通过，完整教师回归72项。见PHASE7_QUESTIONS_CHECKPOINT.md及PHASE7_EXAMS_CHECKPOINT.md。批改与识别继续实施。
+题库、命题及文字答卷评分已具备实际来源、版本、组卷校验、试卷导出、主观题建议、教师复核和成绩更正历史。原生Tool/Skill/Agent和实际Desktop链路通过，完整教师回归77项。见PHASE7_QUESTIONS_CHECKPOINT.md、PHASE7_EXAMS_CHECKPOINT.md及PHASE7_GRADING_CHECKPOINT.md。识别校对与批改报告继续实施。
 
 - [x] 章节命题、选择、判断、填空和简答题，原生Agent使用本机模型服务完成集成验证，真实模型质量待联调。
 - [x] 题库、答案、解析、Rubric、分值与覆盖检查。
 - [x] 学生与教师版 DOCX/PDF 试卷。
-- [ ] 客观题确定性评分、主观题 AI 建议与教师复核。
+- [x] 客观题确定性评分、主观题 AI 建议与教师复核，原生Agent链路使用本机模型服务验证，真实评分质量待联调。
 - [ ] 扫描与手写识别、低置信度复核。
-- [ ] 审批后的正式成绩、错题、课程与学生关联。
+- [x] 审批后的正式成绩、错题、课程与学生关联，包含版本、并发校验和更正历史。
+- [ ] 批改报告导出。
 - [ ] 对应测试、记录、提交与同步。
 
 ## Phase 8

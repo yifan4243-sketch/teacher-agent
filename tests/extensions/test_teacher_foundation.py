@@ -1,6 +1,7 @@
 """Teacher plugin behavior through real discovery, dispatch and local SQLite."""
 
 from concurrent.futures import ThreadPoolExecutor
+from importlib import import_module
 import json
 from pathlib import Path
 import shutil
@@ -173,7 +174,7 @@ def test_profile_database_isolation(teacher, tmp_path):
 def test_failed_step_rolls_back_partial_course_and_can_retry(teacher, monkeypatch):
     _, manager, call = teacher
     service_module = sys.modules[manager._plugins["teacher-assistant"].module.TeachingService.__module__]
-    workflow_module = service_module.workflows
+    workflow_module = import_module(".workflows", service_module.__package__)
     original_create = workflow_module.create_record
 
     def fail_after_insert(conn, entity, data, actor):

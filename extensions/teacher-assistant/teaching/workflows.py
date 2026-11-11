@@ -41,7 +41,7 @@ def change_task(conn, data, actor, target):
     if before["version"] != data.version:
         raise DomainError("version_conflict", "任务已更新，请刷新后重试")
     allowed = {"pending": {"failed"}, "cancelled": {"pending", "awaiting_review", "failed"}}
-    if target == "cancelled" and before["kind"] in {"document_generation", "exam_generation"}:
+    if target == "cancelled" and before["kind"] in {"document_generation", "exam_generation", "grading_generation"}:
         allowed[target].add("running")
     if before["status"] not in allowed[target]:
         raise DomainError("invalid_transition", "当前任务状态不允许此操作")

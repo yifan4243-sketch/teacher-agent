@@ -1,0 +1,44 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 18 test files (~74 tests) under ['tests\\extensions']; running with -j 8
+[  4.1% |     3/~74 | ✓3 | ✗0] ✓ tests\extensions\test_teacher_rendering.py (3✓, 65.7s)
+[  9.5% |     7/~74 | ✓7 | ✗0] ✓ tests\extensions\test_teacher_exams.py (4✓, 71.1s)
+[ 14.9% |    11/~74 | ✓11 | ✗ 0] ✓ tests\extensions\test_teacher_reconstruction.py (4✓, 86.4s)
+[ 21.6% |    16/~74 | ✓16 | ✗ 0] ✓ tests\extensions\test_teacher_grading.py (5✓, 88.7s)
+[ 29.7% |    22/~74 | ✓22 | ✗ 0] ✓ tests\extensions\test_teacher_images.py (6✓, 99.2s)
+[ 33.8% |    25/~74 | ✓25 | ✗ 0] ✓ tests\extensions\test_teacher_documents.py (3✓, 48.8s)
+[ 37.8% |    28/~74 | ✓28 | ✗ 0] ✓ tests\extensions\test_teacher_templates.py (3✓, 57.8s)
+[ 48.6% |    36/~74 | ✓39 | ✗ 0] ✓ tests\extensions\test_teacher_knowledge.py (11✓, 137.1s)
+[ 52.7% |    39/~74 | ✓42 | ✗ 0] ✓ tests\extensions\test_teacher_timetable.py (3✓, 58.1s)
+[ 56.8% |    42/~74 | ✓45 | ✗ 0] ✓ tests\extensions\test_teacher_layout_repair.py (3✓, 63.9s)
+[ 60.8% |    45/~74 | ✓48 | ✗ 0] ✓ tests\extensions\test_teacher_questions.py (3✓, 61.3s)
+[ 63.5% |    47/~74 | ✓50 | ✗ 0] ✓ tests\extensions\test_teacher_references.py (2✓, 49.6s)
+[ 66.2% |    49/~74 | ✓52 | ✗ 0] ✓ tests\extensions\test_teacher_plan_export.py (2✓, 40.4s)
+[ 70.3% |    52/~74 | ✓55 | ✗ 0] ✓ tests\extensions\test_teacher_planning.py (3✓, 57.7s)
+[ 73.0% |    54/~74 | ✓57 | ✗ 0] ✓ tests\extensions\test_teacher_blueprints.py (2✓, 34.0s)
+[ 75.7% |    56/~74 | ✓59 | ✗ 0] ✓ tests\extensions\test_teacher_slides.py (2✓, 29.4s)
+[ 90.5% |    67/~74 | ✓70 | ✗ 0] ✓ tests\extensions\test_teacher_foundation.py (11✓, 185.2s)
+[100.0% |    74/~74 | ✓77 | ✗ 0] ✓ tests\extensions\test_teacher_reminders.py (7✓, 194.0s)
+
+=== Summary: 18 files, 77 tests passed, 0 failed (100% complete) in 194.4s (8 workers) ===
+  Durations cached to test_durations.json (18 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   18
+  Total subprocess CPU-wall: 1428.5s  (runner wall: 194.4s, parallelism: 8x)
+  P50: 63.91s  P90: 185.25s  P95: 193.96s  P99: 193.96s  Max: 193.96s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+    193.96s  tests\extensions\test_teacher_reminders.py
+    185.25s  tests\extensions\test_teacher_foundation.py
+    137.07s  tests\extensions\test_teacher_knowledge.py
+     99.24s  tests\extensions\test_teacher_images.py
+     88.68s  tests\extensions\test_teacher_grading.py
+     86.39s  tests\extensions\test_teacher_reconstruction.py
+     71.10s  tests\extensions\test_teacher_exams.py
+     65.66s  tests\extensions\test_teacher_rendering.py
+     63.91s  tests\extensions\test_teacher_layout_repair.py
+     61.31s  tests\extensions\test_teacher_questions.py

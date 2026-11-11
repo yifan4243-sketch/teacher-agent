@@ -12,10 +12,11 @@ import { Timetable } from './timetable'
 import { Reminders } from './reminders'
 import { QuestionBank } from './question-bank'
 import { ExamsWorkspace } from './exams-workspace'
+import { GradingWorkspace } from './grading-workspace'
 
 const PAGES = [
   ['course', '我的课程'], ['class', '班级'], ['student', '学生档案'],
-  ['roster', '课程身份关联'], ['textbooks', '教材知识库'], ['preparation', '授课稿与教案'], ['slides', '课件页面蓝图'], ['planning', '教学计划'], ['timetable', '课表与进度'], ['reminders', '提醒与待办'], ['questions', '题库'], ['exams', '考试命题'], ['tasks', '任务与审批'], ['settings', '模型与权限'],
+  ['roster', '课程身份关联'], ['textbooks', '教材知识库'], ['preparation', '授课稿与教案'], ['slides', '课件页面蓝图'], ['planning', '教学计划'], ['timetable', '课表与进度'], ['reminders', '提醒与待办'], ['questions', '题库'], ['exams', '考试命题'], ['grading', '答卷与成绩'], ['tasks', '任务与审批'], ['settings', '模型与权限'],
 ]
 
 function TeacherWorkspace() {
@@ -54,6 +55,7 @@ function TeacherWorkspace() {
       {page === 'reminders' && <Reminders route={route} />}
       {page === 'questions' && <QuestionBank route={route} />}
       {page === 'exams' && <ExamsWorkspace route={route} />}
+      {page === 'grading' && <GradingWorkspace route={route} />}
       {page === 'settings' && <Settings route={route} />}
     </div>}
   </main>

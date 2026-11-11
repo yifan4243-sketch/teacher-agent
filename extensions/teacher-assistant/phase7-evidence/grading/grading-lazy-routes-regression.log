@@ -1,0 +1,93 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 18 test files (~74 tests) under ['tests\\extensions']; running with -j 8
+[  4.1% |     3/~74 | ✓3 | ✗0] ✓ tests\extensions\test_teacher_documents.py (3✓, 51.3s)
+[  9.5% |     7/~74 | ✓7 | ✗0] ✓ tests\extensions\test_teacher_exams.py (4✓, 70.1s)
+[ 14.9% |    11/~74 | ✓11 | ✗ 0] ✓ tests\extensions\test_teacher_reconstruction.py (4✓, 81.1s)
+[ 21.6% |    16/~74 | ✓16 | ✗ 0] ✓ tests\extensions\test_teacher_grading.py (5✓, 81.5s)
+[ 25.7% |    19/~74 | ✓19 | ✗ 0] ✓ tests\extensions\test_teacher_planning.py (3✓, 45.5s)
+[ 33.8% |    25/~74 | ✓25 | ✗ 0] ✓ tests\extensions\test_teacher_images.py (6✓, 97.2s)
+[ 36.5% |    27/~74 | ✓27 | ✗ 0] ✓ tests\extensions\test_teacher_plan_export.py (2✓, 35.7s)
+[ 40.5% |    30/~74 | ✓30 | ✗ 0] ✓ tests\extensions\test_teacher_timetable.py (3✓, 49.2s)
+[ 44.6% |    33/~74 | ✓33 | ✗ 0] ✓ tests\extensions\test_teacher_questions.py (3✓, 47.0s)
+[ 55.4% |    41/~74 | ✓44 | ✗ 0] ✓ tests\extensions\test_teacher_knowledge.py (11✓, 129.8s)
+[ 59.5% |    44/~74 | ✓47 | ✗ 0] ✓ tests\extensions\test_teacher_templates.py (3✓, 57.7s)
+[ 63.5% |    47/~74 | ✓50 | ✗ 0] ✓ tests\extensions\test_teacher_rendering.py (3✓, 57.8s)
+[ 66.2% |    49/~74 | ✓52 | ✗ 0] ✓ tests\extensions\test_teacher_slides.py (2✓, 27.4s)
+[ 68.9% |    51/~74 | ✓54 | ✗ 0] ✓ tests\extensions\test_teacher_blueprints.py (2✓, 30.7s)
+[ 71.6% |    53/~74 | ✓56 | ✗ 0] ✓ tests\extensions\test_teacher_references.py (2✓, 40.9s)
+[ 75.7% |    56/~74 | ✓59 | ✗ 0] ✓ tests\extensions\test_teacher_layout_repair.py (3✓, 48.1s)
+[ 90.5% |    67/~74 | ✓69 | ✗ 1] ✗ tests\extensions\test_teacher_foundation.py (10✓ 1✗, 169.5s)
+
+  ╔╍ Failed: tests\extensions\test_teacher_foundation.py ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+  ║ ........F..                                                              [100%]
+  ║ ================================== FAILURES ===================================
+  ║ __________ test_failed_step_rolls_back_partial_course_and_can_retry ___________
+  ║
+  ║ teacher = (WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-s0l6fnw6/pytest-of-unknown/pytest-0/test_failed_step_r...hermes_cli.plugins.PluginManager object at 0x000002AF2E1CF620>, <function teacher.<locals>.call at 0x000002AF2ABDC1A0>)
+  ║ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002AF2E0DEB70>
+  ║
+  ║     def test_failed_step_rolls_back_partial_course_and_can_retry(teacher, monkeypatch):
+  ║         _, manager, call = teacher
+  ║         service_module = sys.modules[manager._plugins["teacher-assistant"].module.TeachingService.__module__]
+  ║ >       workflow_module = service_module.workflows
+  ║                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  ║ E       AttributeError: module 'hermes_plugins.teacher_assistant__home_fa160d578d07.teaching.service' has no attribute 'workflows'
+  ║
+  ║ tests\extensions\test_teacher_foundation.py:176: AttributeError
+  ║ =========================== short test summary info ===========================
+  ║ FAILED tests/extensions/test_teacher_foundation.py::test_failed_step_rolls_back_partial_course_and_can_retry
+  ║ 1 failed, 10 passed in 156.37s (0:02:36)
+  ║
+  ║  Repro: python -m pytest tests\extensions\test_teacher_foundation.py -q
+  ╚╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+
+[100.0% |    74/~74 | ✓76 | ✗ 1] ✓ tests\extensions\test_teacher_reminders.py (7✓, 174.2s)
+
+=== Summary: 18 files, 76 tests passed, 1 failed; FAILED: 1 of 18 files (100% complete) in 174.7s (8 workers) ===
+  Durations cached to test_durations.json (17 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   18
+  Total subprocess CPU-wall: 1294.7s  (runner wall: 174.7s, parallelism: 8x)
+  P50: 57.67s  P90: 169.52s  P95: 174.18s  P99: 174.18s  Max: 174.18s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+    174.18s  tests\extensions\test_teacher_reminders.py
+    169.52s  tests\extensions\test_teacher_foundation.py
+    129.81s  tests\extensions\test_teacher_knowledge.py
+     97.17s  tests\extensions\test_teacher_images.py
+     81.51s  tests\extensions\test_teacher_grading.py
+     81.15s  tests\extensions\test_teacher_reconstruction.py
+     70.09s  tests\extensions\test_teacher_exams.py
+     57.85s  tests\extensions\test_teacher_rendering.py
+     57.67s  tests\extensions\test_teacher_templates.py
+     51.26s  tests\extensions\test_teacher_documents.py
+
+=== Failure output ===
+
+--- tests\extensions\test_teacher_foundation.py ---
+........F..                                                              [100%]
+================================== FAILURES ===================================
+__________ test_failed_step_rolls_back_partial_course_and_can_retry ___________
+
+teacher = (WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-s0l6fnw6/pytest-of-unknown/pytest-0/test_failed_step_r...hermes_cli.plugins.PluginManager object at 0x000002AF2E1CF620>, <function teacher.<locals>.call at 0x000002AF2ABDC1A0>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002AF2E0DEB70>
+
+    def test_failed_step_rolls_back_partial_course_and_can_retry(teacher, monkeypatch):
+        _, manager, call = teacher
+        service_module = sys.modules[manager._plugins["teacher-assistant"].module.TeachingService.__module__]
+>       workflow_module = service_module.workflows
+                          ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'hermes_plugins.teacher_assistant__home_fa160d578d07.teaching.service' has no attribute 'workflows'
+
+tests\extensions\test_teacher_foundation.py:176: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/extensions/test_teacher_foundation.py::test_failed_step_rolls_back_partial_course_and_can_retry
+1 failed, 10 passed in 156.37s (0:02:36)
+
+=== 1 file with test failures ===
+  tests\extensions\test_teacher_foundation.py  (1 test failed)

@@ -1,0 +1,1 @@
+{"source_schema": 19, "target_schema": 20, "original_read_only": true, "full_record_hashes_preserved": true, "record_counts": {"courses": 1, "question_versions": 2, "exam_plans": 1, "exam_papers": 2, "exam_questions": 4, "exam_generations": 1, "exam_exports": 4}, "migration_copy_home": "C:\\Users\\yifan\\AppData\\Local\\Temp\\teacher-grading-upgrade-v19-k3fgp_2m"}

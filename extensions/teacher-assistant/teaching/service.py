@@ -16,9 +16,13 @@ from . import publication, timetable, timetable_models
 from . import plan_export
 from . import reminder_models, reminders, reminder_schedule, todos, windows_notifications
 from . import preparation_status
+from . import question_models, questions
 
 
 READS = {
+    "question.schema": (models.Input, lambda conn, data: question_models.QuestionSave.model_json_schema()),
+    "question.get": (models.Identifier, questions.get_question),
+    "question.list": (question_models.QuestionList, questions.list_questions),
     "course.list": (models.ListRecords, partial(records.list_records, entity="course")),
     "class.list": (models.ListRecords, partial(records.list_records, entity="class")),
     "student.list": (models.ListRecords, partial(records.list_records, entity="student")),
@@ -63,6 +67,7 @@ READS = {
     "todo.get": (models.Identifier, todos.get_todo),
 }
 WRITES = {
+    "question.save": (question_models.QuestionSave, questions.save_question),
     "todo.create": (reminder_models.TodoCreate, todos.create),
     "todo.update": (reminder_models.TodoUpdate, todos.update),
     "reminder.refresh": (models.Input, reminders.refresh),
@@ -121,6 +126,7 @@ class TeachingService:
             "reminder.background.remove": (models.Input, reminder_schedule.remove),
         }
         self.human_writes = {
+            "question.review": (question_models.QuestionReview, questions.review_question),
             "task.review": (models.TaskReview, workflows.review_task),
             "plan.publish": (timetable_models.PlanPublish, publication.publish),
             "calendar.move": (timetable_models.EventMove, timetable.move),

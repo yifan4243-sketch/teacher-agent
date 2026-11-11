@@ -756,6 +756,98 @@ print(json.dumps({'versions':len(plans),'manual_sessions':len(sessions),'practic
 `, home, manualPath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
     expect(contentProbe.status, contentProbe.stderr).toBe(0)
     writeFileSync(testInfo.outputPath('plan-content-receipt.json'), contentProbe.stdout)
+    await page.getByRole('button', { name: '教材知识库', exact: true }).click()
+    await page.getByLabel('教材所属课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
+    await page.getByLabel('教材名称', { exact: true }).fill('UI自动上传教材')
+    await page.getByLabel('版本归属', { exact: true }).selectOption({ label: '新增《UI自动上传教材》版本' })
+    await page.getByLabel('教材文件', { exact: true }).setInputFiles({ name: 'UI教材新版.txt', mimeType: 'text/plain', buffer: Buffer.from('第一章 工业机器人\n1.1 技术参数\n自由度描述独立运动的数量。新版增加了参数选择案例。\n', 'utf8') })
+    await page.getByRole('button', { name: '上传并解析教材', exact: true }).click()
+    await expect(page.getByText('教材已保存，原始文件和版本哈希已保留')).toBeVisible()
+    await page.getByRole('button', { name: '题库', exact: true }).click()
+    const bank = page.getByRole('region', { name: '教材关联题库', exact: true })
+    await bank.getByLabel('题库课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
+    await bank.getByLabel('题库教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v1' })
+    await bank.getByRole('button', { name: '新建题目', exact: true }).click()
+    const questionEditor = bank.getByRole('form', { name: '题目编辑', exact: true })
+    await questionEditor.getByLabel('题目正文', { exact: true }).fill('UI题库自由度单选题')
+    await questionEditor.getByLabel('题目分值', { exact: true }).fill('2.5')
+    await questionEditor.getByLabel('选项标识 1', { exact: true }).fill('C')
+    await questionEditor.getByLabel('选项标识 2', { exact: true }).fill('H')
+    await questionEditor.getByLabel('选项正文 1', { exact: true }).fill('自由度 | 教材术语')
+    await questionEditor.getByLabel('选项正文 2', { exact: true }).fill('工作载荷')
+    await questionEditor.getByLabel('正确选项', { exact: true }).fill('C')
+    await questionEditor.getByLabel('题目解析', { exact: true }).fill('依据所选测试教材原文核对自由度。')
+    await questionEditor.getByRole('checkbox', { name: /^题目来源 / }).first().check()
+    await questionEditor.getByRole('button', { name: '保存题目草稿', exact: true }).click()
+    const questionDetails = bank.getByRole('region', { name: '题目详情与审核', exact: true })
+    await expect(questionDetails.getByRole('heading', { name: '单选题 · v1 · 待审核', exact: true })).toBeVisible()
+    await questionDetails.getByLabel('题目审核说明', { exact: true }).fill('核对虚构测试题目及所关联的教材版本')
+    await questionDetails.getByRole('button', { name: '通过题目审核', exact: true }).click()
+    await expect(questionDetails.getByRole('heading', { name: '单选题 · v1 · 已通过', exact: true })).toBeVisible()
+    await questionDetails.getByRole('button', { name: '修订此题目', exact: true }).click()
+    await expect(questionEditor.getByLabel('选项标识 1', { exact: true })).toHaveValue('C')
+    await expect(questionEditor.getByLabel('选项正文 1', { exact: true })).toHaveValue('自由度 | 教材术语')
+    await questionEditor.getByLabel('题目教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v2' })
+    await questionEditor.getByRole('checkbox', { name: /^题目来源 / }).first().check()
+    await questionEditor.getByLabel('题目正文', { exact: true }).fill('UI题库自由度单选题修订')
+    await questionEditor.getByRole('button', { name: '保存题目草稿', exact: true }).click()
+    await expect(questionDetails.getByRole('heading', { name: '单选题 · v2 · 待审核', exact: true })).toBeVisible()
+    await bank.getByLabel('题目版本', { exact: true }).selectOption({ label: 'v1 · 已通过' })
+    await expect(questionDetails.getByText('UI题库自由度单选题', { exact: true })).toBeVisible()
+    for (const kind of ['true_false', 'fill_blank', 'short_answer', 'multiple_choice']) {
+      await bank.getByRole('button', { name: '新建题目', exact: true }).click()
+      await questionEditor.getByLabel('题目类型', { exact: true }).selectOption(kind)
+      await questionEditor.getByLabel('题目正文', { exact: true }).fill(kind === 'fill_blank' ? 'UI填空测试 {{1}}' : `UI题库测试 ${kind}`)
+      await questionEditor.getByLabel('题目分值', { exact: true }).fill('5')
+      await questionEditor.getByLabel('题目解析', { exact: true }).fill('本地题型表单与来源关联测试。')
+      if (kind === 'true_false') await questionEditor.getByLabel('判断题答案', { exact: true }).selectOption('false')
+      if (kind === 'fill_blank') await questionEditor.getByLabel('第1空答案 1', { exact: true }).fill('自由度 | 可接受文字')
+      if (kind === 'short_answer') {
+        await questionEditor.getByLabel('简答题参考答案', { exact: true }).fill('解释教材术语。\n结合课文原文说明。')
+        await questionEditor.getByLabel('评分要点 1', { exact: true }).fill('依据教材 | 说明含义')
+      }
+      if (kind === 'multiple_choice') {
+        await questionEditor.getByLabel('选项正文 1', { exact: true }).fill('自由度')
+        await questionEditor.getByLabel('选项正文 2', { exact: true }).fill('工作空间')
+        await questionEditor.getByLabel('正确选项', { exact: true }).fill('A,B')
+      }
+      await questionEditor.getByRole('checkbox', { name: /^题目来源 / }).first().check()
+      if (kind === 'short_answer') {
+        await questionEditor.getByLabel('评分要点分值 1', { exact: true }).fill('4')
+        await questionEditor.getByRole('button', { name: '保存题目草稿', exact: true }).click()
+        await expect(questionEditor.getByRole('alert')).toHaveText('简答题评分细则的分值合计需等于题目总分')
+        await questionEditor.getByLabel('评分要点分值 1', { exact: true }).fill('5')
+      }
+      await questionEditor.getByRole('button', { name: '保存题目草稿', exact: true }).click()
+      await expect(questionDetails.getByText('解析 本地题型表单与来源关联测试。', { exact: true })).toBeVisible()
+    }
+    await page.screenshot({ path: testInfo.outputPath('teacher-question-bank.jpg'), type: 'jpeg', quality: 85 })
+    await page.reload()
+    await page.getByText('教师工作台', { exact: true }).click({ timeout: 90000 })
+    await page.getByRole('button', { name: '题库', exact: true }).click()
+    await bank.getByLabel('题库课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
+    await expect(bank.getByRole('button', { name: 'UI题库自由度单选题修订', exact: true })).toBeVisible()
+    const questionProbe = spawnSync(python, ['-c', `
+import json,sqlite3,sys
+from pathlib import Path
+with sqlite3.connect(Path(sys.argv[1])/'plugin-data/teacher-assistant/teaching.db') as conn:
+    conn.row_factory=sqlite3.Row
+    questions=[dict(row) for row in conn.execute('SELECT * FROM question_versions')]
+    assert not conn.execute('PRAGMA foreign_key_check').fetchall()
+assert len(questions)==6
+single=sorted([row for row in questions if row['kind']=='single_choice'],key=lambda row:row['version'])
+assert [row['status'] for row in single]==['approved','draft']
+assert single[0]['textbook_version_id']!=single[1]['textbook_version_id']
+content=json.loads(single[-1]['content_json'])
+assert [option['id'] for option in content['options']]==['C','H'] and content['answer_ids']==['C'] and content['points_centi']==250
+blank=next(json.loads(row['content_json']) for row in questions if row['kind']=='fill_blank')
+assert blank['blanks'][0]['accepted']==['自由度 | 可接受文字']
+subjective=next(json.loads(row['content_json']) for row in questions if row['kind']=='short_answer')
+assert subjective['rubric'][0]['label']=='依据教材 | 说明含义' and subjective['rubric'][0]['points_centi']==500
+print(json.dumps({'types':sorted({row['kind'] for row in questions}),'versions':len(questions),'review_history_preserved':True,'custom_choice_ids_preserved':True,'literal_pipe_answers_preserved':True,'fractional_points_centi':250,'reload_persistence':True},ensure_ascii=False))
+`, home], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(questionProbe.status, questionProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('question-bank-receipt.json'), questionProbe.stdout)
     writeFileSync(testInfo.outputPath('receipt.json'), JSON.stringify({ home, backend: 'real Hermes Gateway', database: 'real SQLite', model: 'loopback scripted test provider', operations_verified: ['course.create', 'course.update', 'class.create', 'student.create', 'course.assign_class', 'enrollment.create', 'task.create', 'task.run', 'task.review', 'reload persistence'] }, null, 2))
   } catch (error) {
     if (app) {

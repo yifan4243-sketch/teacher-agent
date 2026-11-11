@@ -10,10 +10,11 @@ import { SlidesWorkspace } from './slides-workspace'
 import { Planning } from './planning'
 import { Timetable } from './timetable'
 import { Reminders } from './reminders'
+import { QuestionBank } from './question-bank'
 
 const PAGES = [
   ['course', '我的课程'], ['class', '班级'], ['student', '学生档案'],
-  ['roster', '课程身份关联'], ['textbooks', '教材知识库'], ['preparation', '授课稿与教案'], ['slides', '课件页面蓝图'], ['planning', '教学计划'], ['timetable', '课表与进度'], ['reminders', '提醒与待办'], ['tasks', '任务与审批'], ['settings', '模型与权限'],
+  ['roster', '课程身份关联'], ['textbooks', '教材知识库'], ['preparation', '授课稿与教案'], ['slides', '课件页面蓝图'], ['planning', '教学计划'], ['timetable', '课表与进度'], ['reminders', '提醒与待办'], ['questions', '题库'], ['tasks', '任务与审批'], ['settings', '模型与权限'],
 ]
 
 function TeacherWorkspace() {
@@ -50,6 +51,7 @@ function TeacherWorkspace() {
       {page === 'planning' && <Planning route={route} />}
       {page === 'timetable' && <Timetable route={route} />}
       {page === 'reminders' && <Reminders route={route} />}
+      {page === 'questions' && <QuestionBank route={route} />}
       {page === 'settings' && <Settings route={route} />}
     </div>}
   </main>

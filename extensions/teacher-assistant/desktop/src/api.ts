@@ -40,7 +40,7 @@ export interface TeacherSettings {
 interface Response<T> {
   ok: boolean
   data: T
-  error?: { code: string; message: string }
+  error?: { code: string; message: string; fields?: { msg: string }[] }
 }
 
 export async function call<T>(route: PluginProfileRoute, operation: string, data: object = {}, requestId?: string): Promise<T> {
@@ -50,7 +50,8 @@ export async function call<T>(route: PluginProfileRoute, operation: string, data
     request_id: requestId,
   })
   if (!response.ok) {
-    throw new Error(response.error?.message ?? '教师服务未能完成操作')
+    const fields = response.error?.fields?.map(field => field.msg.replace(/^Value error, /, '')).join('。')
+    throw new Error(fields || response.error?.message || '教师服务未能完成操作')
   }
   return response.data
 }

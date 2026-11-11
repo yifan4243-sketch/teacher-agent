@@ -9,6 +9,7 @@ provides_tools:
   - teacher_knowledge
   - teacher_preparation
   - teacher_slides
+  - teacher_assessment
 python_dependencies:
   - python-docx>=1.2,<2
   - python-pptx>=1.0,<2

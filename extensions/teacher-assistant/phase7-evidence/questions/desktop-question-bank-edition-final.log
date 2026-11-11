@@ -1,0 +1,40 @@
+
+Running 1 test using 1 worker
+
+(node:32724) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 (2.0m)
+
+
+  1) ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 
+
+    Error: Traceback (most recent call last):
+      File "<string>", line 11, in <module>
+        assert single[0]['textbook_version_id']!=single[1]['textbook_version_id']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    AssertionError
+
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      842 | print(json.dumps({'types':sorted({row['kind'] for row in questions}),'versions':len(questions),'review_history_preserved':True,'custom_choice_ids_preserved':True,'literal_pipe_answers_preserved':True,'fractional_points_centi':250,'reload_persistence':True},ensure_ascii=False))
+      843 | `, home], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    > 844 |     expect(questionProbe.status, questionProbe.stderr).toBe(0)
+          |                                                        ^
+      845 |     writeFileSync(testInfo.outputPath('question-bank-receipt.json'), questionProbe.stdout)
+      846 |     writeFileSync(testInfo.outputPath('receipt.json'), JSON.stringify({ home, backend: 'real Hermes Gateway', database: 'real SQLite', model: 'loopback scripted test provider', operations_verified: ['course.create', 'course.update', 'class.create', 'student.create', 'course.assign_class', 'enrollment.create', 'task.create', 'task.run', 'task.review', 'reload persistence'] }, null, 2))
+      847 |   } catch (error) {
+        at C:\Users\yifan\Desktop\teacher_Agent_dev\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:844:56
+
+    Error Context: ..\..\extensions\teacher-assistant\desktop\test-results\workspace-教师工作台通过原生-Gateway-操作教学数据库并审批任务\error-context.md
+
+  1 failed
+    ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 
+Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL
+
+  × "pnpm recursive exec" failed in C:
+  │ \Users\yifan\Desktop\teacher_Agent_dev\apps\desktop
+

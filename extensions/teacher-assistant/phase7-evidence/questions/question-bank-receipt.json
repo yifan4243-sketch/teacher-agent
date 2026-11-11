@@ -1,0 +1,1 @@
+{"types": ["fill_blank", "multiple_choice", "short_answer", "single_choice", "true_false"], "versions": 6, "review_history_preserved": true, "custom_choice_ids_preserved": true, "literal_pipe_answers_preserved": true, "fractional_points_centi": 250, "reload_persistence": true}

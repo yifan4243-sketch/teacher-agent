@@ -1,0 +1,263 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 1 test files (~3 tests) under ['tests\\extensions\\test_teacher_templates.py']; running with -j 8
+[100.0% |     3/~3 | ✓0 | ✗1] ✗ tests\extensions\test_teacher_templates.py (1✗ 2e, 15.8s)
+
+  ╔╍ Failed: tests\extensions\test_teacher_templates.py ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+  ║ ..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_blueprint_templates_expor0\teacher-home\plugins\teacher-assistant\teaching\service.py:147: in _call
+  ║     with database() as conn:
+  ║          ^^^^^^^^^^
+  ║ E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\contextlib.py:141: in __enter__
+  ║     return next(self.gen)
+  ║            ^^^^^^^^^^^^^^
+  ║ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  ║ 
+  ║     @contextmanager
+  ║     def database():
+  ║         conn = plugin_db("teacher-assistant", "teaching.db")
+  ║         conn.row_factory = sqlite3.Row
+  ║         try:
+  ║             migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA, RENDER_SCHEMA, REPAIR_SCHEMA, TEMPLATE_SCHEMA)
+  ║             if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
+  ║                 raise ValueError("教学数据库来自更新版本，请升级教师插件")
+  ║             if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):
+  ║                 conn.execute("BEGIN IMMEDIATE")
+  ║                 version = conn.execute("PRAGMA user_version").fetchone()[0]
+  ║                 for index in range(version, len(migrations)):
+  ║                     for statement in migrations[index]:
+  ║ >                       conn.execute(statement)
+  ║ E                       sqlite3.OperationalError: near "source_mode": syntax error
+  ║ 
+  ║ ..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_blueprint_templates_expor0\teacher-home\plugins\teacher-assistant\teaching\database.py:100: OperationalError
+  ║ =========================== short test summary info ===========================
+  ║ FAILED tests/extensions/test_teacher_templates.py::test_blueprint_templates_export_native_text_without_model_calls
+  ║ ERROR tests/extensions/test_teacher_templates.py::test_template_render_has_no_fake_reference_or_pixel_difference
+  ║ ERROR tests/extensions/test_teacher_templates.py::test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports
+  ║ 1 failed, 2 errors in 5.70s
+  ║
+  ║  Repro: python -m pytest tests\extensions\test_teacher_templates.py -q
+  ╚╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+
+
+=== Summary: 1 files, 0 tests passed, 1 failed, 2 errors; FAILED: 1 of 1 file (100% complete) in 16.0s (8 workers) ===
+
+=== Per-file subprocess time distribution ===
+  Files:   1
+  Total subprocess CPU-wall: 15.8s  (runner wall: 16.0s, parallelism: 8x)
+  P50: 15.81s  P90: 15.81s  P95: 15.81s  P99: 15.81s  Max: 15.81s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     15.81s  tests\extensions\test_teacher_templates.py
+
+=== Failure output ===
+
+--- tests\extensions\test_teacher_templates.py ---
+FEE                                                                      [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of test_template_render_has_no_fake_reference_or_pixel_difference _
+
+fixturedef = <FixtureDef argname='image_workspace' scope='function' baseid='tests/extensions/test_teacher_templates.py'>
+request = <SubRequest 'image_workspace' for <Function test_template_render_has_no_fake_reference_or_pixel_difference>>
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_fixture_setup(fixturedef: FixtureDef, request) -> object | None:
+        if (
+            fixturedef.argname == "event_loop_policy"
+            and fixturedef.func.__module__ != __name__
+        ):
+            warnings.warn(
+                PytestDeprecationWarning(_EVENT_LOOP_POLICY_FIXTURE_DEPRECATION_WARNING),
+            )
+        asyncio_mode = _get_asyncio_mode(request.config)
+        if not _is_asyncio_fixture_function(fixturedef.func):
+            if asyncio_mode == Mode.STRICT:
+                # Ignore async fixtures without explicit asyncio mark in strict mode
+                # This applies to pytest_trio fixtures, for example
+>               return (yield)
+                        ^^^^^
+
+E:\TeacherAgentData\dev-home\installs\40230316ec923abe\test-environment\gen-cf83738ae79e43f48d20d57fa5cb9cea\venv\Lib\site-packages\pytest_asyncio\plugin.py:924: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\extensions\test_teacher_images.py:23: in image_workspace
+    _, _, _, params = preparation_fixture(call, tmp_path)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_blueprints.py:25: in preparation_fixture
+    lesson = lesson_fixture(call, tmp_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_documents.py:16: in lesson_fixture
+    course = saved(call, "course.create", {"title": "DOCX文档测试课程"})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_foundation.py:42: in saved
+    result = call(operation, data, request_id or str(uuid4()))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_foundation.py:35: in call
+    return rpc({"operation": operation, "data": data, "request_id": request_id}, session_id=None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_template_render_has_no_fa0\teacher-home\plugins\teacher-assistant\__init__.py:41: in rpc
+    return service.call(params.get("operation"), params.get("data"), params.get("request_id"),
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_template_render_has_no_fa0\teacher-home\plugins\teacher-assistant\teaching\service.py:111: in call
+    return {"ok": True, "data": self._call(command.operation, command.data, command.request_id, human, session_id)}
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_template_render_has_no_fa0\teacher-home\plugins\teacher-assistant\teaching\service.py:147: in _call
+    with database() as conn:
+         ^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    @contextmanager
+    def database():
+        conn = plugin_db("teacher-assistant", "teaching.db")
+        conn.row_factory = sqlite3.Row
+        try:
+            migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA, RENDER_SCHEMA, REPAIR_SCHEMA, TEMPLATE_SCHEMA)
+            if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
+                raise ValueError("教学数据库来自更新版本，请升级教师插件")
+            if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):
+                conn.execute("BEGIN IMMEDIATE")
+                version = conn.execute("PRAGMA user_version").fetchone()[0]
+                for index in range(version, len(migrations)):
+                    for statement in migrations[index]:
+>                       conn.execute(statement)
+E                       sqlite3.OperationalError: near "source_mode": syntax error
+
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_template_render_has_no_fa0\teacher-home\plugins\teacher-assistant\teaching\database.py:100: OperationalError
+_ ERROR at setup of test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports _
+
+fixturedef = <FixtureDef argname='image_workspace' scope='function' baseid='tests/extensions/test_teacher_templates.py'>
+request = <SubRequest 'image_workspace' for <Function test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports>>
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_fixture_setup(fixturedef: FixtureDef, request) -> object | None:
+        if (
+            fixturedef.argname == "event_loop_policy"
+            and fixturedef.func.__module__ != __name__
+        ):
+            warnings.warn(
+                PytestDeprecationWarning(_EVENT_LOOP_POLICY_FIXTURE_DEPRECATION_WARNING),
+            )
+        asyncio_mode = _get_asyncio_mode(request.config)
+        if not _is_asyncio_fixture_function(fixturedef.func):
+            if asyncio_mode == Mode.STRICT:
+                # Ignore async fixtures without explicit asyncio mark in strict mode
+                # This applies to pytest_trio fixtures, for example
+>               return (yield)
+                        ^^^^^
+
+E:\TeacherAgentData\dev-home\installs\40230316ec923abe\test-environment\gen-cf83738ae79e43f48d20d57fa5cb9cea\venv\Lib\site-packages\pytest_asyncio\plugin.py:924: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\extensions\test_teacher_images.py:23: in image_workspace
+    _, _, _, params = preparation_fixture(call, tmp_path)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_blueprints.py:25: in preparation_fixture
+    lesson = lesson_fixture(call, tmp_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_documents.py:16: in lesson_fixture
+    course = saved(call, "course.create", {"title": "DOCX文档测试课程"})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_foundation.py:42: in saved
+    result = call(operation, data, request_id or str(uuid4()))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_foundation.py:35: in call
+    return rpc({"operation": operation, "data": data, "request_id": request_id}, session_id=None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_legacy_migration_preserve0\teacher-home\plugins\teacher-assistant\__init__.py:41: in rpc
+    return service.call(params.get("operation"), params.get("data"), params.get("request_id"),
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_legacy_migration_preserve0\teacher-home\plugins\teacher-assistant\teaching\service.py:111: in call
+    return {"ok": True, "data": self._call(command.operation, command.data, command.request_id, human, session_id)}
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_legacy_migration_preserve0\teacher-home\plugins\teacher-assistant\teaching\service.py:147: in _call
+    with database() as conn:
+         ^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    @contextmanager
+    def database():
+        conn = plugin_db("teacher-assistant", "teaching.db")
+        conn.row_factory = sqlite3.Row
+        try:
+            migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA, RENDER_SCHEMA, REPAIR_SCHEMA, TEMPLATE_SCHEMA)
+            if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
+                raise ValueError("教学数据库来自更新版本，请升级教师插件")
+            if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):
+                conn.execute("BEGIN IMMEDIATE")
+                version = conn.execute("PRAGMA user_version").fetchone()[0]
+                for index in range(version, len(migrations)):
+                    for statement in migrations[index]:
+>                       conn.execute(statement)
+E                       sqlite3.OperationalError: near "source_mode": syntax error
+
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_legacy_migration_preserve0\teacher-home\plugins\teacher-assistant\teaching\database.py:100: OperationalError
+================================== FAILURES ===================================
+_______ test_blueprint_templates_export_native_text_without_model_calls _______
+
+teacher = (WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-dzlmer3i/pytest-of-unknown/pytest-0/test_blueprint_tem...hermes_cli.plugins.PluginManager object at 0x00000219D7831010>, <function teacher.<locals>.call at 0x00000219D8C26400>)
+tmp_path = WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-dzlmer3i/pytest-of-unknown/pytest-0/test_blueprint_templates_expor0')
+
+    def test_blueprint_templates_export_native_text_without_model_calls(teacher, tmp_path):
+        from pptx import Presentation
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
+    
+        _, _, call = teacher
+>       _, _, _, params = preparation_fixture(call, tmp_path)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\extensions\test_teacher_templates.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\extensions\test_teacher_blueprints.py:25: in preparation_fixture
+    lesson = lesson_fixture(call, tmp_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_documents.py:16: in lesson_fixture
+    course = saved(call, "course.create", {"title": "DOCX文档测试课程"})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_foundation.py:42: in saved
+    result = call(operation, data, request_id or str(uuid4()))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_foundation.py:35: in call
+    return rpc({"operation": operation, "data": data, "request_id": request_id}, session_id=None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_blueprint_templates_expor0\teacher-home\plugins\teacher-assistant\__init__.py:41: in rpc
+    return service.call(params.get("operation"), params.get("data"), params.get("request_id"),
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_blueprint_templates_expor0\teacher-home\plugins\teacher-assistant\teaching\service.py:111: in call
+    return {"ok": True, "data": self._call(command.operation, command.data, command.request_id, human, session_id)}
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_blueprint_templates_expor0\teacher-home\plugins\teacher-assistant\teaching\service.py:147: in _call
+    with database() as conn:
+         ^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    @contextmanager
+    def database():
+        conn = plugin_db("teacher-assistant", "teaching.db")
+        conn.row_factory = sqlite3.Row
+        try:
+            migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA, RENDER_SCHEMA, REPAIR_SCHEMA, TEMPLATE_SCHEMA)
+            if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
+                raise ValueError("教学数据库来自更新版本，请升级教师插件")
+            if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):
+                conn.execute("BEGIN IMMEDIATE")
+                version = conn.execute("PRAGMA user_version").fetchone()[0]
+                for index in range(version, len(migrations)):
+                    for statement in migrations[index]:
+>                       conn.execute(statement)
+E                       sqlite3.OperationalError: near "source_mode": syntax error
+
+..\..\appdata\local\temp\hermes-pytest\r-dzlmer3i\pytest-of-unknown\pytest-0\test_blueprint_templates_expor0\teacher-home\plugins\teacher-assistant\teaching\database.py:100: OperationalError
+=========================== short test summary info ===========================
+FAILED tests/extensions/test_teacher_templates.py::test_blueprint_templates_export_native_text_without_model_calls
+ERROR tests/extensions/test_teacher_templates.py::test_template_render_has_no_fake_reference_or_pixel_difference
+ERROR tests/extensions/test_teacher_templates.py::test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports
+1 failed, 2 errors in 5.70s
+
+=== 1 file with test failures ===
+  tests\extensions\test_teacher_templates.py  (1 test failed)

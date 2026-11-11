@@ -73,3 +73,7 @@ TypeScript和真实Desktop回归通过。Desktop使用真实WPS 12.0渲染页面
 # Phase 5 实测文字字号适配增量
 
 完整教师回归9文件45项通过。真实Electron、Gateway、SQLite与WPS 12.0测得16个文字区域（7个文字框及9个表格单元格），缺测0。标题160→32原图像素，超框1→0；表格100→32原图像素，超框9→0。审核版本v3保持不变，修复分别追加v5和v7草稿。原始失败与最终成功日志、收据和截图保存在 `phase5-evidence/text-fit`；模型边界使用本机模拟服务，WPS渲染及测量真实执行。
+
+## 蓝图结构化备用模式
+
+完整教师回归10文件48项通过，新增3项覆盖原生Tool、真实PPTX、无原图渲染、版本保护、schema 10完整关联数据升级及注入失败回滚。真实Desktop生成8页、逐页审核和整套下载通过，首张页面WPS实测3区域，超框/缺测0，无虚假差异指标。测试模型仍为本机模拟服务；备用生成本身不调用模型。详见PHASE5_TEMPLATES_CHECKPOINT.md及phase5-evidence/blueprint-templates。

@@ -43,7 +43,8 @@ export interface EditablePageSummary {
 }
 
 export interface EditablePage extends EditablePageSummary {
-  asset_id: string
+  asset_id: string | null
+  source_mode: 'vision' | 'blueprint'
   layout: NativeLayout
   object_counts: Record<string, number>
   text_check: { missing_text: string[] }

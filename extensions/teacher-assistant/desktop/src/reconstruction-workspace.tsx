@@ -26,6 +26,10 @@ export function ReconstructionWorkspace({ route, blueprintId }: Props) {
     onSuccess: async page => { await queryClient.invalidateQueries({ queryKey: [...routeKey(route), 'slide-pages'] }); setPageId(page.id) },
   })
   const download = useMutation({ mutationFn: () => downloadSlides(route, 'slide.deck.export', blueprintId) })
+  const template = useMutation({
+    mutationFn: () => call<{ items: EditablePageSummary[] }>(route, 'slide.deck.from_blueprint', { id: blueprintId }, crypto.randomUUID()),
+    onSuccess: async result => { await queryClient.invalidateQueries({ queryKey: [...routeKey(route), 'slide-pages'] }); setPageId(result.items[0].id) },
+  })
   return <section aria-label="图片转可编辑课件" className="space-y-4">
     <h3 className="text-lg font-semibold">图片转可编辑课件</h3>
     <p>复用已完成的视觉布局识别，教师先审核设计图，再建立可编辑页面。完整导出逐页选择最新已审核版本。</p>
@@ -37,11 +41,13 @@ export function ReconstructionWorkspace({ route, blueprintId }: Props) {
       <Button variant="secondary" disabled={analyses.data?.next_offset == null} onClick={() => { setOffset(analyses.data?.next_offset ?? offset); setAnalysisId('') }}>下一组识别记录</Button>
     </div>
     <Button disabled={!analysisId || create.isPending} onClick={() => create.mutate()}>从识别布局建立可编辑页面</Button>
+    <p>备用模式可直接用已审核蓝图的准确文字生成整套可编辑草稿，无需生图。已有审核成果保留，新草稿需逐页复核。</p>
+    <Button variant="secondary" disabled={template.isPending} onClick={() => template.mutate()}>从蓝图生成整套结构化草稿</Button>
     <label>可编辑页面版本<select aria-label="可编辑页面版本" value={pageId} onChange={event => setPageId(event.target.value)}>
       <option value="">选择可编辑页面</option>{pages.data?.items.map(page => <option key={page.id} value={page.id}>第{page.page_number}页 · v{page.version} · {PAGE_LABELS[page.status]}</option>)}
     </select></label>
     {pageId && <EditableSlide key={pageId} route={route} pageId={pageId} onVersion={setPageId} />}
     <Button disabled={download.isPending} onClick={() => download.mutate()}>下载完整可编辑PPTX</Button>
-    {[analyses.error, pages.error, create.error, download.error].filter(Boolean).map((error, i) => <p role="alert" key={i}>{error?.message}</p>)}
+    {[analyses.error, pages.error, create.error, template.error, download.error].filter(Boolean).map((error, i) => <p role="alert" key={i}>{error?.message}</p>)}
   </section>
 }

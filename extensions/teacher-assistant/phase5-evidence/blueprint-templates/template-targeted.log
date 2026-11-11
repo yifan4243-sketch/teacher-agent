@@ -1,0 +1,112 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 1 test files (~3 tests) under ['tests\\extensions\\test_teacher_templates.py']; running with -j 8
+[100.0% |     3/~3 | ✓1 | ✗2] ✗ tests\extensions\test_teacher_templates.py (1✓ 2✗, 22.1s)
+
+  ╔╍ Failed: tests\extensions\test_teacher_templates.py ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+  ║ render_workspace = (<function teacher.<locals>.call at 0x000001E3D3F3F1C0>, {'id': 'd5279643-33d2-4302-a6bc-c4042b55c38f', 'blueprint_id'...\x00\x02\x10\x80\x00\x04 \x00\x01\x08@\x00\x02\x10\x80\x00\x04\xfe\x1f\x8a\xb9u@(+\x11D\x00\x00\x00\x00IEND\xaeB`\x82')
+  ║ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001E3D3C8B0B0>
+  ║ 
+  ║     def test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports(render_workspace, monkeypatch):
+  ║         call, page, adapter, _, _, rendered = render_workspace
+  ║         module = importlib.import_module(adapter.__package__ + ".reconstruction_schema")
+  ║         database = importlib.import_module(adapter.__package__ + ".database")
+  ║         saved(call, "slide.page.review", {"id": page["id"], "decision": "approved", "note": "legacy approval"})
+  ║         monkeypatch.setattr(adapter, "render", lambda *args: (rendered, {"version": "fixture", "measurements": [{
+  ║             "element_name": "title", "frame_width": 900, "frame_height": 50, "content_width": 800,
+  ║             "content_height": 500, "font_size": 30}]}))
+  ║         job = saved(call, "slide.render.begin", {"id": page["id"]})
+  ║         saved(call, "slide.render.run", {"id": job["id"]}, job["id"])
+  ║         repaired = saved(call, "slide.page.fit_text", {"id": job["id"]})["page"]
+  ║         tables = ("slide_render_jobs", "slide_page_repairs", "slide_deck_exports")
+  ║         with database.database() as conn:
+  ║             path = conn.execute("PRAGMA database_list").fetchone()[2]
+  ║             snapshot = {table: [tuple(row) for row in conn.execute(f"SELECT * FROM {table}")] for table in tables}
+  ║             before_pages = [dict(row) for row in conn.execute("SELECT * FROM slide_pages ORDER BY version")]
+  ║             hashes = {row["stored_path"]: row["sha256"] for row in conn.execute("SELECT * FROM slide_deck_exports")}
+  ║         # Recreate the actual schema-10 table while retaining the surrounding populated database.
+  ║ >       with sqlite3.connect(path) as conn:
+  ║              ^^^^^^^^^^^^^^^^^^^^^
+  ║ E       sqlite3.IntegrityError: FOREIGN KEY constraint failed
+  ║ 
+  ║ tests\extensions\test_teacher_templates.py:83: IntegrityError
+  ║ =========================== short test summary info ===========================
+  ║ FAILED tests/extensions/test_teacher_templates.py::test_template_render_has_no_fake_reference_or_pixel_difference
+  ║ FAILED tests/extensions/test_teacher_templates.py::test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports
+  ║ 2 failed, 1 passed in 8.60s
+  ║
+  ║  Repro: python -m pytest tests\extensions\test_teacher_templates.py -q
+  ╚╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+
+
+=== Summary: 1 files, 1 tests passed, 2 failed; FAILED: 1 of 1 file (100% complete) in 22.3s (8 workers) ===
+
+=== Per-file subprocess time distribution ===
+  Files:   1
+  Total subprocess CPU-wall: 22.1s  (runner wall: 22.3s, parallelism: 8x)
+  P50: 22.11s  P90: 22.11s  P95: 22.11s  P99: 22.11s  Max: 22.11s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     22.11s  tests\extensions\test_teacher_templates.py
+
+=== Failure output ===
+
+--- tests\extensions\test_teacher_templates.py ---
+.FF                                                                      [100%]
+================================== FAILURES ===================================
+_______ test_template_render_has_no_fake_reference_or_pixel_difference ________
+
+render_workspace = (<function teacher.<locals>.call at 0x000001E3D3B4AA30>, {'id': '03f5d433-fd0a-45be-a6ad-baeb412e37f0', 'blueprint_id'...\x00\x02\x10\x80\x00\x04 \x00\x01\x08@\x00\x02\x10\x80\x00\x04\xfe\x1f\x8a\xb9u@(+\x11D\x00\x00\x00\x00IEND\xaeB`\x82')
+
+    def test_template_render_has_no_fake_reference_or_pixel_difference(render_workspace):
+        call, source, _, _, _, _ = render_workspace
+        deck = saved(call, "slide.deck.from_blueprint", {"id": source["blueprint_id"]})
+        page = deck["items"][0]
+        job = saved(call, "slide.render.begin", {"id": page["id"]})
+        finished = saved(call, "slide.render.run", {"id": job["id"]}, job["id"])
+>       assert finished["state"] == "succeeded", finished
+E       AssertionError: {'id': '2477ec90-88fe-4e7d-bc1a-e9ac9cf53a80', 'page_id': '095d836d-a942-4e9c-9b05-3b4066c88ab5', 'export_id': '6d7e5000-5249-4605-b694-92476a81af09', 'renderer': 'wps', ...}
+E       assert 'failed' == 'succeeded'
+E         
+E         - succeeded
+E         + failed
+
+tests\extensions\test_teacher_templates.py:53: AssertionError
+_ test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports _
+
+render_workspace = (<function teacher.<locals>.call at 0x000001E3D3F3F1C0>, {'id': 'd5279643-33d2-4302-a6bc-c4042b55c38f', 'blueprint_id'...\x00\x02\x10\x80\x00\x04 \x00\x01\x08@\x00\x02\x10\x80\x00\x04\xfe\x1f\x8a\xb9u@(+\x11D\x00\x00\x00\x00IEND\xaeB`\x82')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001E3D3C8B0B0>
+
+    def test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports(render_workspace, monkeypatch):
+        call, page, adapter, _, _, rendered = render_workspace
+        module = importlib.import_module(adapter.__package__ + ".reconstruction_schema")
+        database = importlib.import_module(adapter.__package__ + ".database")
+        saved(call, "slide.page.review", {"id": page["id"], "decision": "approved", "note": "legacy approval"})
+        monkeypatch.setattr(adapter, "render", lambda *args: (rendered, {"version": "fixture", "measurements": [{
+            "element_name": "title", "frame_width": 900, "frame_height": 50, "content_width": 800,
+            "content_height": 500, "font_size": 30}]}))
+        job = saved(call, "slide.render.begin", {"id": page["id"]})
+        saved(call, "slide.render.run", {"id": job["id"]}, job["id"])
+        repaired = saved(call, "slide.page.fit_text", {"id": job["id"]})["page"]
+        tables = ("slide_render_jobs", "slide_page_repairs", "slide_deck_exports")
+        with database.database() as conn:
+            path = conn.execute("PRAGMA database_list").fetchone()[2]
+            snapshot = {table: [tuple(row) for row in conn.execute(f"SELECT * FROM {table}")] for table in tables}
+            before_pages = [dict(row) for row in conn.execute("SELECT * FROM slide_pages ORDER BY version")]
+            hashes = {row["stored_path"]: row["sha256"] for row in conn.execute("SELECT * FROM slide_deck_exports")}
+        # Recreate the actual schema-10 table while retaining the surrounding populated database.
+>       with sqlite3.connect(path) as conn:
+             ^^^^^^^^^^^^^^^^^^^^^
+E       sqlite3.IntegrityError: FOREIGN KEY constraint failed
+
+tests\extensions\test_teacher_templates.py:83: IntegrityError
+=========================== short test summary info ===========================
+FAILED tests/extensions/test_teacher_templates.py::test_template_render_has_no_fake_reference_or_pixel_difference
+FAILED tests/extensions/test_teacher_templates.py::test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports
+2 failed, 1 passed in 8.60s
+
+=== 1 file with test failures ===
+  tests\extensions\test_teacher_templates.py  (2 tests failed)

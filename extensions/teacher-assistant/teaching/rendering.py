@@ -109,16 +109,17 @@ def execute(data, actor, request_id, **_context):
             exported = dict(conn.execute("SELECT * FROM slide_deck_exports WHERE id=?", (job["export_id"],)).fetchone())
             reconstruction._checked_export(exported)
             page = reconstruction.get_page(conn, Identifier(id=job["page_id"]))
-            asset, reference = read_asset(conn, Identifier(id=page["asset_id"]))
+            asset, reference = read_asset(conn, Identifier(id=page["asset_id"])) if page["asset_id"] else (None, None)
         with tempfile.TemporaryDirectory(prefix=".slide-render-", dir=file_root()) as folder:
             content, metadata = office_render.render(Path(exported["stored_path"]), Path(folder), job["renderer"])
-        difference, comparison = compare(reference, content)
+        difference, comparison = compare(reference, content) if reference else (None, {
+            "width": 1600, "height": 900, "review_note": "结构化页面没有原始设计图，请核对实际渲染中的文字、版式和教材内容"})
         text_report = inspect_layout(page["layout"], metadata.get("measurements", []))
         path, digest = store_bytes(content, ".png")
-        diff_path, diff_digest = store_bytes(difference, ".png")
-        result = {"stored_path": str(path), "sha256": digest, "byte_size": len(content), "difference_path": str(diff_path),
+        diff_path, diff_digest = store_bytes(difference, ".png") if difference else (None, None)
+        result = {"stored_path": str(path), "sha256": digest, "byte_size": len(content), "difference_path": str(diff_path) if diff_path else None,
                   "difference_sha256": diff_digest, "renderer_version": metadata["version"],
-                  "comparison": {**comparison, "reference_sha256": asset["sha256"], "pptx_sha256": exported["sha256"],
+                  "comparison": {**comparison, "reference_sha256": asset["sha256"] if asset else None, "pptx_sha256": exported["sha256"],
                     "measurements": metadata.get("measurements", []), "unmeasured_objects": metadata.get("unmeasured_objects", []),
                     "text_bounds": {"measured_regions": text_report["measured_regions"], "missing_regions": text_report["missing_regions"], "overflow_regions": len(text_report["overflows"])}}}
     except DomainError as exc:
@@ -145,6 +146,8 @@ def _read_file(conn, data):
     job = get_job(conn, data)
     if job["state"] != "succeeded":
         raise DomainError("render_required", "页面尚无成功渲染结果")
+    if data.variant == "difference" and not job["difference_sha256"]:
+        raise DomainError("reference_unavailable", "结构化页面没有原始设计图，无法生成像素差异")
     path = Path(job["stored_path"] if data.variant == "rendered" else job["difference_path"])
     digest = job["sha256"] if data.variant == "rendered" else job["difference_sha256"]
     if not path.resolve().is_relative_to(file_root().resolve()):

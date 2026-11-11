@@ -2,6 +2,8 @@
 
 ## 当前状态
 
+Phase 5结构化备用模式已接入原生Tool、Skill及Desktop，schema 11。整套草稿、逐页审核、真实WPS渲染和完整PPTX下载通过，当前继续Phase 4可选素材及Phase 5剩余能力，再按依赖推进Phase 6–9。上一同步提交 `49561ff88b7b9b7a1e53fd7494b584282865a44e`，本增量凭据见Git历史。
+
 最新增量为Phase 5实测文字字号适配，schema 10。文字框和表格单元格均以实际Office测量及蓝图规定尺寸判定超框；修复另存草稿并重新渲染。当前继续结构化备用模式、Phase 4可选素材及后续Phase 6–9，未将完整专业版标记交付。上一已推送基线为 `c627618c3c9ed908037fb9a377e8c6894ef727f3`，本次提交以Git历史为准。
 
 Phase 3 已提交并推送，SHA为 `cdef9071df842eb01462c2663ea33c210366d4c8`，远端分支核验一致。Phase 2提交为 `0d1f63156b03bfb7299cb6a99947b2f14ec1fad7`。当前在Phase 4，完成页面蓝图与自动提示词的首个模块，图片生成、缓存、成本预算及视觉核验继续开发。Phase 0 已由用户验收，交付基线为 `bdbdc35865015135e1ad1ee3f86a4bcef1008e81`。
@@ -42,6 +44,8 @@ Phase 4图片模块已接入原生image_generate、预算预留、持久认领�
 schema 9已接入实际办公软件渲染任务、历史记录、三图对照、RGB绝对差指标和PNG下载。WPS 12.0已通过原生Desktop完整链路验证，使用独立PPTX副本保持输入文件哈希。公开入口查找PowerShell，PowerPoint适配器待对应环境验证。自动修复、结构化备用路线和真实模型质量继续实施。
 
 ## 最近成功测试
+
+结构化备用模式加入后，教师回归10文件48项通过。真实Desktop生成并逐页审核8页，WPS渲染首张结构化页面超框/缺测0，整套下载重读核对0位图及SHA-256。旧schema带页面父子版本、审核、渲染、修复及导出记录的升级与注入失败回滚通过。见 `PHASE5_TEMPLATES_CHECKPOINT.md`。
 
 本次完整教师回归9文件45项通过。真实Desktop/WPS验证标题超框1→0、表格单元格超框9→0；每次测量16区域，缺测0，审核v3保持不变，修复追加v5及v7草稿。详见 `PHASE5_TEXT_FIT_CHECKPOINT.md` 和 `phase5-evidence/text-fit`。
 

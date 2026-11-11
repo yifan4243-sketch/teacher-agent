@@ -68,17 +68,22 @@ def list_pages(conn, data):
     return {"items": [dict(row) for row in rows], "total": total, "next_offset": data.offset + len(rows) if data.offset + len(rows) < total else None}
 
 
-def _save_page(conn, blueprint_id, page_number, expected_version, analysis_id, asset_id, layout, actor):
+def _save_page(conn, blueprint_id, page_number, expected_version, analysis_id, asset_id, layout, actor, *, source_mode="vision"):
     _page_content(conn, blueprint_id, page_number)
     latest = conn.execute("SELECT id,version FROM slide_pages WHERE blueprint_id=? AND page_number=? ORDER BY version DESC LIMIT 1", (blueprint_id, page_number)).fetchone()
     if expected_version != (latest["version"] if latest else 0):
         raise DomainError("version_conflict", "可编辑页面已有更新版本，请刷新后修订")
-    asset, _ = read_asset(conn, Identifier(id=asset_id))
-    if (layout.width, layout.height) != (asset["width"], asset["height"]) or abs(layout.width / layout.height - 16 / 9) > 0.005:
+    if asset_id is not None:
+        asset, _ = read_asset(conn, Identifier(id=asset_id))
+        if (layout.width, layout.height) != (asset["width"], asset["height"]):
+            raise DomainError("invalid_slide_dimensions", "页面画布需与设计图尺寸一致")
+    elif any(element.kind == "image" for element in layout.elements):
+        raise DomainError("image_source_required", "结构化页面没有原始设计图，不能加入来源不明的图片对象")
+    if abs(layout.width / layout.height - 16 / 9) > 0.005:
         raise DomainError("invalid_slide_dimensions", "页面画布需与16比9设计图尺寸一致")
     identifier = new_id()
-    conn.execute("""INSERT INTO slide_pages(id,blueprint_id,page_number,version,parent_id,analysis_id,asset_id,layout_json,created_by)
-        VALUES(?,?,?,?,?,?,?,?,?)""", (identifier, blueprint_id, page_number, expected_version + 1, latest["id"] if latest else None, analysis_id, asset_id, encode(layout.model_dump()), actor))
+    conn.execute("""INSERT INTO slide_pages(id,blueprint_id,page_number,version,parent_id,analysis_id,asset_id,layout_json,created_by,source_mode)
+        VALUES(?,?,?,?,?,?,?,?,?,?)""", (identifier, blueprint_id, page_number, expected_version + 1, latest["id"] if latest else None, analysis_id, asset_id, encode(layout.model_dump()), actor, source_mode))
     result = get_page(conn, Identifier(id=identifier))
     audit(conn, "slide_page", identifier, "save_version", actor, None, result)
     return result
@@ -97,7 +102,7 @@ def from_analysis(conn, data, actor):
 
 def revise(conn, data, actor):
     before = get_page(conn, data)
-    return _save_page(conn, before["blueprint_id"], before["page_number"], before["version"], before["analysis_id"], before["asset_id"], data.layout, actor)
+    return _save_page(conn, before["blueprint_id"], before["page_number"], before["version"], before["analysis_id"], before["asset_id"], data.layout, actor, source_mode=before["source_mode"])
 
 
 def review(conn, data, actor):

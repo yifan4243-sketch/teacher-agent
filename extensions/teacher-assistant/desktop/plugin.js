@@ -1379,6 +1379,9 @@ function RenderComparison({ route, job, assetId, onVersion }) {
   const previews = useQuery11({
     queryKey: [...routeKey(route), "render-comparison", job.id, assetId],
     queryFn: async () => {
+      if (!assetId) {
+        return [{ label: "PPTX\u5B9E\u9645\u6E32\u67D3\u56FE", ...await call(route, "slide.render.preview", { id: job.id, variant: "rendered" }) }];
+      }
       const [reference, rendered, difference] = await Promise.all([
         call(route, "slide.image.preview", { id: assetId }),
         call(route, "slide.render.preview", { id: job.id, variant: "rendered" }),
@@ -1406,7 +1409,7 @@ function RenderComparison({ route, job, assetId, onVersion }) {
     repair.mutate(Number(new FormData(event.currentTarget).get("minimum")));
   }
   return /* @__PURE__ */ jsxs11("div", { className: "space-y-3", children: [
-    /* @__PURE__ */ jsxs11("p", { children: [
+    job.comparison.reference_sha256 && /* @__PURE__ */ jsxs11("p", { children: [
       "RGB\u5E73\u5747\u7EDD\u5BF9\u5DEE ",
       job.comparison.mean_absolute_rgb_error?.toFixed(2),
       " \xB7 \u901A\u9053\u5DEE\u503C\u5927\u4E8E32\u7684\u50CF\u7D20\u5360\u6BD4 ",
@@ -1437,7 +1440,7 @@ function RenderComparison({ route, job, assetId, onVersion }) {
       repair.data.report.missing_regions,
       "\u4E2A\u533A\u57DF\u7F3A\u5C11\u6D4B\u91CF\u3002"
     ] }),
-    /* @__PURE__ */ jsx11(Button11, { variant: "secondary", onClick: () => setVisible((value) => !value), children: visible ? "\u6536\u8D77\u6E32\u67D3\u5BF9\u7167" : "\u67E5\u770B\u6E32\u67D3\u5BF9\u7167" }),
+    /* @__PURE__ */ jsx11(Button11, { variant: "secondary", onClick: () => setVisible((value) => !value), children: visible ? "\u6536\u8D77\u6E32\u67D3\u5BF9\u7167" : assetId ? "\u67E5\u770B\u6E32\u67D3\u5BF9\u7167" : "\u67E5\u770B\u5B9E\u9645\u6E32\u67D3" }),
     visible && previews.isPending && /* @__PURE__ */ jsx11("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5B9E\u9645\u6E32\u67D3\u56FE" }),
     visible && previews.data && /* @__PURE__ */ jsx11("div", { className: "grid gap-3", style: { gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" }, children: previews.data.map((preview) => /* @__PURE__ */ jsxs11("figure", { children: [
       /* @__PURE__ */ jsx11("figcaption", { children: preview.label }),
@@ -1445,7 +1448,7 @@ function RenderComparison({ route, job, assetId, onVersion }) {
     ] }, preview.label)) }),
     /* @__PURE__ */ jsxs11("div", { className: "flex flex-wrap gap-2", children: [
       /* @__PURE__ */ jsx11(Button11, { variant: "secondary", disabled: download.isPending, onClick: () => download.mutate("rendered"), children: "\u4E0B\u8F7D\u5B9E\u9645\u6E32\u67D3PNG" }),
-      /* @__PURE__ */ jsx11(Button11, { variant: "secondary", disabled: download.isPending, onClick: () => download.mutate("difference"), children: "\u4E0B\u8F7D\u50CF\u7D20\u5DEE\u5F02PNG" })
+      job.comparison.reference_sha256 && /* @__PURE__ */ jsx11(Button11, { variant: "secondary", disabled: download.isPending, onClick: () => download.mutate("difference"), children: "\u4E0B\u8F7D\u50CF\u7D20\u5DEE\u5F02PNG" })
     ] }),
     [previews.error, download.error, repair.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx11("p", { role: "alert", children: error?.message }, index))
   ] });
@@ -1572,6 +1575,10 @@ function EditableSlide({ route, pageId, onVersion }) {
         saved.version,
         " \xB7 ",
         PAGE_LABELS[saved.status]
+      ] }),
+      /* @__PURE__ */ jsxs12("p", { children: [
+        "\u9875\u9762\u6765\u6E90\uFF1A",
+        saved.source_mode === "blueprint" ? "\u84DD\u56FE\u7ED3\u6784\u5316\u5907\u7528\u6A21\u5F0F" : "\u8BBE\u8BA1\u56FE\u7247\u89C6\u89C9\u8FD8\u539F"
       ] }),
       /* @__PURE__ */ jsxs12("p", { children: [
         "\u9875\u9762\u5BF9\u8C61 ",
@@ -1702,6 +1709,13 @@ function ReconstructionWorkspace({ route, blueprintId }) {
     }
   });
   const download = useMutation13({ mutationFn: () => downloadSlides(route, "slide.deck.export", blueprintId) });
+  const template = useMutation13({
+    mutationFn: () => call(route, "slide.deck.from_blueprint", { id: blueprintId }, crypto.randomUUID()),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: [...routeKey(route), "slide-pages"] });
+      setPageId(result.items[0].id);
+    }
+  });
   return /* @__PURE__ */ jsxs13("section", { "aria-label": "\u56FE\u7247\u8F6C\u53EF\u7F16\u8F91\u8BFE\u4EF6", className: "space-y-4", children: [
     /* @__PURE__ */ jsx13("h3", { className: "text-lg font-semibold", children: "\u56FE\u7247\u8F6C\u53EF\u7F16\u8F91\u8BFE\u4EF6" }),
     /* @__PURE__ */ jsx13("p", { children: "\u590D\u7528\u5DF2\u5B8C\u6210\u7684\u89C6\u89C9\u5E03\u5C40\u8BC6\u522B\uFF0C\u6559\u5E08\u5148\u5BA1\u6838\u8BBE\u8BA1\u56FE\uFF0C\u518D\u5EFA\u7ACB\u53EF\u7F16\u8F91\u9875\u9762\u3002\u5B8C\u6574\u5BFC\u51FA\u9010\u9875\u9009\u62E9\u6700\u65B0\u5DF2\u5BA1\u6838\u7248\u672C\u3002" }),
@@ -1728,6 +1742,8 @@ function ReconstructionWorkspace({ route, blueprintId }) {
       }, children: "\u4E0B\u4E00\u7EC4\u8BC6\u522B\u8BB0\u5F55" })
     ] }),
     /* @__PURE__ */ jsx13(Button13, { disabled: !analysisId || create.isPending, onClick: () => create.mutate(), children: "\u4ECE\u8BC6\u522B\u5E03\u5C40\u5EFA\u7ACB\u53EF\u7F16\u8F91\u9875\u9762" }),
+    /* @__PURE__ */ jsx13("p", { children: "\u5907\u7528\u6A21\u5F0F\u53EF\u76F4\u63A5\u7528\u5DF2\u5BA1\u6838\u84DD\u56FE\u7684\u51C6\u786E\u6587\u5B57\u751F\u6210\u6574\u5957\u53EF\u7F16\u8F91\u8349\u7A3F\uFF0C\u65E0\u9700\u751F\u56FE\u3002\u5DF2\u6709\u5BA1\u6838\u6210\u679C\u4FDD\u7559\uFF0C\u65B0\u8349\u7A3F\u9700\u9010\u9875\u590D\u6838\u3002" }),
+    /* @__PURE__ */ jsx13(Button13, { variant: "secondary", disabled: template.isPending, onClick: () => template.mutate(), children: "\u4ECE\u84DD\u56FE\u751F\u6210\u6574\u5957\u7ED3\u6784\u5316\u8349\u7A3F" }),
     /* @__PURE__ */ jsxs13("label", { children: [
       "\u53EF\u7F16\u8F91\u9875\u9762\u7248\u672C",
       /* @__PURE__ */ jsxs13("select", { "aria-label": "\u53EF\u7F16\u8F91\u9875\u9762\u7248\u672C", value: pageId, onChange: (event) => setPageId(event.target.value), children: [
@@ -1744,7 +1760,7 @@ function ReconstructionWorkspace({ route, blueprintId }) {
     ] }),
     pageId && /* @__PURE__ */ jsx13(EditableSlide, { route, pageId, onVersion: setPageId }, pageId),
     /* @__PURE__ */ jsx13(Button13, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u4E0B\u8F7D\u5B8C\u6574\u53EF\u7F16\u8F91PPTX" }),
-    [analyses.error, pages.error, create.error, download.error].filter(Boolean).map((error, i) => /* @__PURE__ */ jsx13("p", { role: "alert", children: error?.message }, i))
+    [analyses.error, pages.error, create.error, template.error, download.error].filter(Boolean).map((error, i) => /* @__PURE__ */ jsx13("p", { role: "alert", children: error?.message }, i))
   ] });
 }
 

@@ -410,6 +410,56 @@ print(json.dumps({'before_font_pixels':tables[0]['font_size'],'after_font_pixels
     await reconstruction.getByRole('button', { name: '下载完整可编辑PPTX', exact: true }).click()
     await expect(reconstruction.getByRole('alert').filter({ hasText: '第2页尚无已审核的可编辑版本' })).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('teacher-editable-page.png') })
+    await reconstruction.getByRole('button', { name: '从蓝图生成整套结构化草稿', exact: true }).click()
+    await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v8 · 草稿', exact: true })).toBeVisible()
+    await expect(reconstruction.getByText('页面来源：蓝图结构化备用模式', { exact: true })).toBeVisible()
+    await renderPanel.getByRole('button', { name: '生成实际页面预览', exact: true }).click()
+    await expect(renderPanel.getByText(/渲染完成 · WPS演示/)).toBeVisible({ timeout: 120000 })
+    await expect(renderPanel.getByText(/超框区域 0/)).toBeVisible()
+    await expect(renderPanel.getByText(/RGB平均绝对差/)).toHaveCount(0)
+    await expect(renderPanel.getByRole('button', { name: '下载像素差异PNG', exact: true })).toHaveCount(0)
+    await renderPanel.getByRole('button', { name: '查看实际渲染', exact: true }).click()
+    await expect(renderPanel.getByAltText('PPTX实际渲染图', { exact: true })).toBeVisible()
+    await expect(renderPanel.getByAltText('原始设计图', { exact: true })).toHaveCount(0)
+    await page.screenshot({ path: testInfo.outputPath('teacher-template-preview.jpg'), type: 'jpeg', quality: 85 })
+    const templateIds = await reconstruction.getByLabel('可编辑页面版本', { exact: true }).locator('option').evaluateAll(options => options.map(option => option.value).filter(Boolean))
+    expect(templateIds.length).toBe(8)
+    for (const templateId of templateIds) {
+      await reconstruction.getByLabel('可编辑页面版本', { exact: true }).selectOption(templateId)
+      await reconstruction.getByLabel(/已核对原生文字/).check()
+      await reconstruction.getByLabel('可编辑页面审核意见', { exact: true }).fill('测试蓝图结构化草稿，核对原生文字')
+      await reconstruction.getByRole('button', { name: '审核通过可编辑页面', exact: true }).click()
+      await expect(reconstruction.getByRole('heading').filter({ hasText: /可编辑第\d+页 · v\d+ · 已审核/ })).toBeVisible()
+    }
+    const templatePath = testInfo.outputPath('structured-deck.pptx')
+    await app.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }) }, templatePath)
+    await reconstruction.getByRole('button', { name: '下载完整可编辑PPTX', exact: true }).click()
+    await expect.poll(() => existsSync(templatePath)).toBe(true)
+    const templateProbe = spawnSync(python, ['-c', `
+import hashlib,json,sqlite3,sys
+from pathlib import Path
+from pptx import Presentation
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+home,path=map(Path,sys.argv[1:])
+with sqlite3.connect(home/'plugin-data/teacher-assistant/teaching.db') as conn:
+    conn.row_factory=sqlite3.Row
+    pages=[dict(row) for row in conn.execute("SELECT * FROM slide_pages WHERE source_mode='blueprint' ORDER BY page_number")]
+    render=dict(conn.execute('SELECT * FROM slide_render_jobs WHERE page_id=?',(pages[0]['id'],)).fetchone())
+    exported=next(dict(row) for row in conn.execute('SELECT * FROM slide_deck_exports') if len(json.loads(row['pages_json']))==8)
+    assert conn.execute("SELECT status FROM slide_pages WHERE source_mode='vision' AND version=3").fetchone()[0]=='approved'
+    assert not conn.execute('PRAGMA foreign_key_check').fetchall()
+assert len(pages)==8 and all(page['status']=='approved' and page['asset_id'] is None and page['analysis_id'] is None for page in pages)
+assert render['state']=='succeeded' and render['difference_path'] is None
+comparison=json.loads(render['comparison_json'])
+assert comparison['reference_sha256'] is None and 'mean_absolute_rgb_error' not in comparison
+assert comparison['text_bounds']['overflow_regions']==0 and comparison['text_bounds']['missing_regions']==0
+deck=Presentation(path)
+assert len(deck.slides)==8 and not any(shape.shape_type==MSO_SHAPE_TYPE.PICTURE for slide in deck.slides for shape in slide.shapes)
+assert hashlib.sha256(path.read_bytes()).hexdigest()==exported['sha256']
+print(json.dumps({'pages':len(pages),'first_version':pages[0]['version'],'source_mode':'blueprint','renderer':render['renderer'],'comparison':comparison,'sha256':exported['sha256']},ensure_ascii=False))
+`, home, templatePath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(templateProbe.status, templateProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('template-receipt.json'), templateProbe.stdout)
     await page.getByRole('button', { name: '教材知识库', exact: true }).click()
     await page.getByLabel('教材所属课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
     await page.getByLabel('教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v1 · UI教材.txt' })

@@ -16,6 +16,7 @@ from .image_analysis_schema import SCHEMA as IMAGE_ANALYSIS_SCHEMA
 from .reconstruction_schema import SCHEMA as RECONSTRUCTION_SCHEMA
 from .render_schema import SCHEMA as RENDER_SCHEMA
 from .repair_schema import SCHEMA as REPAIR_SCHEMA
+from .template_schema import SCHEMA as TEMPLATE_SCHEMA
 
 
 SCHEMA = (
@@ -88,17 +89,23 @@ def database():
     conn = plugin_db("teacher-assistant", "teaching.db")
     conn.row_factory = sqlite3.Row
     try:
-        migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA, RENDER_SCHEMA, REPAIR_SCHEMA)
+        migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA, RENDER_SCHEMA, REPAIR_SCHEMA, TEMPLATE_SCHEMA)
         if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
             raise ValueError("教学数据库来自更新版本，请升级教师插件")
         if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):
+            # SQLite table rebuilds require disabling FK actions outside the transaction.
+            # Validate all links before commit, then restore enforcement before serving writes.
+            conn.execute("PRAGMA foreign_keys=OFF")
             conn.execute("BEGIN IMMEDIATE")
             version = conn.execute("PRAGMA user_version").fetchone()[0]
             for index in range(version, len(migrations)):
                 for statement in migrations[index]:
                     conn.execute(statement)
                 conn.execute(f"PRAGMA user_version={index + 1}")
+            if conn.execute("PRAGMA foreign_key_check").fetchone():
+                raise ValueError("教学数据库迁移后关联校验失败，已撤销迁移")
             conn.commit()
+            conn.execute("PRAGMA foreign_keys=ON")
         with conn:
             yield conn
     finally:

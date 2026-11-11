@@ -85,6 +85,8 @@ def test_legacy_migration_preserves_pages_approvals_repairs_renders_and_exports(
     # Recreate the actual schema-10 table while retaining the surrounding populated database.
     with sqlite3.connect(path) as conn:
         conn.execute("BEGIN IMMEDIATE")
+        conn.execute("DROP TABLE slide_job_references")
+        conn.execute("DROP TABLE slide_references")
         conn.execute(module.SCHEMA[0].replace("CREATE TABLE slide_pages (", "CREATE TABLE slide_pages_legacy ("))
         columns = [row[1] for row in conn.execute("PRAGMA table_info(slide_pages_legacy)")]
         names = ",".join(columns)

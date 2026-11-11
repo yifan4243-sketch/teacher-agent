@@ -1,5 +1,6 @@
 import { Button, useMutation, useQuery, useQueryClient, type PluginProfileRoute } from '@hermes/plugin-sdk'
 import { useState, type FormEvent } from 'react'
+import { SlideReferences } from './slide-references'
 
 import { call, routeKey } from './api'
 import type { BlueprintDocument } from './blueprint-api'
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function SlideImages({ route, blueprint }: Props) {
+  const [referenceId, setReferenceId] = useState('')
   const queryClient = useQueryClient()
   const [pageNumber, setPageNumber] = useState(blueprint.content.pages[0].number)
   const [offset, setOffset] = useState(0)
@@ -25,9 +27,12 @@ export function SlideImages({ route, blueprint }: Props) {
   const refresh = () => queryClient.invalidateQueries({ queryKey: key })
   const setBudget = useMutation({ mutationFn: (micro: number) => call(route, 'slide.image.set_budget', { blueprint_id: blueprint.id, budget_micro_usd: micro }, crypto.randomUUID()), onSettled: refresh })
   const reserve = useMutation({
-    mutationFn: async ({ pages, estimate, allowed, force }: { pages: number[]; estimate: number; allowed: boolean; force: boolean }) => {
+    mutationFn: async ({ pages, estimate, allowed, force, allowReference }: { pages: number[]; estimate: number; allowed: boolean; force: boolean; allowReference: boolean }) => {
       for (const number of pages) {
-        await call(route, 'slide.image.reserve', { id: blueprint.id, page_number: number, estimated_micro_usd: estimate, allow_model_call: allowed, force_regenerate: force }, crypto.randomUUID())
+        await call(route, referenceId ? 'slide.image.reserve_references' : 'slide.image.reserve', {
+          id: blueprint.id, page_number: number, estimated_micro_usd: estimate, allow_model_call: allowed, force_regenerate: force,
+          ...(referenceId ? { reference_id: referenceId, allow_reference_upload: allowReference } : {}),
+        }, crypto.randomUUID())
         // Each committed reservation is visible even when a later page exceeds the budget.
         await refresh()
       }
@@ -51,7 +56,7 @@ export function SlideImages({ route, blueprint }: Props) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const pages = form.get('scope') === 'all' ? blueprint.content.pages.map(page => page.number) : [pageNumber]
-    reserve.mutate({ pages, estimate: Math.round(Number(form.get('estimate')) * 1_000_000), allowed: form.has('allow'), force: form.has('force') })
+    reserve.mutate({ pages, estimate: Math.round(Number(form.get('estimate')) * 1_000_000), allowed: form.has('allow'), force: form.has('force'), allowReference: form.has('allow-reference') })
   }
   function reserveAnalysis(event: FormEvent<HTMLFormElement>, assetId: string) {
     event.preventDefault()
@@ -59,9 +64,15 @@ export function SlideImages({ route, blueprint }: Props) {
     analyze.mutate({ assetId, estimate: Math.round(Number(form.get('analysis-estimate')) * 1_000_000), force: form.has('analysis-force') })
   }
   const states = { queued: '待执行', running: '执行中，勿重复调用', succeeded: '已生成', failed: '失败', cancelled: '已取消', cached: '复用缓存' }
+  const errors: Record<string, string> = {
+    reference_not_supported: '当前生图模型未声明支持参考图片，请切换支持的模型或取消参考素材后重新预留任务',
+    file_integrity_error: '任务所需文件未通过哈希校验，请核对本地素材',
+    image_configuration_changed: '生图配置已变化，请重新预留图片任务',
+  }
   return <section className="space-y-4" aria-label="AI逐页设计图片">
     <h3 className="text-lg font-semibold">AI逐页设计图片</h3>
     <p>已审核蓝图 → 自动合成提示词 → Hermes原生生图服务。每次外部调用前先预留费用。</p>
+    <SlideReferences route={route} blueprintId={blueprint.id} selected={referenceId} onSelect={setReferenceId} />
     {budget.data && <>
       <p role="status">预算 {usd(budget.data.budget_micro_usd)} · 待执行预留 {usd(budget.data.reserved_micro_usd)} · 已记录 {usd(budget.data.spent_micro_usd)}</p>
       <p>{budget.data.cost_basis}</p>
@@ -75,6 +86,7 @@ export function SlideImages({ route, blueprint }: Props) {
       <label>预留范围<select name="scope" aria-label="图片预留范围"><option value="single">当前页</option><option value="all">全部页面，依页序预留</option></select></label>
       <label>单页估算费用（美元）<input name="estimate" aria-label="单页估算费用（美元）" type="number" min="0.000001" max="1000" step="0.000001" required /></label>
       <label className="flex gap-2"><input type="checkbox" name="allow" />授权所选页面调用当前配置的生图服务并接受估算费用，实际账单以服务商为准</label>
+      {referenceId && <label className="flex gap-2"><input type="checkbox" name="allow-reference" required />授权将本次选定的参考图片发送给当前生图服务，仅用于视觉风格</label>}
       <label className="flex gap-2"><input type="checkbox" name="force" />重新生成所选页面并另计费用，保留历史图片</label>
       <Button type="submit" disabled={reserve.isPending}>预留所选图片任务</Button>
     </form>
@@ -85,8 +97,9 @@ export function SlideImages({ route, blueprint }: Props) {
     {jobs.data?.items.map(job => <article key={job.id} aria-label={`第${job.page_number}页图片任务 ${job.id}`} className="space-y-3 rounded border border-(--ui-border) p-4">
       <h4>第{job.page_number}页{job.kind === 'analysis' ? '文字与布局识别' : ''} · {states[job.state]}</h4>
       <p className="break-all">任务 {job.id}</p>
+      {job.reference && <p>已授权参考素材：{job.reference.label} · SHA-256 {job.reference.sha256}</p>}
       <p>预估 {usd(job.estimated_micro_usd)}{job.reported_micro_usd !== null ? ` · 服务报告 ${usd(job.reported_micro_usd)}` : ''} · {job.provider ?? '尚无服务结果'} · {job.model ?? ''}</p>
-      {job.error_code && <p role="alert">错误记录 {job.error_code}</p>}
+      {job.error_code && <p role="alert">{errors[job.error_code] ?? `错误记录 ${job.error_code}`}</p>}
       {job.state === 'queued' && <Button disabled={execute.isPending || executeBatch.isPending} onClick={() => execute.mutate(job)}>{job.kind === 'analysis' ? '执行此页文字与布局识别' : '执行此页图片生成'}</Button>}
       {['queued', 'running'].includes(job.state) && <Button variant="secondary" disabled={cancel.isPending || !!job.attempted && !costAcknowledged} onClick={() => cancel.mutate(job)}>取消此图片任务</Button>}
       {job.assets.map(asset => <SlideImagePreview key={asset.id} route={route} asset={asset} selected={asset.id === job.asset_id} />)}

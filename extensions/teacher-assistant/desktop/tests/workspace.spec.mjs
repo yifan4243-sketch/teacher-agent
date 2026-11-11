@@ -460,6 +460,38 @@ print(json.dumps({'pages':len(pages),'first_version':pages[0]['version'],'source
 `, home, templatePath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
     expect(templateProbe.status, templateProbe.stderr).toBe(0)
     writeFileSync(testInfo.outputPath('template-receipt.json'), templateProbe.stdout)
+    const references = images.getByRole('region', { name: '可选参考素材', exact: true })
+    await references.getByLabel('参考素材名称', { exact: true }).fill('系统自动测试参考图')
+    await references.getByLabel('参考素材来源说明', { exact: true }).fill('系统此前生图的测试素材')
+    await references.getByLabel('参考图片', { exact: true }).setInputFiles(imagePath)
+    await references.getByRole('button', { name: '保存参考素材到本地', exact: true }).click()
+    await expect(references.getByAltText('可选参考图片预览', { exact: true })).toBeVisible()
+    const referenceId = await references.getByLabel('本次生图参考', { exact: true }).inputValue()
+    await expect(images.getByLabel(/授权将本次选定的参考图片/)).not.toBeChecked()
+    await images.getByLabel(/授权将本次选定的参考图片/).check()
+    await images.getByRole('button', { name: '预留所选图片任务', exact: true }).click()
+    const referenceJob = images.getByRole('article').filter({ hasText: '已授权参考素材：系统自动测试参考图' })
+    await expect(referenceJob).toHaveCount(1)
+    await referenceJob.getByRole('button', { name: '取消此图片任务', exact: true }).click()
+    await references.getByRole('button', { name: '归档所选参考素材', exact: true }).click()
+    await expect(references.getByLabel('本次生图参考', { exact: true })).toHaveValue('')
+    await expect(references.getByRole('option').filter({ hasText: '已归档' })).toHaveCount(1)
+    const referenceProbe = spawnSync(python, ['-c', `
+import hashlib,json,sqlite3,sys
+from pathlib import Path
+home=Path(sys.argv[1])
+with sqlite3.connect(home/'plugin-data/teacher-assistant/teaching.db') as conn:
+    conn.row_factory=sqlite3.Row
+    reference=dict(conn.execute('SELECT * FROM slide_references WHERE id=?',(sys.argv[2],)).fetchone())
+    job=dict(conn.execute('SELECT j.* FROM slide_image_jobs j JOIN slide_job_references r ON r.job_id=j.id WHERE r.reference_id=?',(sys.argv[2],)).fetchone())
+assert reference['archived']==1 and hashlib.sha256(Path(reference['stored_path']).read_bytes()).hexdigest()==reference['sha256']
+assert job['state']=='cancelled' and job['attempted']==0
+assert len((home/'image-fixture-calls.jsonl').read_text(encoding='utf-8').splitlines())==1
+print(json.dumps({'reference_id':reference['id'],'sha256':reference['sha256'],'archived':True,'job_state':job['state'],'external_reference_calls':0}))
+`, home, referenceId], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(referenceProbe.status, referenceProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('reference-receipt.json'), referenceProbe.stdout)
+    await page.screenshot({ path: testInfo.outputPath('teacher-references.jpg'), type: 'jpeg', quality: 85 })
     await page.getByRole('button', { name: '教材知识库', exact: true }).click()
     await page.getByLabel('教材所属课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
     await page.getByLabel('教材版本', { exact: true }).selectOption({ label: 'UI自动上传教材 · v1 · UI教材.txt' })

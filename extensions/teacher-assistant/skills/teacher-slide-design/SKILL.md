@@ -1,7 +1,7 @@
 ---
 name: teacher-slide-design
 description: Plan and verify source-linked teaching slide images.
-version: 0.3.0
+version: 0.4.0
 author: yifan4243-sketch
 license: MIT
 metadata:
@@ -34,6 +34,7 @@ metadata:
 - `teacher_slides` 的 `slide.image.list` 和 `slide.image.get` 查询已授权的图片及视觉检查任务。
 - `teacher_slides` 的 `slide.image.run` 执行指定任务，data.id与request_id均使用该任务ID。
 - `teacher_slides` 的 `slide.image.budget` 查询预留与已记录费用，金额单位为micro-USD。
+- `slide.reference.list` 查询蓝图可选素材。素材上传、归档和发送授权由Desktop完成，Agent不能自动上传参考图或代替教师授权。
 - `teacher_slides` 的 `slide.page.from_analysis` 将成功识别任务保存为可编辑页面，传入识别任务ID与当前页面expected_version。
 - `teacher_slides` 的 `slide.page.get`、`slide.page.list` 和 `slide.page.revise` 读取或追加原生对象版本。
 - `teacher_slides` 的 `slide.page.preview_export` 导出核对用单页草稿，`slide.page.export` 与 `slide.deck.export` 导出已审核成果。
@@ -53,6 +54,7 @@ metadata:
 9. 视觉检查任务提取实际图片文字与布局，再与蓝图比对。missing_text列出未匹配文字，完整layout存于 `slide.image.get` 返回的analysis中，供可编辑PPTX重建复用。
 10. 教师审核设计图后，复用已完成的布局建立可编辑页面。修订保留此前版本，审核前核对蓝图文字。页面审核由Desktop完成，完整课件需全部蓝图页面均存在已审核版本。
 11. 教师选择结构化备用模式时，调用 `slide.deck.from_blueprint` 并保存request_id；丢失响应时使用同一ID重放。备用页面只排列蓝图准确文字，不推断图表或关系。告知教师核对并逐页审核，不能把备用页面描述成AI图片还原。
+12. 可选参考图仅影响视觉风格。没有参考图时继续正常自动设计，不能要求教师先提供固定样式。已授权任务记录具体素材ID与哈希；归档素材保留旧任务记录。模型未声明参考图片能力时任务在外部尝试前失败，不能声称素材已经生效。
 
 ## Pitfalls
 

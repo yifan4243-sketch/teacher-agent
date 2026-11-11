@@ -31,6 +31,7 @@ export interface ImageJob {
   error_code: string | null
   provider: string | null
   model: string | null
+  reference?: { id: string; label: string; sha256: string } | null
   assets: ImageAsset[]
 }
 

@@ -27,10 +27,20 @@ def tool_entry():
     return entry
 
 
-def generate(prompt, task_id):
+def require_reference_support():
+    entry = tool_entry()
+    schema = {**entry.schema, **(entry.dynamic_schema_overrides() if entry.dynamic_schema_overrides else {})}
+    if "image_url" not in schema.get("parameters", {}).get("properties", {}):
+        raise DomainError("reference_not_supported", "当前生图模型未声明支持参考图片，请切换支持的模型或取消参考素材")
+
+
+def generate(prompt, task_id, *, reference_image=None):
     from tools.registry import registry
 
-    raw = registry.dispatch("image_generate", {"prompt": prompt, "aspect_ratio": "landscape"}, task_id=task_id)
+    arguments = {"prompt": prompt, "aspect_ratio": "landscape"}
+    if reference_image is not None:
+        arguments["image_url"] = reference_image
+    raw = registry.dispatch("image_generate", arguments, task_id=task_id)
     result = json.loads(raw) if isinstance(raw, str) else raw
     if not isinstance(result, dict) or result.get("success") is not True:
         raise DomainError("image_provider_failed", "原生生图服务未返回成功结果，请核查服务状态和调用记录")

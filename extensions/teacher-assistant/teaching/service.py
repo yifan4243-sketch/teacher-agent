@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from . import blueprint_models, blueprints, document_models, documents, image_analysis, image_assets, image_models, images, knowledge, knowledge_models, layout_repair, lessons, models, preparation, reconstruction, records, rendering, semantic, workflows
 from .database import database, encode
 from . import template_slides
+from . import slide_references
 
 
 READS = {
@@ -35,6 +36,7 @@ READS = {
     "document.generation.list": (document_models.DocumentList, preparation.list_generations),
     "slide.prompt": (blueprint_models.PageRequest, blueprints.get_prompt),
     "slide.themes": (models.Input, blueprints.list_themes),
+    "slide.reference.list": (image_models.ImageList, slide_references.list_references),
     "slide.image.get": (models.Identifier, images.get_job),
     "slide.image.list": (image_models.ImageList, images.list_jobs),
     "slide.image.budget": (image_models.BlueprintFilter, images.budget),
@@ -98,6 +100,9 @@ class TeachingService:
             "document.generation.claim": (document_models.GenerationClaim, preparation.claim_generation),
             "slide.image.set_budget": (image_models.ImageBudget, images.set_budget),
             "slide.image.reserve": (image_models.ImageReserve, images.reserve),
+            "slide.image.reserve_references": (slide_references.ReferenceReserve, images.reserve),
+            "slide.reference.upload": (slide_references.ReferenceUpload, slide_references.upload),
+            "slide.reference.archive": (models.Identifier, slide_references.archive),
             "slide.image.abandon": (image_models.ImageAbandon, images.abandon),
             "slide.image.review": (image_assets.ImageReview, image_assets.review),
             "slide.image.reserve_analysis": (image_analysis.AnalysisReserve, image_analysis.reserve),
@@ -129,6 +134,7 @@ class TeachingService:
         reads = {**self.reads, "document.file": (models.Identifier, documents.read_export),
                  "slide.image.preview": (models.Identifier, image_assets.preview),
                  "slide.image.file": (models.Identifier, image_assets.download),
+                 "slide.reference.preview": (models.Identifier, slide_references.preview),
                  "slide.render.preview": (rendering.RenderAsset, rendering.preview),
                  "slide.render.file": (rendering.RenderAsset, rendering.download)} if human else self.reads
         schema, handler = ({**reads, **writes}).get(operation, (None, None))

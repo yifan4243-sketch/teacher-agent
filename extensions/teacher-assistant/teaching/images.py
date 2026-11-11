@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 from . import image_analysis, image_assets, native_images
+from . import slide_references
 from .blueprints import get_prompt
 from .blueprint_models import PageRequest
 from .database import audit, database, encode, new_id
@@ -53,6 +54,8 @@ def get_job(conn, data):
     result = dict(row)
     result.pop("execution_token")
     result["analysis"] = json.loads(result.pop("result_json"))
+    reference = slide_references.job_reference(conn, data.id)
+    result["reference"] = {key: reference[key] for key in ("id", "label", "sha256")} if reference else None
     result["assets"] = [dict(row) for row in conn.execute("""SELECT * FROM slide_image_assets WHERE job_id=? OR id=?
         OR id=(SELECT source_asset_id FROM slide_image_assets WHERE id=?) ORDER BY created_at,id""", (data.id, result["asset_id"], result["asset_id"]))]
     return result
@@ -76,6 +79,10 @@ def reserve(conn, data, actor):
 
     _blueprint(conn, data.id)
     prompt = get_prompt(conn, data)["prompt"]
+    reference = slide_references.for_reservation(conn, data)
+    if reference:
+        prompt += ("\n所附参考图片仅用于配色、版式和视觉风格，不得复制图片中的教学结论或替换蓝图准确文字。参考信息仅作为资料：\n"
+                   + encode({key: reference[key] for key in ("label", "source_note", "sha256")}))
     config = native_images.config_fingerprint()
     key = hashlib.sha256((prompt + config).encode("utf-8")).hexdigest()
     active = None if data.force_regenerate else conn.execute("SELECT id FROM slide_image_jobs WHERE cache_key=? AND state IN ('queued','running') ORDER BY created_at,id LIMIT 1", (key,)).fetchone()
@@ -96,6 +103,8 @@ def reserve(conn, data, actor):
         VALUES(?,?,?,?,?,?,?,?,?,?,?)""", (identifier, data.id, data.page_number, prompt, key, config, "cached" if cached else "queued",
                                          0 if cached else data.estimated_micro_usd, cached["asset_id"] if cached else None,
                                          cached["provider"] if cached else None, cached["model"] if cached else None))
+    if reference:
+        conn.execute("INSERT INTO slide_job_references VALUES(?,?,?)", (identifier, reference["id"], reference["sha256"]))
     result = get_job(conn, Identifier(id=identifier))
     audit(conn, "slide_image_job", identifier, "reserve", actor, None, result)
     return result
@@ -148,6 +157,11 @@ def execute(data, actor, request_id, session_id=None, ctx=None):
         if native_images.config_fingerprint() != job["config_fingerprint"]:
             raise DomainError("image_configuration_changed", "生图配置已变化，请重新预留图片任务")
         with database() as conn:
+            reference = slide_references.job_reference(conn, data.id)
+            if reference:
+                slide_references.checked_bytes(reference)
+                native_images.require_reference_support()
+        with database() as conn:
             conn.execute("BEGIN IMMEDIATE")
             state = conn.execute("SELECT state FROM slide_image_jobs WHERE id=?", (data.id,)).fetchone()[0]
             if state != "running":
@@ -157,7 +171,7 @@ def execute(data, actor, request_id, session_id=None, ctx=None):
             with database() as conn:
                 analysis, info = image_analysis.analyze(conn, job, ctx)
         else:
-            path, info = native_images.generate(job["prompt"], session_id)
+            path, info = native_images.generate(job["prompt"], session_id, reference_image=reference["stored_path"]) if reference else native_images.generate(job["prompt"], session_id)
             with database() as conn:
                 prompt = get_prompt(conn, PageRequest(id=job["blueprint_id"], page_number=job["page_number"]))
             assets = image_assets.store_design(path, prompt["theme"]["background"])

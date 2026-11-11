@@ -77,3 +77,7 @@ TypeScript和真实Desktop回归通过。Desktop使用真实WPS 12.0渲染页面
 ## 蓝图结构化备用模式
 
 完整教师回归10文件48项通过，新增3项覆盖原生Tool、真实PPTX、无原图渲染、版本保护、schema 10完整关联数据升级及注入失败回滚。真实Desktop生成8页、逐页审核和整套下载通过，首张页面WPS实测3区域，超框/缺测0，无虚假差异指标。测试模型仍为本机模拟服务；备用生成本身不调用模型。详见PHASE5_TEMPLATES_CHECKPOINT.md及phase5-evidence/blueprint-templates。
+
+## 可选参考素材
+
+完整教师回归11文件50项通过，后补跨蓝图案例定向2项通过。原生参数、缓存隔离、权限、动态能力、文件损坏和归档历史均由离线测试验证；真实Desktop完成本地上传、预览、明确授权预留、取消和归档，本用例参考图外发0次。见PHASE4_REFERENCES_CHECKPOINT.md。

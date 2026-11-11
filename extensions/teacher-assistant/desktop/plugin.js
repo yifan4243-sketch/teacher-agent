@@ -1,8 +1,8 @@
 // Generated from desktop/src by scripts/build_desktop.mjs.
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { Button as Button23, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery23, useValue } from "@hermes/plugin-sdk";
-import { useState as useState22 } from "react";
+import { Button as Button24, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery23, useValue } from "@hermes/plugin-sdk";
+import { useState as useState23 } from "react";
 
 // extensions/teacher-assistant/desktop/src/records.tsx
 import { Button, Input, useMutation, useQuery, useQueryClient } from "@hermes/plugin-sdk";
@@ -2094,8 +2094,8 @@ function SlidesWorkspace({ route }) {
 }
 
 // extensions/teacher-assistant/desktop/src/planning.tsx
-import { Button as Button18, captureGatewayFileDownload as captureGatewayFileDownload5, host as host6, useMutation as useMutation18, useQuery as useQuery18, useQueryClient as useQueryClient17 } from "@hermes/plugin-sdk";
-import { useState as useState17 } from "react";
+import { Button as Button19, captureGatewayFileDownload as captureGatewayFileDownload5, host as host6, useMutation as useMutation19, useQuery as useQuery18, useQueryClient as useQueryClient17 } from "@hermes/plugin-sdk";
+import { useState as useState18 } from "react";
 
 // extensions/teacher-assistant/desktop/src/plan-publication.tsx
 import { Button as Button17, useMutation as useMutation17, useQuery as useQuery17, useQueryClient as useQueryClient16 } from "@hermes/plugin-sdk";
@@ -2174,13 +2174,78 @@ function PlanPublication({ route, planId, latest, current }) {
   ] });
 }
 
-// extensions/teacher-assistant/desktop/src/planning.tsx
+// extensions/teacher-assistant/desktop/src/plan-content-editor.tsx
+import { Button as Button18, useMutation as useMutation18 } from "@hermes/plugin-sdk";
+import { useState as useState17 } from "react";
 import { jsx as jsx18, jsxs as jsxs18 } from "react/jsx-runtime";
-var KINDS = { teaching: "\u6559\u5B66", practice: "\u7EC3\u4E60", review: "\u590D\u4E60", exam: "\u8003\u6838", assessment: "\u8003\u6838", break: "\u4F11\u606F" };
+var KINDS = { teaching: "\u6559\u5B66", practice: "\u7EC3\u4E60", review: "\u590D\u4E60", exam: "\u8003\u6838" };
+function PlanContentEditor({ route, plan, book, onSaved }) {
+  const [expanded, setExpanded] = useState17(false);
+  const [content, setContent] = useState17(() => plan.sessions.map((session) => ({ kind: session.kind, chapter_id: session.chapter_id, title: session.title })));
+  const selected = new Set(plan.config.chapters.map((chapter) => chapter.chapter_id));
+  const chapters = book.chapters.filter((chapter) => selected.size ? selected.has(chapter.id) : !chapter.parent_id);
+  const save = useMutation18({ mutationFn: (data) => call(route, "plan.save", data, crypto.randomUUID()), onSuccess: onSaved });
+  function move(index, step) {
+    setContent((current) => {
+      const next = [...current];
+      const destination = index + step;
+      const previous = next[index];
+      next[index] = next[destination];
+      next[destination] = previous;
+      return next;
+    });
+  }
+  function revise(index, update) {
+    setContent((current) => current.map((item, ordinal) => ordinal === index ? { ...item, ...update } : item));
+  }
+  function submit(event) {
+    event.preventDefault();
+    const config = { ...plan.config };
+    delete config.time_basis;
+    delete config.course_timing;
+    save.mutate({ ...config, course_id: plan.course_id, textbook_version_id: plan.textbook_version_id, parent_id: plan.id, session_content: content });
+  }
+  return /* @__PURE__ */ jsxs18("section", { "aria-label": "\u4EBA\u5DE5\u8C03\u6574\u7AE0\u8282\u8FDB\u5EA6", className: "space-y-3", children: [
+    /* @__PURE__ */ jsx18(Button18, { variant: "secondary", onClick: () => setExpanded((value) => !value), children: expanded ? "\u6536\u8D77\u8BFE\u6B21\u5185\u5BB9\u8C03\u6574" : "\u8C03\u6574\u7AE0\u8282\u8FDB\u5EA6\u4E0E\u8BFE\u6B21\u5185\u5BB9" }),
+    expanded && /* @__PURE__ */ jsxs18("form", { onSubmit: submit, className: "space-y-3", children: [
+      /* @__PURE__ */ jsx18("p", { children: "\u4E0A\u79FB\u6216\u4E0B\u79FB\u53EF\u4EA4\u6362\u8BFE\u6B21\u5185\u5BB9\uFF0C\u6388\u8BFE\u65E5\u671F\u4F7F\u7528\u5F53\u524D\u6821\u5386\u3002\u6559\u5B66\u8BFE\u6B21\u53EF\u4EE5\u91CD\u65B0\u5206\u914D\u7AE0\u8282\uFF0C\u6240\u9009\u7AE0\u8282\u5747\u9700\u8986\u76D6\u3002\u4FDD\u5B58\u4F1A\u5EFA\u7ACB\u5F85\u53D1\u5E03\u7684\u65B0\u7248\u672C\u3002" }),
+      /* @__PURE__ */ jsx18("p", { children: chapters.map((chapter) => `${chapter.title} ${content.filter((item) => item.chapter_id === chapter.id).length}\u6B21`).join(" \xB7 ") }),
+      content.map((item, index) => /* @__PURE__ */ jsxs18("fieldset", { className: "space-y-2 rounded border border-(--ui-border) p-3", children: [
+        /* @__PURE__ */ jsxs18("legend", { children: [
+          "\u7B2C",
+          index + 1,
+          "\u6B21\u8BFE \xB7 ",
+          plan.sessions[index].starts_at.replace("T", " "),
+          " \xB7 ",
+          KINDS[item.kind]
+        ] }),
+        item.kind === "teaching" && /* @__PURE__ */ jsxs18("label", { children: [
+          "\u6559\u6750\u7AE0\u8282",
+          /* @__PURE__ */ jsx18("select", { "aria-label": `\u8BFE\u6B21\u7AE0\u8282 ${index + 1}`, value: item.chapter_id ?? "", onChange: (event) => revise(index, { chapter_id: event.target.value, title: chapters.find((chapter) => chapter.id === event.target.value)?.title ?? item.title }), children: chapters.map((chapter) => /* @__PURE__ */ jsx18("option", { value: chapter.id, children: chapter.title }, chapter.id)) })
+        ] }),
+        /* @__PURE__ */ jsxs18("label", { children: [
+          "\u8BFE\u6B21\u5185\u5BB9",
+          /* @__PURE__ */ jsx18("input", { "aria-label": `\u8BFE\u6B21\u5185\u5BB9 ${index + 1}`, value: item.title, maxLength: 200, required: true, onChange: (event) => revise(index, { title: event.target.value }) })
+        ] }),
+        /* @__PURE__ */ jsxs18("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsx18(Button18, { type: "button", variant: "secondary", "aria-label": `\u4E0A\u79FB\u7B2C${index + 1}\u6B21\u8BFE\u5185\u5BB9`, disabled: index === 0, onClick: () => move(index, -1), children: "\u4E0A\u79FB" }),
+          /* @__PURE__ */ jsx18(Button18, { type: "button", variant: "secondary", "aria-label": `\u4E0B\u79FB\u7B2C${index + 1}\u6B21\u8BFE\u5185\u5BB9`, disabled: index === content.length - 1, onClick: () => move(index, 1), children: "\u4E0B\u79FB" })
+        ] })
+      ] }, index)),
+      /* @__PURE__ */ jsx18(Button18, { type: "submit", disabled: save.isPending || plan.version !== plan.latest_version, children: "\u4FDD\u5B58\u5185\u5BB9\u8C03\u6574\u65B0\u7248\u672C" }),
+      plan.version !== plan.latest_version && /* @__PURE__ */ jsx18("p", { children: "\u8BF7\u9009\u62E9\u6700\u65B0\u8BA1\u5212\u7248\u672C\u540E\u8C03\u6574\u5185\u5BB9\u3002" }),
+      save.error && /* @__PURE__ */ jsx18("p", { role: "alert", children: save.error.message })
+    ] })
+  ] });
+}
+
+// extensions/teacher-assistant/desktop/src/planning.tsx
+import { jsx as jsx19, jsxs as jsxs19 } from "react/jsx-runtime";
+var KINDS2 = { teaching: "\u6559\u5B66", practice: "\u7EC3\u4E60", review: "\u590D\u4E60", exam: "\u8003\u6838", assessment: "\u8003\u6838", break: "\u4F11\u606F" };
 function PlanForm({ route, courseId, book, plan, onSaved }) {
   const config = plan?.config;
-  const [slots, setSlots] = useState17(config?.weekly_slots ?? [{ weekday: 0, start_time: "" }]);
-  const save = useMutation18({ mutationFn: (data) => call(route, "plan.save", data, crypto.randomUUID()), onSuccess: onSaved });
+  const [slots, setSlots] = useState18(config?.weekly_slots ?? [{ weekday: 0, start_time: "" }]);
+  const save = useMutation19({ mutationFn: (data) => call(route, "plan.save", data, crypto.randomUUID()), onSuccess: onSaved });
   function submit(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -2197,73 +2262,78 @@ function PlanForm({ route, courseId, book, plan, onSaved }) {
       review_sessions: Number(form.get("review_sessions")),
       exam_sessions: Number(form.get("exam_sessions")),
       exam_minutes: Number(form.get("exam_minutes")),
-      parent_id: plan?.id ?? null
+      parent_id: plan?.id ?? null,
+      session_content: form.has("keep_content") ? config?.session_content ?? [] : []
     });
   }
-  return /* @__PURE__ */ jsxs18("form", { onSubmit: submit, className: "grid max-w-4xl gap-3", children: [
-    /* @__PURE__ */ jsxs18("label", { children: [
+  return /* @__PURE__ */ jsxs19("form", { onSubmit: submit, className: "grid max-w-4xl gap-3", children: [
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u5B66\u671F\u8BA1\u5212\u540D\u79F0",
-      /* @__PURE__ */ jsx18("input", { name: "title", "aria-label": "\u5B66\u671F\u8BA1\u5212\u540D\u79F0", defaultValue: config?.title, maxLength: 200, required: true })
+      /* @__PURE__ */ jsx19("input", { name: "title", "aria-label": "\u5B66\u671F\u8BA1\u5212\u540D\u79F0", defaultValue: config?.title, maxLength: 200, required: true })
     ] }),
-    /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u5B66\u671F\u5F00\u59CB\u65E5\u671F",
-      /* @__PURE__ */ jsx18("input", { type: "date", name: "start_date", "aria-label": "\u5B66\u671F\u5F00\u59CB\u65E5\u671F", defaultValue: config?.start_date, required: true })
+      /* @__PURE__ */ jsx19("input", { type: "date", name: "start_date", "aria-label": "\u5B66\u671F\u5F00\u59CB\u65E5\u671F", defaultValue: config?.start_date, required: true })
     ] }),
-    /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u5B66\u671F\u7ED3\u675F\u65E5\u671F",
-      /* @__PURE__ */ jsx18("input", { type: "date", name: "end_date", "aria-label": "\u5B66\u671F\u7ED3\u675F\u65E5\u671F", defaultValue: config?.end_date, required: true })
+      /* @__PURE__ */ jsx19("input", { type: "date", name: "end_date", "aria-label": "\u5B66\u671F\u7ED3\u675F\u65E5\u671F", defaultValue: config?.end_date, required: true })
     ] }),
-    /* @__PURE__ */ jsxs18("fieldset", { className: "grid gap-2", children: [
-      /* @__PURE__ */ jsx18("legend", { children: "\u6BCF\u5468\u6388\u8BFE\u65F6\u6BB5 \xB7 \u5317\u4EAC\u65F6\u95F4" }),
-      slots.map((slot, index) => /* @__PURE__ */ jsxs18("div", { className: "flex flex-wrap gap-2", children: [
-        /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsxs19("fieldset", { className: "grid gap-2", children: [
+      /* @__PURE__ */ jsx19("legend", { children: "\u6BCF\u5468\u6388\u8BFE\u65F6\u6BB5 \xB7 \u5317\u4EAC\u65F6\u95F4" }),
+      slots.map((slot, index) => /* @__PURE__ */ jsxs19("div", { className: "flex flex-wrap gap-2", children: [
+        /* @__PURE__ */ jsxs19("label", { children: [
           "\u661F\u671F",
-          /* @__PURE__ */ jsx18("select", { "aria-label": `\u6388\u8BFE\u661F\u671F ${index + 1}`, value: slot.weekday, onChange: (event) => setSlots(slots.map((item, i) => i === index ? { ...item, weekday: Number(event.target.value) } : item)), children: ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"].map((day, i) => /* @__PURE__ */ jsxs18("option", { value: i, children: [
+          /* @__PURE__ */ jsx19("select", { "aria-label": `\u6388\u8BFE\u661F\u671F ${index + 1}`, value: slot.weekday, onChange: (event) => setSlots(slots.map((item, i) => i === index ? { ...item, weekday: Number(event.target.value) } : item)), children: ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"].map((day, i) => /* @__PURE__ */ jsxs19("option", { value: i, children: [
             "\u661F\u671F",
             day
           ] }, i)) })
         ] }),
-        /* @__PURE__ */ jsxs18("label", { children: [
+        /* @__PURE__ */ jsxs19("label", { children: [
           "\u5F00\u59CB\u65F6\u95F4",
-          /* @__PURE__ */ jsx18("input", { type: "time", "aria-label": `\u6388\u8BFE\u5F00\u59CB\u65F6\u95F4 ${index + 1}`, value: slot.start_time, onChange: (event) => setSlots(slots.map((item, i) => i === index ? { ...item, start_time: event.target.value } : item)), required: true })
+          /* @__PURE__ */ jsx19("input", { type: "time", "aria-label": `\u6388\u8BFE\u5F00\u59CB\u65F6\u95F4 ${index + 1}`, value: slot.start_time, onChange: (event) => setSlots(slots.map((item, i) => i === index ? { ...item, start_time: event.target.value } : item)), required: true })
         ] }),
-        /* @__PURE__ */ jsx18(Button18, { type: "button", variant: "secondary", disabled: slots.length === 1, onClick: () => setSlots(slots.filter((_, i) => i !== index)), children: "\u79FB\u9664\u6B64\u6388\u8BFE\u65F6\u6BB5" })
+        /* @__PURE__ */ jsx19(Button19, { type: "button", variant: "secondary", disabled: slots.length === 1, onClick: () => setSlots(slots.filter((_, i) => i !== index)), children: "\u79FB\u9664\u6B64\u6388\u8BFE\u65F6\u6BB5" })
       ] }, index)),
-      /* @__PURE__ */ jsx18(Button18, { type: "button", variant: "secondary", disabled: slots.length >= 30, onClick: () => setSlots([...slots, { weekday: 0, start_time: "" }]), children: "\u589E\u52A0\u6BCF\u5468\u6388\u8BFE\u65F6\u6BB5" })
+      /* @__PURE__ */ jsx19(Button19, { type: "button", variant: "secondary", disabled: slots.length >= 30, onClick: () => setSlots([...slots, { weekday: 0, start_time: "" }]), children: "\u589E\u52A0\u6BCF\u5468\u6388\u8BFE\u65F6\u6BB5" })
     ] }),
-    /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u505C\u8BFE\u65E5\u671F\uFF08\u6BCF\u884C\u4E00\u4E2AYYYY-MM-DD\uFF09",
-      /* @__PURE__ */ jsx18("textarea", { name: "excluded_dates", "aria-label": "\u505C\u8BFE\u65E5\u671F", defaultValue: config?.excluded_dates.join("\n") })
+      /* @__PURE__ */ jsx19("textarea", { name: "excluded_dates", "aria-label": "\u505C\u8BFE\u65E5\u671F", defaultValue: config?.excluded_dates.join("\n") })
     ] }),
-    /* @__PURE__ */ jsxs18("fieldset", { className: "grid gap-2", children: [
-      /* @__PURE__ */ jsx18("legend", { children: "\u7AE0\u8282\u4E0E\u96BE\u5EA6\u6743\u91CD \xB7 \u8BF7\u52FF\u540C\u65F6\u9009\u7236\u7AE0\u8282\u548C\u5B50\u7AE0\u8282" }),
-      book.chapters.map((chapter) => /* @__PURE__ */ jsxs18("div", { className: "flex flex-wrap gap-2", children: [
-        /* @__PURE__ */ jsxs18("label", { children: [
-          /* @__PURE__ */ jsx18("input", { type: "checkbox", name: `chapter-${chapter.id}`, defaultChecked: config?.chapters.length ? config.chapters.some((item) => item.chapter_id === chapter.id) : !chapter.parent_id }),
+    /* @__PURE__ */ jsxs19("fieldset", { className: "grid gap-2", children: [
+      /* @__PURE__ */ jsx19("legend", { children: "\u7AE0\u8282\u4E0E\u96BE\u5EA6\u6743\u91CD \xB7 \u8BF7\u52FF\u540C\u65F6\u9009\u7236\u7AE0\u8282\u548C\u5B50\u7AE0\u8282" }),
+      book.chapters.map((chapter) => /* @__PURE__ */ jsxs19("div", { className: "flex flex-wrap gap-2", children: [
+        /* @__PURE__ */ jsxs19("label", { children: [
+          /* @__PURE__ */ jsx19("input", { type: "checkbox", name: `chapter-${chapter.id}`, defaultChecked: config?.chapters.length ? config.chapters.some((item) => item.chapter_id === chapter.id) : !chapter.parent_id }),
           chapter.title
         ] }),
-        /* @__PURE__ */ jsxs18("label", { children: [
+        /* @__PURE__ */ jsxs19("label", { children: [
           "\u96BE\u5EA6",
-          /* @__PURE__ */ jsx18("input", { type: "number", "aria-label": `\u7AE0\u8282\u96BE\u5EA6 ${chapter.title}`, name: `weight-${chapter.id}`, min: "1", max: "10", defaultValue: config?.chapters.find((item) => item.chapter_id === chapter.id)?.difficulty ?? 1, required: true })
+          /* @__PURE__ */ jsx19("input", { type: "number", "aria-label": `\u7AE0\u8282\u96BE\u5EA6 ${chapter.title}`, name: `weight-${chapter.id}`, min: "1", max: "10", defaultValue: config?.chapters.find((item) => item.chapter_id === chapter.id)?.difficulty ?? 1, required: true })
         ] })
       ] }, chapter.id))
     ] }),
-    [["practice_sessions", "\u7EFC\u5408\u7EC3\u4E60\u8BFE\u6B21"], ["review_sessions", "\u590D\u4E60\u8BFE\u6B21"], ["exam_sessions", "\u8003\u6838\u8BFE\u6B21"]].map(([field, label]) => /* @__PURE__ */ jsxs18("label", { children: [
+    [["practice_sessions", "\u7EFC\u5408\u7EC3\u4E60\u8BFE\u6B21"], ["review_sessions", "\u590D\u4E60\u8BFE\u6B21"], ["exam_sessions", "\u8003\u6838\u8BFE\u6B21"]].map(([field, label]) => /* @__PURE__ */ jsxs19("label", { children: [
       label,
-      /* @__PURE__ */ jsx18("input", { type: "number", name: field, "aria-label": label, min: "0", max: field === "exam_sessions" ? 20 : 100, defaultValue: config?.[field] ?? 0, required: true })
+      /* @__PURE__ */ jsx19("input", { type: "number", name: field, "aria-label": label, min: "0", max: field === "exam_sessions" ? 20 : 100, defaultValue: config?.[field] ?? 0, required: true })
     ] }, field)),
-    /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u6BCF\u6B21\u8003\u6838\u65F6\u957F\uFF08\u5206\u949F\uFF09",
-      /* @__PURE__ */ jsx18("input", { type: "number", name: "exam_minutes", "aria-label": "\u6BCF\u6B21\u8003\u6838\u65F6\u957F\uFF08\u5206\u949F\uFF09", min: "1", max: "480", defaultValue: config?.exam_minutes ?? 90, required: true })
+      /* @__PURE__ */ jsx19("input", { type: "number", name: "exam_minutes", "aria-label": "\u6BCF\u6B21\u8003\u6838\u65F6\u957F\uFF08\u5206\u949F\uFF09", min: "1", max: "480", defaultValue: config?.exam_minutes ?? 90, required: true })
     ] }),
-    /* @__PURE__ */ jsx18(Button18, { type: "submit", disabled: save.isPending, children: plan ? "\u91CD\u65B0\u8BA1\u7B97\u5E76\u4FDD\u5B58\u65B0\u7248\u672C" : "\u8BA1\u7B97\u5E76\u4FDD\u5B58\u5B66\u671F\u8BA1\u5212" }),
-    save.error && /* @__PURE__ */ jsx18("p", { role: "alert", children: save.error.message })
+    !!config?.session_content?.length && /* @__PURE__ */ jsxs19("label", { children: [
+      /* @__PURE__ */ jsx19("input", { type: "checkbox", name: "keep_content", "aria-label": "\u4FDD\u7559\u4EBA\u5DE5\u8BFE\u6B21\u5185\u5BB9", defaultChecked: true }),
+      "\u4FDD\u7559\u4EBA\u5DE5\u8BFE\u6B21\u5185\u5BB9\uFF0C\u53D6\u6D88\u52FE\u9009\u4F1A\u6309\u7AE0\u8282\u96BE\u5EA6\u91CD\u65B0\u5206\u914D\u5E76\u4FDD\u5B58\u65B0\u7248\u672C"
+    ] }),
+    /* @__PURE__ */ jsx19(Button19, { type: "submit", disabled: save.isPending, children: plan ? "\u91CD\u65B0\u8BA1\u7B97\u5E76\u4FDD\u5B58\u65B0\u7248\u672C" : "\u8BA1\u7B97\u5E76\u4FDD\u5B58\u5B66\u671F\u8BA1\u5212" }),
+    save.error && /* @__PURE__ */ jsx19("p", { role: "alert", children: save.error.message })
   ] });
 }
 function PlanResults({ route, plan }) {
-  const [group, setGroup] = useState17("all");
-  const [format, setFormat] = useState17("docx");
-  const download = useMutation18({ mutationFn: async () => {
+  const [group, setGroup] = useState18("all");
+  const [format, setFormat] = useState18("docx");
+  const download = useMutation19({ mutationFn: async () => {
     const save = captureGatewayFileDownload5();
     const release = await host6.retainProfile(route, { spawnPriority: "foreground" });
     try {
@@ -2277,13 +2347,13 @@ function PlanResults({ route, plan }) {
     }
   } });
   const allowed = group === "all" ? null : group.startsWith("month:") ? plan.months[group.slice(6)] : plan.weeks[group.slice(5)];
-  return /* @__PURE__ */ jsxs18("section", { "aria-label": "\u5B66\u671F\u8BA1\u5212\u8BA1\u7B97\u7ED3\u679C", className: "space-y-3", children: [
-    /* @__PURE__ */ jsxs18("h3", { children: [
+  return /* @__PURE__ */ jsxs19("section", { "aria-label": "\u5B66\u671F\u8BA1\u5212\u8BA1\u7B97\u7ED3\u679C", className: "space-y-3", children: [
+    /* @__PURE__ */ jsxs19("h3", { children: [
       plan.title,
       " \xB7 v",
       plan.version
     ] }),
-    /* @__PURE__ */ jsxs18("p", { role: "status", children: [
+    /* @__PURE__ */ jsxs19("p", { role: "status", children: [
       "\u8BFE\u6B21",
       plan.totals.sessions,
       " \xB7 \u5B9E\u9645\u6559\u5B66",
@@ -2294,66 +2364,66 @@ function PlanResults({ route, plan }) {
       plan.totals.assessment_minutes,
       "\u5206\u949F"
     ] }),
-    /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u8BA1\u5212\u8303\u56F4",
-      /* @__PURE__ */ jsxs18("select", { "aria-label": "\u8BA1\u5212\u8303\u56F4", value: group, onChange: (event) => setGroup(event.target.value), children: [
-        /* @__PURE__ */ jsx18("option", { value: "all", children: "\u5168\u5B66\u671F" }),
-        Object.keys(plan.months).map((month) => /* @__PURE__ */ jsxs18("option", { value: `month:${month}`, children: [
+      /* @__PURE__ */ jsxs19("select", { "aria-label": "\u8BA1\u5212\u8303\u56F4", value: group, onChange: (event) => setGroup(event.target.value), children: [
+        /* @__PURE__ */ jsx19("option", { value: "all", children: "\u5168\u5B66\u671F" }),
+        Object.keys(plan.months).map((month) => /* @__PURE__ */ jsxs19("option", { value: `month:${month}`, children: [
           "\u6708\u5EA6 ",
           month
         ] }, month)),
-        Object.keys(plan.weeks).map((week) => /* @__PURE__ */ jsxs18("option", { value: `week:${week}`, children: [
+        Object.keys(plan.weeks).map((week) => /* @__PURE__ */ jsxs19("option", { value: `week:${week}`, children: [
           "\u6BCF\u5468 ",
           week
         ] }, week))
       ] })
     ] }),
-    /* @__PURE__ */ jsx18("p", { children: "\u6309\u5F53\u524D\u6240\u9009\u8303\u56F4\u5BFC\u51FA\u8BA1\u5212\u7248\u672C\uFF0C\u5B9E\u9645\u8C03\u8BFE\u548C\u6388\u8BFE\u8FDB\u5EA6\u4EE5\u8BFE\u8868\u4E3A\u51C6\u3002" }),
-    /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsx19("p", { children: "\u6309\u5F53\u524D\u6240\u9009\u8303\u56F4\u5BFC\u51FA\u8BA1\u5212\u7248\u672C\uFF0C\u5B9E\u9645\u8C03\u8BFE\u548C\u6388\u8BFE\u8FDB\u5EA6\u4EE5\u8BFE\u8868\u4E3A\u51C6\u3002" }),
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u8BA1\u5212\u5BFC\u51FA\u683C\u5F0F",
-      /* @__PURE__ */ jsxs18("select", { "aria-label": "\u8BA1\u5212\u5BFC\u51FA\u683C\u5F0F", value: format, onChange: (event) => setFormat(event.target.value), children: [
-        /* @__PURE__ */ jsx18("option", { value: "docx", children: "DOCX" }),
-        /* @__PURE__ */ jsx18("option", { value: "xlsx", children: "XLSX" }),
-        /* @__PURE__ */ jsx18("option", { value: "pdf", children: "PDF" })
+      /* @__PURE__ */ jsxs19("select", { "aria-label": "\u8BA1\u5212\u5BFC\u51FA\u683C\u5F0F", value: format, onChange: (event) => setFormat(event.target.value), children: [
+        /* @__PURE__ */ jsx19("option", { value: "docx", children: "DOCX" }),
+        /* @__PURE__ */ jsx19("option", { value: "xlsx", children: "XLSX" }),
+        /* @__PURE__ */ jsx19("option", { value: "pdf", children: "PDF" })
       ] })
     ] }),
-    /* @__PURE__ */ jsx18(Button18, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u5BFC\u51FA\u6240\u9009\u8303\u56F4\u8BA1\u5212" }),
-    download.error && /* @__PURE__ */ jsx18("p", { role: "alert", children: download.error.message }),
-    /* @__PURE__ */ jsxs18("table", { children: [
-      /* @__PURE__ */ jsx18("thead", { children: /* @__PURE__ */ jsxs18("tr", { children: [
-        /* @__PURE__ */ jsx18("th", { children: "\u8BFE\u6B21" }),
-        /* @__PURE__ */ jsx18("th", { children: "\u5F00\u59CB/\u7ED3\u675F" }),
-        /* @__PURE__ */ jsx18("th", { children: "\u5185\u5BB9" }),
-        /* @__PURE__ */ jsx18("th", { children: "\u6559\u5B66\u4E0E\u4F11\u606F" })
+    /* @__PURE__ */ jsx19(Button19, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u5BFC\u51FA\u6240\u9009\u8303\u56F4\u8BA1\u5212" }),
+    download.error && /* @__PURE__ */ jsx19("p", { role: "alert", children: download.error.message }),
+    /* @__PURE__ */ jsx19("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs19("table", { className: "w-full min-w-176 table-fixed border-collapse text-left", children: [
+      /* @__PURE__ */ jsx19("thead", { children: /* @__PURE__ */ jsxs19("tr", { children: [
+        /* @__PURE__ */ jsx19("th", { className: "w-14 p-2", children: "\u8BFE\u6B21" }),
+        /* @__PURE__ */ jsx19("th", { className: "w-48 p-2", children: "\u5F00\u59CB/\u7ED3\u675F" }),
+        /* @__PURE__ */ jsx19("th", { className: "p-2", children: "\u5185\u5BB9" }),
+        /* @__PURE__ */ jsx19("th", { className: "w-60 p-2", children: "\u6559\u5B66\u4E0E\u4F11\u606F" })
       ] }) }),
-      /* @__PURE__ */ jsx18("tbody", { children: plan.sessions.filter((session) => !allowed || allowed.includes(session.id)).map((session) => /* @__PURE__ */ jsxs18("tr", { children: [
-        /* @__PURE__ */ jsx18("td", { children: session.ordinal }),
-        /* @__PURE__ */ jsxs18("td", { children: [
+      /* @__PURE__ */ jsx19("tbody", { children: plan.sessions.filter((session) => !allowed || allowed.includes(session.id)).map((session) => /* @__PURE__ */ jsxs19("tr", { className: "border-t border-(--ui-border)", children: [
+        /* @__PURE__ */ jsx19("td", { className: "p-2 align-top", children: session.ordinal }),
+        /* @__PURE__ */ jsxs19("td", { className: "whitespace-nowrap p-2 align-top", children: [
           session.starts_at.replace("T", " "),
-          /* @__PURE__ */ jsx18("br", {}),
+          /* @__PURE__ */ jsx19("br", {}),
           session.ends_at.replace("T", " ")
         ] }),
-        /* @__PURE__ */ jsxs18("td", { children: [
-          KINDS[session.kind],
+        /* @__PURE__ */ jsxs19("td", { className: "wrap-break-word p-2 align-top", children: [
+          KINDS2[session.kind],
           " \xB7 ",
           session.title
         ] }),
-        /* @__PURE__ */ jsx18("td", { children: session.periods.map((part, index) => /* @__PURE__ */ jsxs18("p", { children: [
-          KINDS[part.kind],
+        /* @__PURE__ */ jsx19("td", { className: "p-2 align-top", children: session.periods.map((part, index) => /* @__PURE__ */ jsxs19("p", { children: [
+          KINDS2[part.kind],
           " ",
           part.start.slice(11, 16),
           "\u2013",
           part.end.slice(11, 16)
         ] }, index)) })
       ] }, session.id)) })
-    ] })
+    ] }) })
   ] });
 }
 function Planning({ route }) {
   const queryClient = useQueryClient17();
-  const [courseId, setCourseId] = useState17("");
-  const [bookId, setBookId] = useState17("");
-  const [planId, setPlanId] = useState17("");
+  const [courseId, setCourseId] = useState18("");
+  const [bookId, setBookId] = useState18("");
+  const [planId, setPlanId] = useState18("");
   const courses = useQuery18({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
   const books = useQuery18({ queryKey: [...routeKey(route), "books", courseId], queryFn: () => call(route, "textbook.list", { course_id: courseId }), enabled: !!courseId });
   const plans = useQuery18({ queryKey: [...routeKey(route), "semester-plans", courseId], queryFn: () => call(route, "plan.list", { course_id: courseId }), enabled: !!courseId });
@@ -2367,70 +2437,72 @@ function Planning({ route }) {
     await queryClient.invalidateQueries({ queryKey: [...routeKey(route), "semester-plans"] });
     setPlanId(updated.id);
   }
-  return /* @__PURE__ */ jsxs18("section", { "aria-label": "\u6559\u5B66\u8BA1\u5212", className: "space-y-4", children: [
-    /* @__PURE__ */ jsx18("h2", { className: "text-xl font-semibold", children: "\u5B66\u671F\u3001\u6708\u5EA6\u4E0E\u6BCF\u5468\u6559\u5B66\u8BA1\u5212" }),
-    /* @__PURE__ */ jsx18("p", { children: "\u4F9D\u636E\u5B9E\u9645\u65E5\u671F\u4E0E\u505C\u8BFE\u5B89\u6392\u8BA1\u7B97\uFF0C\u8BFE\u7A0B\u6559\u5B66\u548C\u8BFE\u95F4\u5206\u5F00\u8BA1\u65F6\u3002\u91CD\u65B0\u8BA1\u7B97\u4FDD\u7559\u65E7\u7248\u672C\uFF0C\u6838\u5BF9\u53D1\u5E03\u540E\u8FDB\u5165\u5B9E\u9645\u8BFE\u8868\u3002" }),
-    /* @__PURE__ */ jsxs18("label", { children: [
+  return /* @__PURE__ */ jsxs19("section", { "aria-label": "\u6559\u5B66\u8BA1\u5212", className: "space-y-4", children: [
+    /* @__PURE__ */ jsx19("h2", { className: "text-xl font-semibold", children: "\u5B66\u671F\u3001\u6708\u5EA6\u4E0E\u6BCF\u5468\u6559\u5B66\u8BA1\u5212" }),
+    /* @__PURE__ */ jsx19("p", { children: "\u4F9D\u636E\u5B9E\u9645\u65E5\u671F\u4E0E\u505C\u8BFE\u5B89\u6392\u8BA1\u7B97\uFF0C\u8BFE\u7A0B\u6559\u5B66\u548C\u8BFE\u95F4\u5206\u5F00\u8BA1\u65F6\u3002\u91CD\u65B0\u8BA1\u7B97\u4FDD\u7559\u65E7\u7248\u672C\uFF0C\u6838\u5BF9\u53D1\u5E03\u540E\u8FDB\u5165\u5B9E\u9645\u8BFE\u8868\u3002" }),
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u8BA1\u5212\u6240\u5C5E\u8BFE\u7A0B",
-      /* @__PURE__ */ jsxs18("select", { "aria-label": "\u8BA1\u5212\u6240\u5C5E\u8BFE\u7A0B", value: courseId, onChange: (event) => {
+      /* @__PURE__ */ jsxs19("select", { "aria-label": "\u8BA1\u5212\u6240\u5C5E\u8BFE\u7A0B", value: courseId, onChange: (event) => {
         setCourseId(event.target.value);
         setBookId("");
         setPlanId("");
       }, children: [
-        /* @__PURE__ */ jsx18("option", { value: "", children: "\u9009\u62E9\u8BFE\u7A0B" }),
-        courses.data?.items.map((course) => /* @__PURE__ */ jsx18("option", { value: course.id, children: course.title }, course.id))
+        /* @__PURE__ */ jsx19("option", { value: "", children: "\u9009\u62E9\u8BFE\u7A0B" }),
+        courses.data?.items.map((course) => /* @__PURE__ */ jsx19("option", { value: course.id, children: course.title }, course.id))
       ] })
     ] }),
-    /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u8BA1\u5212\u7248\u672C",
-      /* @__PURE__ */ jsxs18("select", { "aria-label": "\u8BA1\u5212\u7248\u672C", value: planId, onChange: (event) => selectPlan(event.target.value), children: [
-        /* @__PURE__ */ jsx18("option", { value: "", children: "\u5EFA\u7ACB\u65B0\u8BA1\u5212" }),
-        plans.data?.items.map((item) => /* @__PURE__ */ jsxs18("option", { value: item.id, children: [
+      /* @__PURE__ */ jsxs19("select", { "aria-label": "\u8BA1\u5212\u7248\u672C", value: planId, onChange: (event) => selectPlan(event.target.value), children: [
+        /* @__PURE__ */ jsx19("option", { value: "", children: "\u5EFA\u7ACB\u65B0\u8BA1\u5212" }),
+        plans.data?.items.map((item) => /* @__PURE__ */ jsxs19("option", { value: item.id, children: [
           item.title,
           " \xB7 v",
           item.version
         ] }, item.id))
       ] })
     ] }),
-    /* @__PURE__ */ jsxs18("label", { children: [
+    /* @__PURE__ */ jsxs19("label", { children: [
       "\u8BA1\u5212\u6559\u6750\u7248\u672C",
-      /* @__PURE__ */ jsxs18("select", { "aria-label": "\u8BA1\u5212\u6559\u6750\u7248\u672C", value: bookId, onChange: (event) => setBookId(event.target.value), children: [
-        /* @__PURE__ */ jsx18("option", { value: "", children: "\u9009\u62E9\u6559\u6750\u7248\u672C" }),
-        books.data?.items.flatMap((book2) => book2.versions.map((version) => /* @__PURE__ */ jsxs18("option", { value: version.id, children: [
+      /* @__PURE__ */ jsxs19("select", { "aria-label": "\u8BA1\u5212\u6559\u6750\u7248\u672C", value: bookId, onChange: (event) => setBookId(event.target.value), children: [
+        /* @__PURE__ */ jsx19("option", { value: "", children: "\u9009\u62E9\u6559\u6750\u7248\u672C" }),
+        books.data?.items.flatMap((book2) => book2.versions.map((version) => /* @__PURE__ */ jsxs19("option", { value: version.id, children: [
           book2.title,
           " \xB7 v",
           version.version
         ] }, version.id)))
       ] })
     ] }),
-    planId && plan.isPending && /* @__PURE__ */ jsx18("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u8BA1\u5212\u7248\u672C" }),
-    book.data && (!planId || plan.data) && /* @__PURE__ */ jsx18(PlanForm, { route, courseId, book: book.data, plan: plan.data, onSaved: saved }, `${planId}:${bookId}`),
-    plan.data && /* @__PURE__ */ jsx18(PlanResults, { route, plan: plan.data }, `results:${planId}`),
-    plan.data && /* @__PURE__ */ jsx18(PlanPublication, { route, planId, latest: plan.data.version === plan.data.latest_version, current: plan.data.publication }, `publication:${planId}`),
-    [courses.error, books.error, plans.error, plan.error, book.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx18("p", { role: "alert", children: error?.message }, index))
+    planId && plan.isPending && /* @__PURE__ */ jsx19("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u8BA1\u5212\u7248\u672C" }),
+    book.data && (!planId || plan.data) && /* @__PURE__ */ jsx19(PlanForm, { route, courseId, book: book.data, plan: plan.data, onSaved: saved }, `${planId}:${bookId}`),
+    plan.data && /* @__PURE__ */ jsx19(PlanResults, { route, plan: plan.data }, `results:${planId}`),
+    plan.data && book.data && plan.data.textbook_version_id === bookId && /* @__PURE__ */ jsx19(PlanContentEditor, { route, plan: plan.data, book: book.data, onSaved: saved }, `content:${planId}`),
+    plan.data && /* @__PURE__ */ jsx19(PlanPublication, { route, planId, latest: plan.data.version === plan.data.latest_version, current: plan.data.publication }, `publication:${planId}`),
+    [courses.error, books.error, plans.error, plan.error, book.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx19("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/timetable.tsx
-import { Button as Button20, useQuery as useQuery20 } from "@hermes/plugin-sdk";
-import { useState as useState19 } from "react";
+import { Button as Button21, useQuery as useQuery20 } from "@hermes/plugin-sdk";
+import { useState as useState20 } from "react";
 
 // extensions/teacher-assistant/desktop/src/calendar-event-editor.tsx
-import { Button as Button19, useMutation as useMutation19, useQuery as useQuery19, useQueryClient as useQueryClient18 } from "@hermes/plugin-sdk";
-import { useState as useState18 } from "react";
-import { jsx as jsx19, jsxs as jsxs19 } from "react/jsx-runtime";
+import { Button as Button20, useMutation as useMutation20, useQuery as useQuery19, useQueryClient as useQueryClient18 } from "@hermes/plugin-sdk";
+import { useState as useState19 } from "react";
+import { jsx as jsx20, jsxs as jsxs20 } from "react/jsx-runtime";
 function CalendarEventEditor({ route, event, onMoved }) {
   const queryClient = useQueryClient18();
-  const [status, setStatus] = useState18(event.status);
-  const [showHistory, setShowHistory] = useState18(false);
+  const [status, setStatus] = useState19(event.status);
+  const [showHistory, setShowHistory] = useState19(false);
   const lessons = useQuery19({ queryKey: [...routeKey(route), "lessons", event.course_id], queryFn: () => call(route, "lesson.list", { course_id: event.course_id }) });
+  const readiness = useQuery19({ queryKey: [...routeKey(route), "calendar-preparation", event.id, event.version], queryFn: () => call(route, "calendar.preparation", { id: event.id }) });
   const history = useQuery19({ queryKey: [...routeKey(route), "calendar-history", event.id, event.version], queryFn: () => call(route, "calendar.history", { id: event.id }), enabled: showHistory });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: routeKey(route) });
-  const move = useMutation19({ mutationFn: (data) => call(route, "calendar.move", { ...data, id: event.id, version: event.version, publication_id: event.active_publication_id }, crypto.randomUUID()), onSuccess: async (updated) => {
+  const move = useMutation20({ mutationFn: (data) => call(route, "calendar.move", { ...data, id: event.id, version: event.version, publication_id: event.active_publication_id }, crypto.randomUUID()), onSuccess: async (updated) => {
     onMoved(updated);
     await invalidate();
   } });
-  const progress = useMutation19({ mutationFn: (data) => call(route, "calendar.progress", { ...data, id: event.id, version: event.version, publication_id: event.active_publication_id }, crypto.randomUUID()), onSuccess: invalidate });
+  const progress = useMutation20({ mutationFn: (data) => call(route, "calendar.progress", { ...data, id: event.id, version: event.version, publication_id: event.active_publication_id }, crypto.randomUUID()), onSuccess: invalidate });
   function reschedule(submit) {
     submit.preventDefault();
     const form = new FormData(submit.currentTarget);
@@ -2447,65 +2519,73 @@ function CalendarEventEditor({ route, event, onMoved }) {
     });
   }
   const minutes = event.kind === "exam" ? event.assessment_minutes : event.instruction_minutes;
-  return /* @__PURE__ */ jsxs19("section", { "aria-label": "\u8BFE\u6B21\u8C03\u8BFE\u4E0E\u8FDB\u5EA6", className: "space-y-3 rounded border border-(--ui-border) p-4", children: [
-    /* @__PURE__ */ jsxs19("h3", { children: [
+  return /* @__PURE__ */ jsxs20("section", { "aria-label": "\u8BFE\u6B21\u8C03\u8BFE\u4E0E\u8FDB\u5EA6", className: "space-y-3 rounded border border-(--ui-border) p-4", children: [
+    /* @__PURE__ */ jsxs20("h3", { children: [
       event.course_title,
       " \xB7 \u7B2C",
       event.ordinal,
       "\u6B21\u8BFE \xB7 ",
       event.title
     ] }),
-    /* @__PURE__ */ jsxs19("p", { children: [
+    /* @__PURE__ */ jsxs20("p", { children: [
       event.starts_at.replace("T", " "),
       "\u2013",
       event.ends_at.slice(11),
       " \xB7 ",
       EVENT_STATUS[event.status]
     ] }),
-    /* @__PURE__ */ jsx19("p", { children: event.periods.map((part) => `${PERIOD_KIND[part.kind]} ${part.start.slice(11, 16)}\u2013${part.end.slice(11, 16)}`).join(" \xB7 ") }),
-    event.status === "scheduled" && /* @__PURE__ */ jsxs19("form", { onSubmit: reschedule, className: "grid max-w-3xl gap-2", children: [
-      /* @__PURE__ */ jsxs19("label", { children: [
-        "\u8C03\u8BFE\u5F00\u59CB\u65F6\u95F4",
-        /* @__PURE__ */ jsx19("input", { name: "starts_at", "aria-label": "\u8C03\u8BFE\u5F00\u59CB\u65F6\u95F4", type: "datetime-local", defaultValue: event.starts_at.slice(0, 16), required: true })
-      ] }),
-      /* @__PURE__ */ jsxs19("label", { children: [
-        "\u8C03\u8BFE\u539F\u56E0",
-        /* @__PURE__ */ jsx19("input", { name: "note", "aria-label": "\u8C03\u8BFE\u539F\u56E0", maxLength: 4e3, required: true })
-      ] }),
-      /* @__PURE__ */ jsx19(Button19, { type: "submit", disabled: move.isPending, children: "\u4FDD\u5B58\u8C03\u8BFE" })
+    /* @__PURE__ */ jsx20("p", { children: event.periods.map((part) => `${PERIOD_KIND[part.kind]} ${part.start.slice(11, 16)}\u2013${part.end.slice(11, 16)}`).join(" \xB7 ") }),
+    readiness.data && /* @__PURE__ */ jsxs20("p", { "aria-label": "\u8BFE\u6B21\u5907\u8BFE\u51C6\u5907\u72B6\u6001", children: [
+      readiness.data.lesson_id ? "" : "\u5C1A\u672A\u5173\u8054\u5907\u8BFE\u8BFE\u6B21 \xB7 ",
+      readiness.data.script_approved ? "\u6388\u8BFE\u7A3F\u5DF2\u5BA1\u6838" : "\u6388\u8BFE\u7A3F\u5F85\u51C6\u5907",
+      " \xB7 ",
+      readiness.data.plan_approved ? "\u6559\u6848\u5DF2\u5BA1\u6838" : "\u6559\u6848\u5F85\u51C6\u5907",
+      " \xB7",
+      readiness.data.blueprint_id ? `PPT\u5DF2\u5BA1\u6838${readiness.data.approved_slide_pages}/${readiness.data.slide_pages}\u9875 \xB7 \u84DD\u56FEv${readiness.data.blueprint_version}` : "PPT\u5C1A\u65E0\u5BA1\u6838\u84DD\u56FE"
     ] }),
-    /* @__PURE__ */ jsxs19("form", { onSubmit: record, className: "grid max-w-3xl gap-2", children: [
-      /* @__PURE__ */ jsxs19("label", { children: [
+    event.status === "scheduled" && /* @__PURE__ */ jsxs20("form", { onSubmit: reschedule, className: "grid max-w-3xl gap-2", children: [
+      /* @__PURE__ */ jsxs20("label", { children: [
+        "\u8C03\u8BFE\u5F00\u59CB\u65F6\u95F4",
+        /* @__PURE__ */ jsx20("input", { name: "starts_at", "aria-label": "\u8C03\u8BFE\u5F00\u59CB\u65F6\u95F4", type: "datetime-local", defaultValue: event.starts_at.slice(0, 16), required: true })
+      ] }),
+      /* @__PURE__ */ jsxs20("label", { children: [
+        "\u8C03\u8BFE\u539F\u56E0",
+        /* @__PURE__ */ jsx20("input", { name: "note", "aria-label": "\u8C03\u8BFE\u539F\u56E0", maxLength: 4e3, required: true })
+      ] }),
+      /* @__PURE__ */ jsx20(Button20, { type: "submit", disabled: move.isPending, children: "\u4FDD\u5B58\u8C03\u8BFE" })
+    ] }),
+    /* @__PURE__ */ jsxs20("form", { onSubmit: record, className: "grid max-w-3xl gap-2", children: [
+      /* @__PURE__ */ jsxs20("label", { children: [
         "\u6388\u8BFE\u8FDB\u5EA6\u72B6\u6001",
-        /* @__PURE__ */ jsx19("select", { "aria-label": "\u6388\u8BFE\u8FDB\u5EA6\u72B6\u6001", value: status, onChange: (change) => setStatus(change.target.value), children: Object.entries(EVENT_STATUS).map(([value, label]) => /* @__PURE__ */ jsx19("option", { value, children: label }, value)) })
+        /* @__PURE__ */ jsx20("select", { "aria-label": "\u6388\u8BFE\u8FDB\u5EA6\u72B6\u6001", value: status, onChange: (change) => setStatus(change.target.value), children: Object.entries(EVENT_STATUS).map(([value, label]) => /* @__PURE__ */ jsx20("option", { value, children: label }, value)) })
       ] }),
-      status === "completed" && /* @__PURE__ */ jsxs19("label", { children: [
+      status === "completed" && /* @__PURE__ */ jsxs20("label", { children: [
         event.kind === "exam" ? "\u5B9E\u9645\u8003\u6838\u5206\u949F" : "\u5B9E\u9645\u6559\u5B66\u5206\u949F",
-        /* @__PURE__ */ jsx19("input", { name: "actual_minutes", "aria-label": "\u5B9E\u9645\u5B8C\u6210\u5206\u949F", type: "number", min: "0", max: minutes, defaultValue: event.actual_minutes ?? minutes, required: true })
+        /* @__PURE__ */ jsx20("input", { name: "actual_minutes", "aria-label": "\u5B9E\u9645\u5B8C\u6210\u5206\u949F", type: "number", min: "0", max: minutes, defaultValue: event.actual_minutes ?? minutes, required: true })
       ] }),
-      /* @__PURE__ */ jsxs19("label", { children: [
+      /* @__PURE__ */ jsxs20("label", { children: [
         "\u5173\u8054\u5907\u8BFE\u8BFE\u6B21",
-        /* @__PURE__ */ jsxs19("select", { name: "lesson_id", "aria-label": "\u5173\u8054\u5907\u8BFE\u8BFE\u6B21", defaultValue: event.lesson_id ?? "", children: [
-          /* @__PURE__ */ jsx19("option", { value: "", children: "\u6682\u4E0D\u5173\u8054" }),
-          lessons.data?.items.filter((lesson) => lesson.version_id === event.textbook_version_id).map((lesson) => /* @__PURE__ */ jsx19("option", { value: lesson.id, children: lesson.title }, lesson.id))
+        /* @__PURE__ */ jsxs20("select", { name: "lesson_id", "aria-label": "\u5173\u8054\u5907\u8BFE\u8BFE\u6B21", defaultValue: event.lesson_id ?? "", children: [
+          /* @__PURE__ */ jsx20("option", { value: "", children: "\u6682\u4E0D\u5173\u8054" }),
+          lessons.data?.items.filter((lesson) => lesson.version_id === event.textbook_version_id).map((lesson) => /* @__PURE__ */ jsx20("option", { value: lesson.id, children: lesson.title }, lesson.id))
         ] })
       ] }),
-      /* @__PURE__ */ jsxs19("label", { children: [
+      /* @__PURE__ */ jsxs20("label", { children: [
         "\u6388\u8BFE\u8FDB\u5EA6\u8BF4\u660E",
-        /* @__PURE__ */ jsx19("input", { name: "note", "aria-label": "\u6388\u8BFE\u8FDB\u5EA6\u8BF4\u660E", maxLength: 4e3, required: true })
+        /* @__PURE__ */ jsx20("input", { name: "note", "aria-label": "\u6388\u8BFE\u8FDB\u5EA6\u8BF4\u660E", maxLength: 4e3, required: true })
       ] }),
-      /* @__PURE__ */ jsx19(Button19, { type: "submit", disabled: progress.isPending, children: "\u4FDD\u5B58\u6388\u8BFE\u8FDB\u5EA6" })
+      /* @__PURE__ */ jsx20(Button20, { type: "submit", disabled: progress.isPending, children: "\u4FDD\u5B58\u6388\u8BFE\u8FDB\u5EA6" })
     ] }),
-    /* @__PURE__ */ jsx19(Button19, { variant: "secondary", onClick: () => setShowHistory((value) => !value), children: showHistory ? "\u6536\u8D77\u8BFE\u6B21\u4FEE\u6539\u8BB0\u5F55" : "\u67E5\u770B\u8BFE\u6B21\u4FEE\u6539\u8BB0\u5F55" }),
-    showHistory && history.data?.items.map((item) => /* @__PURE__ */ jsxs19("article", { children: [
-      /* @__PURE__ */ jsxs19("p", { children: [
+    /* @__PURE__ */ jsx20(Button20, { variant: "secondary", onClick: () => setShowHistory((value) => !value), children: showHistory ? "\u6536\u8D77\u8BFE\u6B21\u4FEE\u6539\u8BB0\u5F55" : "\u67E5\u770B\u8BFE\u6B21\u4FEE\u6539\u8BB0\u5F55" }),
+    showHistory && history.data?.items.map((item) => /* @__PURE__ */ jsxs20("article", { children: [
+      /* @__PURE__ */ jsxs20("p", { children: [
         item.created_at,
         " \xB7 ",
         item.actor.startsWith("desktop:") ? "\u6559\u5E08\u64CD\u4F5C" : "Agent\u64CD\u4F5C",
         " \xB7 ",
         item.action === "reschedule" ? "\u8C03\u8BFE" : "\u8FDB\u5EA6\u8BB0\u5F55"
       ] }),
-      /* @__PURE__ */ jsxs19("p", { children: [
+      /* @__PURE__ */ jsxs20("p", { children: [
         "\u4FEE\u6539\u524D ",
         item.before.starts_at.replace("T", " "),
         " \xB7 ",
@@ -2514,7 +2594,7 @@ function CalendarEventEditor({ route, event, onMoved }) {
         item.before.actual_minutes ?? "\u672A\u767B\u8BB0",
         "\u5206\u949F"
       ] }),
-      /* @__PURE__ */ jsxs19("p", { children: [
+      /* @__PURE__ */ jsxs20("p", { children: [
         "\u4FEE\u6539\u540E ",
         item.after.starts_at.replace("T", " "),
         " \xB7 ",
@@ -2523,23 +2603,23 @@ function CalendarEventEditor({ route, event, onMoved }) {
         item.after.actual_minutes ?? "\u672A\u767B\u8BB0",
         "\u5206\u949F"
       ] }),
-      /* @__PURE__ */ jsxs19("p", { children: [
+      /* @__PURE__ */ jsxs20("p", { children: [
         "\u8BF4\u660E\uFF1A",
         item.after.note
       ] })
     ] }, item.sequence)),
-    showHistory && history.data?.items.length === 0 && /* @__PURE__ */ jsx19("p", { children: "\u6B64\u8BFE\u6B21\u5C1A\u65E0\u8C03\u8BFE\u6216\u8FDB\u5EA6\u4FEE\u6539\u8BB0\u5F55\u3002" }),
-    [lessons.error, history.error, move.error, progress.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx19("p", { role: "alert", children: error?.message }, index))
+    showHistory && history.data?.items.length === 0 && /* @__PURE__ */ jsx20("p", { children: "\u6B64\u8BFE\u6B21\u5C1A\u65E0\u8C03\u8BFE\u6216\u8FDB\u5EA6\u4FEE\u6539\u8BB0\u5F55\u3002" }),
+    [lessons.error, readiness.error, history.error, move.error, progress.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx20("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/timetable.tsx
-import { jsx as jsx20, jsxs as jsxs20 } from "react/jsx-runtime";
+import { jsx as jsx21, jsxs as jsxs21 } from "react/jsx-runtime";
 function Timetable({ route }) {
-  const [anchor, setAnchor] = useState19(() => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(/* @__PURE__ */ new Date()));
-  const [view, setView] = useState19("week");
-  const [courseId, setCourseId] = useState19("");
-  const [selectedId, setSelectedId] = useState19("");
+  const [anchor, setAnchor] = useState20(() => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(/* @__PURE__ */ new Date()));
+  const [view, setView] = useState20("week");
+  const [courseId, setCourseId] = useState20("");
+  const [selectedId, setSelectedId] = useState20("");
   const range = calendarRange(anchor, view);
   const courses = useQuery20({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
   const calendar = useQuery20({ queryKey: [...routeKey(route), "calendar", range, courseId], queryFn: () => call(route, "calendar.list", { ...range, course_id: courseId || null }), enabled: !!range });
@@ -2558,37 +2638,37 @@ function Timetable({ route }) {
     setSelectedId(event.id);
   }
   const totals = calendar.data?.progress;
-  return /* @__PURE__ */ jsxs20("section", { "aria-label": "\u5B9E\u9645\u8BFE\u8868\u4E0E\u6559\u5B66\u8FDB\u5EA6", className: "space-y-4", children: [
-    /* @__PURE__ */ jsx20("h2", { className: "text-xl font-semibold", children: "\u8BFE\u8868\u4E0E\u6559\u5B66\u8FDB\u5EA6" }),
-    /* @__PURE__ */ jsx20("p", { children: "\u4EC5\u663E\u793A\u6559\u5E08\u5DF2\u53D1\u5E03\u7684\u5B9E\u9645\u8BFE\u8868\uFF0C\u65F6\u95F4\u4E3A\u5317\u4EAC\u65F6\u95F4\u3002\u4E00\u6B21\u5927\u8BFE\u5408\u5E76\u663E\u793A\uFF0C\u8BFE\u95F4\u5305\u542B\u5728\u8BE5\u8BFE\u6B21\u5185\u3002" }),
-    /* @__PURE__ */ jsxs20("div", { className: "flex flex-wrap gap-3", children: [
-      /* @__PURE__ */ jsxs20("label", { children: [
+  return /* @__PURE__ */ jsxs21("section", { "aria-label": "\u5B9E\u9645\u8BFE\u8868\u4E0E\u6559\u5B66\u8FDB\u5EA6", className: "space-y-4", children: [
+    /* @__PURE__ */ jsx21("h2", { className: "text-xl font-semibold", children: "\u8BFE\u8868\u4E0E\u6559\u5B66\u8FDB\u5EA6" }),
+    /* @__PURE__ */ jsx21("p", { children: "\u4EC5\u663E\u793A\u6559\u5E08\u5DF2\u53D1\u5E03\u7684\u5B9E\u9645\u8BFE\u8868\uFF0C\u65F6\u95F4\u4E3A\u5317\u4EAC\u65F6\u95F4\u3002\u4E00\u6B21\u5927\u8BFE\u5408\u5E76\u663E\u793A\uFF0C\u8BFE\u95F4\u5305\u542B\u5728\u8BE5\u8BFE\u6B21\u5185\u3002" }),
+    /* @__PURE__ */ jsxs21("div", { className: "flex flex-wrap gap-3", children: [
+      /* @__PURE__ */ jsxs21("label", { children: [
         "\u8BFE\u8868\u65E5\u671F",
-        /* @__PURE__ */ jsx20("input", { "aria-label": "\u8BFE\u8868\u65E5\u671F", type: "date", value: anchor, onChange: (event) => {
+        /* @__PURE__ */ jsx21("input", { "aria-label": "\u8BFE\u8868\u65E5\u671F", type: "date", value: anchor, onChange: (event) => {
           setAnchor(event.target.value);
           setSelectedId("");
         } })
       ] }),
-      /* @__PURE__ */ jsxs20("label", { children: [
+      /* @__PURE__ */ jsxs21("label", { children: [
         "\u8BFE\u8868\u89C6\u56FE",
-        /* @__PURE__ */ jsxs20("select", { "aria-label": "\u8BFE\u8868\u89C6\u56FE", value: view, onChange: (event) => setView(event.target.value), children: [
-          /* @__PURE__ */ jsx20("option", { value: "day", children: "\u65E5\u8BFE\u8868" }),
-          /* @__PURE__ */ jsx20("option", { value: "week", children: "\u5468\u8BFE\u8868" }),
-          /* @__PURE__ */ jsx20("option", { value: "month", children: "\u6708\u5386" })
+        /* @__PURE__ */ jsxs21("select", { "aria-label": "\u8BFE\u8868\u89C6\u56FE", value: view, onChange: (event) => setView(event.target.value), children: [
+          /* @__PURE__ */ jsx21("option", { value: "day", children: "\u65E5\u8BFE\u8868" }),
+          /* @__PURE__ */ jsx21("option", { value: "week", children: "\u5468\u8BFE\u8868" }),
+          /* @__PURE__ */ jsx21("option", { value: "month", children: "\u6708\u5386" })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs20("label", { children: [
+      /* @__PURE__ */ jsxs21("label", { children: [
         "\u8BFE\u8868\u8BFE\u7A0B",
-        /* @__PURE__ */ jsxs20("select", { "aria-label": "\u8BFE\u8868\u8BFE\u7A0B", value: courseId, onChange: (event) => {
+        /* @__PURE__ */ jsxs21("select", { "aria-label": "\u8BFE\u8868\u8BFE\u7A0B", value: courseId, onChange: (event) => {
           setCourseId(event.target.value);
           setSelectedId("");
         }, children: [
-          /* @__PURE__ */ jsx20("option", { value: "", children: "\u5168\u90E8\u8BFE\u7A0B" }),
-          courses.data?.items.map((course) => /* @__PURE__ */ jsx20("option", { value: course.id, children: course.title }, course.id))
+          /* @__PURE__ */ jsx21("option", { value: "", children: "\u5168\u90E8\u8BFE\u7A0B" }),
+          courses.data?.items.map((course) => /* @__PURE__ */ jsx21("option", { value: course.id, children: course.title }, course.id))
         ] })
       ] })
     ] }),
-    totals && /* @__PURE__ */ jsxs20("p", { role: "status", children: [
+    totals && /* @__PURE__ */ jsxs21("p", { role: "status", children: [
       "\u672C\u8303\u56F4",
       totals.total_sessions,
       "\u8BFE\u6B21 \xB7 \u5DF2\u5B8C\u6210",
@@ -2603,42 +2683,42 @@ function Timetable({ route }) {
       totals.instruction_variance_minutes,
       "\u5206\u949F"
     ] }),
-    calendar.isPending && range && /* @__PURE__ */ jsx20("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5DF2\u53D1\u5E03\u8BFE\u8868" }),
-    calendar.data && /* @__PURE__ */ jsxs20("div", { "aria-label": "\u8BFE\u7A0B\u65E5\u5386", className: "grid gap-2", style: { gridTemplateColumns: view === "day" ? "1fr" : "repeat(7, minmax(0, 1fr))" }, children: [
-      view !== "day" && ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"].map((day) => /* @__PURE__ */ jsxs20("p", { children: [
+    calendar.isPending && range && /* @__PURE__ */ jsx21("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5DF2\u53D1\u5E03\u8BFE\u8868" }),
+    calendar.data && /* @__PURE__ */ jsxs21("div", { "aria-label": "\u8BFE\u7A0B\u65E5\u5386", className: "grid gap-2", style: { gridTemplateColumns: view === "day" ? "1fr" : "repeat(7, minmax(0, 1fr))" }, children: [
+      view !== "day" && ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"].map((day) => /* @__PURE__ */ jsxs21("p", { children: [
         "\u661F\u671F",
         day
       ] }, day)),
-      days.map((day, index) => day ? /* @__PURE__ */ jsxs20("article", { "aria-label": `\u8BFE\u8868\u65E5\u671F ${day}`, className: "min-h-24 space-y-2 rounded border border-(--ui-border) p-2", children: [
-        /* @__PURE__ */ jsx20(Button20, { variant: "ghost", onClick: () => {
+      days.map((day, index) => day ? /* @__PURE__ */ jsxs21("article", { "aria-label": `\u8BFE\u8868\u65E5\u671F ${day}`, className: "min-h-24 space-y-2 rounded border border-(--ui-border) p-2", children: [
+        /* @__PURE__ */ jsx21(Button21, { variant: "ghost", onClick: () => {
           setAnchor(day);
           setView("day");
         }, children: day.slice(5) }),
-        byDate.get(day)?.map((event) => /* @__PURE__ */ jsx20(Button20, { variant: "secondary", className: "h-auto w-full whitespace-normal text-left", onClick: () => setSelectedId(event.id), children: /* @__PURE__ */ jsxs20("span", { children: [
+        byDate.get(day)?.map((event) => /* @__PURE__ */ jsx21(Button21, { variant: "secondary", className: "h-auto w-full whitespace-normal text-left", onClick: () => setSelectedId(event.id), children: /* @__PURE__ */ jsxs21("span", { children: [
           event.starts_at.slice(11, 16),
           "\u2013",
           event.ends_at.slice(11, 16),
-          /* @__PURE__ */ jsx20("br", {}),
+          /* @__PURE__ */ jsx21("br", {}),
           event.course_title,
           " \xB7 \u7B2C",
           event.ordinal,
           "\u6B21\u8BFE",
-          /* @__PURE__ */ jsx20("br", {}),
+          /* @__PURE__ */ jsx21("br", {}),
           event.title,
-          /* @__PURE__ */ jsx20("br", {}),
+          /* @__PURE__ */ jsx21("br", {}),
           EVENT_STATUS[event.status]
         ] }) }, event.id))
-      ] }, day) : /* @__PURE__ */ jsx20("div", { "aria-hidden": "true" }, `pad-${index}`))
+      ] }, day) : /* @__PURE__ */ jsx21("div", { "aria-hidden": "true" }, `pad-${index}`))
     ] }),
-    calendar.data && events.length === 0 && /* @__PURE__ */ jsx20("p", { children: "\u8BE5\u8303\u56F4\u6CA1\u6709\u5DF2\u53D1\u5E03\u8BFE\u6B21\uFF0C\u53EF\u5148\u5728\u6559\u5B66\u8BA1\u5212\u4E2D\u6838\u5BF9\u5E76\u53D1\u5E03\u3002" }),
-    selected && /* @__PURE__ */ jsx20(CalendarEventEditor, { route, event: selected, onMoved: moved }, `${selected.id}:${selected.version}:${selected.active_publication_id}`),
-    [courses.error, calendar.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx20("p", { role: "alert", children: error?.message }, index))
+    calendar.data && events.length === 0 && /* @__PURE__ */ jsx21("p", { children: "\u8BE5\u8303\u56F4\u6CA1\u6709\u5DF2\u53D1\u5E03\u8BFE\u6B21\uFF0C\u53EF\u5148\u5728\u6559\u5B66\u8BA1\u5212\u4E2D\u6838\u5BF9\u5E76\u53D1\u5E03\u3002" }),
+    selected && /* @__PURE__ */ jsx21(CalendarEventEditor, { route, event: selected, onMoved: moved }, `${selected.id}:${selected.version}:${selected.active_publication_id}`),
+    [courses.error, calendar.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx21("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/reminders.tsx
-import { Button as Button22, useMutation as useMutation21, useQuery as useQuery22, useQueryClient as useQueryClient20 } from "@hermes/plugin-sdk";
-import { useState as useState21 } from "react";
+import { Button as Button23, useMutation as useMutation22, useQuery as useQuery22, useQueryClient as useQueryClient20 } from "@hermes/plugin-sdk";
+import { useState as useState22 } from "react";
 
 // extensions/teacher-assistant/desktop/src/reminder-api.ts
 var TODO_KINDS = { homework: "\u4F5C\u4E1A", exam: "\u8003\u8BD5", preparation: "\u5907\u8BFE", personal: "\u4E2A\u4EBA\u4E8B\u52A1" };
@@ -2646,13 +2726,13 @@ var TODO_STATES = { pending: "\u5F85\u5B8C\u6210", completed: "\u5DF2\u5B8C\u621
 var DELIVERY_STATES = { queued: "\u7B49\u5F85\u53D1\u9001", dispatching: "\u6B63\u5728\u53D1\u9001\u6216\u53D1\u9001\u4E2D\u65AD", accepted: "Windows\u5DF2\u63A5\u53D7", failed: "\u53D1\u9001\u5931\u8D25", expired: "\u5DF2\u8FC7\u8865\u53D1\u7A97\u53E3", cancelled: "\u6765\u6E90\u5DF2\u53D8\u66F4" };
 
 // extensions/teacher-assistant/desktop/src/teacher-todos.tsx
-import { Button as Button21, useMutation as useMutation20, useQuery as useQuery21, useQueryClient as useQueryClient19 } from "@hermes/plugin-sdk";
-import { useState as useState20 } from "react";
-import { jsx as jsx21, jsxs as jsxs21 } from "react/jsx-runtime";
+import { Button as Button22, useMutation as useMutation21, useQuery as useQuery21, useQueryClient as useQueryClient19 } from "@hermes/plugin-sdk";
+import { useState as useState21 } from "react";
+import { jsx as jsx22, jsxs as jsxs22 } from "react/jsx-runtime";
 function TodoEditor({ route, todo, onSaved }) {
   const courses = useQuery21({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
   const queryClient = useQueryClient19();
-  const save = useMutation20({
+  const save = useMutation21({
     mutationFn: (data) => call(route, todo ? "todo.update" : "todo.create", data, crypto.randomUUID()),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: routeKey(route) });
@@ -2672,96 +2752,96 @@ function TodoEditor({ route, todo, onSaved }) {
     };
     save.mutate(todo ? { ...data, id: todo.id, version: todo.version, status: form.get("status") } : data);
   }
-  return /* @__PURE__ */ jsxs21("form", { "aria-label": "\u5F85\u529E\u7F16\u8F91", onSubmit: submit, className: "grid max-w-3xl gap-3 rounded border border-(--ui-border) p-4", children: [
-    /* @__PURE__ */ jsx21("h3", { children: todo ? "\u4FEE\u6539\u5F85\u529E" : "\u65B0\u5EFA\u5F85\u529E" }),
-    /* @__PURE__ */ jsxs21("label", { children: [
+  return /* @__PURE__ */ jsxs22("form", { "aria-label": "\u5F85\u529E\u7F16\u8F91", onSubmit: submit, className: "grid max-w-3xl gap-3 rounded border border-(--ui-border) p-4", children: [
+    /* @__PURE__ */ jsx22("h3", { children: todo ? "\u4FEE\u6539\u5F85\u529E" : "\u65B0\u5EFA\u5F85\u529E" }),
+    /* @__PURE__ */ jsxs22("label", { children: [
       "\u5F85\u529E\u6807\u9898",
-      /* @__PURE__ */ jsx21("input", { name: "title", "aria-label": "\u5F85\u529E\u6807\u9898", defaultValue: todo?.title ?? "", maxLength: 200, required: true })
+      /* @__PURE__ */ jsx22("input", { name: "title", "aria-label": "\u5F85\u529E\u6807\u9898", defaultValue: todo?.title ?? "", maxLength: 200, required: true })
     ] }),
-    /* @__PURE__ */ jsxs21("label", { children: [
+    /* @__PURE__ */ jsxs22("label", { children: [
       "\u5F85\u529E\u7C7B\u578B",
-      /* @__PURE__ */ jsx21("select", { name: "kind", "aria-label": "\u5F85\u529E\u7C7B\u578B", defaultValue: todo?.kind ?? "personal", children: Object.entries(TODO_KINDS).map(([value, label]) => /* @__PURE__ */ jsx21("option", { value, children: label }, value)) })
+      /* @__PURE__ */ jsx22("select", { name: "kind", "aria-label": "\u5F85\u529E\u7C7B\u578B", defaultValue: todo?.kind ?? "personal", children: Object.entries(TODO_KINDS).map(([value, label]) => /* @__PURE__ */ jsx22("option", { value, children: label }, value)) })
     ] }),
-    /* @__PURE__ */ jsxs21("label", { children: [
+    /* @__PURE__ */ jsxs22("label", { children: [
       "\u5F85\u529E\u8BFE\u7A0B",
-      /* @__PURE__ */ jsxs21("select", { name: "course_id", "aria-label": "\u5F85\u529E\u8BFE\u7A0B", defaultValue: todo?.course_id ?? "", children: [
-        /* @__PURE__ */ jsx21("option", { value: "", children: "\u4E2A\u4EBA\u4E8B\u52A1" }),
-        courses.data?.items.map((course) => /* @__PURE__ */ jsx21("option", { value: course.id, children: course.title }, course.id))
+      /* @__PURE__ */ jsxs22("select", { name: "course_id", "aria-label": "\u5F85\u529E\u8BFE\u7A0B", defaultValue: todo?.course_id ?? "", children: [
+        /* @__PURE__ */ jsx22("option", { value: "", children: "\u4E2A\u4EBA\u4E8B\u52A1" }),
+        courses.data?.items.map((course) => /* @__PURE__ */ jsx22("option", { value: course.id, children: course.title }, course.id))
       ] })
     ] }),
-    /* @__PURE__ */ jsxs21("label", { children: [
+    /* @__PURE__ */ jsxs22("label", { children: [
       "\u622A\u6B62\u65F6\u95F4\uFF08\u5317\u4EAC\u65F6\u95F4\uFF09",
-      /* @__PURE__ */ jsx21("input", { type: "datetime-local", name: "due_at", "aria-label": "\u5F85\u529E\u622A\u6B62\u65F6\u95F4", defaultValue: todo?.due_at.slice(0, 16) ?? "", required: true })
+      /* @__PURE__ */ jsx22("input", { type: "datetime-local", name: "due_at", "aria-label": "\u5F85\u529E\u622A\u6B62\u65F6\u95F4", defaultValue: todo?.due_at.slice(0, 16) ?? "", required: true })
     ] }),
-    /* @__PURE__ */ jsxs21("label", { children: [
+    /* @__PURE__ */ jsxs22("label", { children: [
       "\u63D0\u524D\u63D0\u9192\u5206\u949F",
-      /* @__PURE__ */ jsx21("input", { type: "number", name: "lead_minutes", "aria-label": "\u5F85\u529E\u63D0\u524D\u5206\u949F", min: 0, max: 10080, defaultValue: todo?.lead_minutes ?? 15, required: true })
+      /* @__PURE__ */ jsx22("input", { type: "number", name: "lead_minutes", "aria-label": "\u5F85\u529E\u63D0\u524D\u5206\u949F", min: 0, max: 10080, defaultValue: todo?.lead_minutes ?? 15, required: true })
     ] }),
-    /* @__PURE__ */ jsxs21("label", { children: [
+    /* @__PURE__ */ jsxs22("label", { children: [
       "\u5F85\u529E\u8BF4\u660E",
-      /* @__PURE__ */ jsx21("textarea", { name: "details", "aria-label": "\u5F85\u529E\u8BF4\u660E", maxLength: 4e3, defaultValue: todo?.details ?? "" })
+      /* @__PURE__ */ jsx22("textarea", { name: "details", "aria-label": "\u5F85\u529E\u8BF4\u660E", maxLength: 4e3, defaultValue: todo?.details ?? "" })
     ] }),
-    todo && /* @__PURE__ */ jsxs21("label", { children: [
+    todo && /* @__PURE__ */ jsxs22("label", { children: [
       "\u5F85\u529E\u72B6\u6001",
-      /* @__PURE__ */ jsx21("select", { name: "status", "aria-label": "\u5F85\u529E\u72B6\u6001", defaultValue: todo.status, children: Object.entries(TODO_STATES).map(([value, label]) => /* @__PURE__ */ jsx21("option", { value, children: label }, value)) })
+      /* @__PURE__ */ jsx22("select", { name: "status", "aria-label": "\u5F85\u529E\u72B6\u6001", defaultValue: todo.status, children: Object.entries(TODO_STATES).map(([value, label]) => /* @__PURE__ */ jsx22("option", { value, children: label }, value)) })
     ] }),
-    /* @__PURE__ */ jsx21(Button21, { type: "submit", disabled: save.isPending, children: "\u4FDD\u5B58\u5F85\u529E" }),
-    [courses.error, save.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx21("p", { role: "alert", children: error?.message }, index))
+    /* @__PURE__ */ jsx22(Button22, { type: "submit", disabled: save.isPending, children: "\u4FDD\u5B58\u5F85\u529E" }),
+    [courses.error, save.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx22("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 function TeacherTodos({ route }) {
-  const [status, setStatus] = useState20("pending");
-  const [offset, setOffset] = useState20(0);
-  const [selected, setSelected] = useState20();
-  const [revision, setRevision] = useState20(0);
+  const [status, setStatus] = useState21("pending");
+  const [offset, setOffset] = useState21(0);
+  const [selected, setSelected] = useState21();
+  const [revision, setRevision] = useState21(0);
   const todos = useQuery21({ queryKey: [...routeKey(route), "todos", status, offset], queryFn: () => call(route, "todo.list", { status: status || null, offset, limit: 20 }) });
-  return /* @__PURE__ */ jsxs21("section", { "aria-label": "\u6559\u5E08\u5F85\u529E", className: "space-y-3", children: [
-    /* @__PURE__ */ jsx21("h2", { className: "text-xl font-semibold", children: "\u5F85\u529E" }),
-    /* @__PURE__ */ jsx21("p", { children: "\u622A\u6B62\u65F6\u95F4\u4F7F\u7528\u5317\u4EAC\u65F6\u95F4\u3002\u4F5C\u4E1A\u3001\u8003\u8BD5\u3001\u5907\u8BFE\u548C\u4E2A\u4EBA\u4E8B\u52A1\u5747\u4FDD\u5B58\u5728\u5F53\u524D\u6559\u5E08\u914D\u7F6E\u3002" }),
-    /* @__PURE__ */ jsxs21("label", { children: [
+  return /* @__PURE__ */ jsxs22("section", { "aria-label": "\u6559\u5E08\u5F85\u529E", className: "space-y-3", children: [
+    /* @__PURE__ */ jsx22("h2", { className: "text-xl font-semibold", children: "\u5F85\u529E" }),
+    /* @__PURE__ */ jsx22("p", { children: "\u622A\u6B62\u65F6\u95F4\u4F7F\u7528\u5317\u4EAC\u65F6\u95F4\u3002\u4F5C\u4E1A\u3001\u8003\u8BD5\u3001\u5907\u8BFE\u548C\u4E2A\u4EBA\u4E8B\u52A1\u5747\u4FDD\u5B58\u5728\u5F53\u524D\u6559\u5E08\u914D\u7F6E\u3002" }),
+    /* @__PURE__ */ jsxs22("label", { children: [
       "\u5F85\u529E\u7B5B\u9009",
-      /* @__PURE__ */ jsxs21("select", { "aria-label": "\u5F85\u529E\u7B5B\u9009", value: status, onChange: (event) => {
+      /* @__PURE__ */ jsxs22("select", { "aria-label": "\u5F85\u529E\u7B5B\u9009", value: status, onChange: (event) => {
         setStatus(event.target.value);
         setOffset(0);
       }, children: [
-        /* @__PURE__ */ jsx21("option", { value: "", children: "\u5168\u90E8" }),
-        Object.entries(TODO_STATES).map(([value, label]) => /* @__PURE__ */ jsx21("option", { value, children: label }, value))
+        /* @__PURE__ */ jsx22("option", { value: "", children: "\u5168\u90E8" }),
+        Object.entries(TODO_STATES).map(([value, label]) => /* @__PURE__ */ jsx22("option", { value, children: label }, value))
       ] })
     ] }),
-    /* @__PURE__ */ jsx21(Button21, { variant: "secondary", onClick: () => {
+    /* @__PURE__ */ jsx22(Button22, { variant: "secondary", onClick: () => {
       setSelected(void 0);
       setRevision((value) => value + 1);
     }, children: "\u65B0\u5EFA\u5F85\u529E" }),
-    todos.data?.items.map((todo) => /* @__PURE__ */ jsxs21("article", { className: "rounded border border-(--ui-border) p-3", children: [
-      /* @__PURE__ */ jsx21(Button21, { variant: "ghost", onClick: () => setSelected(todo), children: todo.title }),
-      /* @__PURE__ */ jsxs21("p", { children: [
+    todos.data?.items.map((todo) => /* @__PURE__ */ jsxs22("article", { className: "rounded border border-(--ui-border) p-3", children: [
+      /* @__PURE__ */ jsx22(Button22, { variant: "ghost", onClick: () => setSelected(todo), children: todo.title }),
+      /* @__PURE__ */ jsxs22("p", { children: [
         TODO_KINDS[todo.kind],
         " \xB7 ",
         todo.due_at.replace("T", " "),
         " \xB7 ",
         TODO_STATES[todo.status]
       ] }),
-      /* @__PURE__ */ jsx21("p", { children: todo.details })
+      /* @__PURE__ */ jsx22("p", { children: todo.details })
     ] }, todo.id)),
-    todos.data?.total === 0 && /* @__PURE__ */ jsx21("p", { children: "\u5F53\u524D\u7B5B\u9009\u6CA1\u6709\u5F85\u529E\u3002" }),
-    /* @__PURE__ */ jsxs21("div", { className: "flex gap-2", children: [
-      /* @__PURE__ */ jsx21(Button21, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u5F85\u529E" }),
-      /* @__PURE__ */ jsx21(Button21, { variant: "secondary", disabled: todos.data?.next_offset == null, onClick: () => setOffset(todos.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u5F85\u529E" })
+    todos.data?.total === 0 && /* @__PURE__ */ jsx22("p", { children: "\u5F53\u524D\u7B5B\u9009\u6CA1\u6709\u5F85\u529E\u3002" }),
+    /* @__PURE__ */ jsxs22("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u5F85\u529E" }),
+      /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: todos.data?.next_offset == null, onClick: () => setOffset(todos.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u5F85\u529E" })
     ] }),
-    /* @__PURE__ */ jsx21(TodoEditor, { route, todo: selected, onSaved: () => {
+    /* @__PURE__ */ jsx22(TodoEditor, { route, todo: selected, onSaved: () => {
       setSelected(void 0);
       setRevision((value) => value + 1);
     } }, `${selected?.id ?? "new"}:${selected?.version ?? revision}`),
-    todos.isPending && /* @__PURE__ */ jsx21("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5F85\u529E" }),
-    todos.error && /* @__PURE__ */ jsx21("p", { role: "alert", children: todos.error.message })
+    todos.isPending && /* @__PURE__ */ jsx22("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5F85\u529E" }),
+    todos.error && /* @__PURE__ */ jsx22("p", { role: "alert", children: todos.error.message })
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/reminders.tsx
-import { jsx as jsx22, jsxs as jsxs22 } from "react/jsx-runtime";
+import { jsx as jsx23, jsxs as jsxs23 } from "react/jsx-runtime";
 function ReminderPolicy({ route, settings }) {
   const queryClient = useQueryClient20();
-  const save = useMutation21({ mutationFn: (data) => call(route, "reminder.set_settings", data, crypto.randomUUID()), onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }) });
+  const save = useMutation22({ mutationFn: (data) => call(route, "reminder.set_settings", data, crypto.randomUUID()), onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }) });
   function submit(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -2772,122 +2852,124 @@ function ReminderPolicy({ route, settings }) {
       preclass_minutes: lead("preclass_minutes"),
       preparation_minutes: lead("preparation_minutes"),
       exam_minutes: lead("exam_minutes"),
+      break_lead_minutes: lead("break_lead_minutes"),
+      end_lead_minutes: lead("end_lead_minutes"),
       late_grace_minutes: Number(form.get("late_grace_minutes"))
     });
   }
-  return /* @__PURE__ */ jsxs22("form", { "aria-label": "\u63D0\u9192\u8BBE\u7F6E", onSubmit: submit, className: "grid max-w-3xl gap-3", children: [
-    /* @__PURE__ */ jsxs22("label", { children: [
-      /* @__PURE__ */ jsx22("input", { type: "checkbox", name: "enabled", "aria-label": "\u542F\u7528\u6559\u5B66\u63D0\u9192", defaultChecked: settings.enabled }),
+  return /* @__PURE__ */ jsxs23("form", { "aria-label": "\u63D0\u9192\u8BBE\u7F6E", onSubmit: submit, className: "grid max-w-3xl gap-3", children: [
+    /* @__PURE__ */ jsxs23("label", { children: [
+      /* @__PURE__ */ jsx23("input", { type: "checkbox", name: "enabled", "aria-label": "\u542F\u7528\u6559\u5B66\u63D0\u9192", defaultChecked: settings.enabled }),
       "\u542F\u7528\u6559\u5B66\u63D0\u9192"
     ] }),
-    /* @__PURE__ */ jsx22("p", { children: "\u8BFE\u8868\u63D0\u9192\u7684\u63D0\u524D\u5206\u949F\u7559\u7A7A\u53EF\u5173\u95ED\u8BE5\u7C7B\u63D0\u9192\u3002\u540E\u53F0\u4EFB\u52A1\u6BCF\u5206\u949F\u68C0\u67E5\u5230\u671F\u9879\u76EE\uFF0C\u7535\u8111\u5173\u673A\u6216\u9000\u51FA Windows \u767B\u5F55\u540E\u6682\u505C\u3002" }),
-    [["preclass_minutes", "\u8BFE\u524D\u63D0\u524D\u5206\u949F"], ["preparation_minutes", "\u5907\u8BFE\u63D0\u524D\u5206\u949F"], ["exam_minutes", "\u8003\u8BD5\u63D0\u524D\u5206\u949F"]].map(([name, label]) => /* @__PURE__ */ jsxs22("label", { children: [
+    /* @__PURE__ */ jsx23("p", { children: "\u8BFE\u8868\u63D0\u9192\u7684\u63D0\u524D\u5206\u949F\u7559\u7A7A\u53EF\u5173\u95ED\u8BE5\u7C7B\u63D0\u9192\u3002\u540E\u53F0\u4EFB\u52A1\u6BCF\u5206\u949F\u68C0\u67E5\u5230\u671F\u9879\u76EE\uFF0C\u7535\u8111\u5173\u673A\u6216\u9000\u51FA Windows \u767B\u5F55\u540E\u6682\u505C\u3002" }),
+    [["preclass_minutes", "\u8BFE\u524D\u63D0\u524D\u5206\u949F"], ["preparation_minutes", "\u5907\u8BFE\u63D0\u524D\u5206\u949F"], ["exam_minutes", "\u8003\u8BD5\u63D0\u524D\u5206\u949F"], ["break_lead_minutes", "\u8BFE\u95F4\u63D0\u524D\u5206\u949F"], ["end_lead_minutes", "\u4E0B\u8BFE\u63D0\u524D\u5206\u949F"]].map(([name, label]) => /* @__PURE__ */ jsxs23("label", { children: [
       label,
-      /* @__PURE__ */ jsx22("input", { type: "number", name, "aria-label": label, min: 0, max: 10080, defaultValue: settings[name] ?? "" })
+      /* @__PURE__ */ jsx23("input", { type: "number", name, "aria-label": label, min: 0, max: 10080, defaultValue: settings[name] ?? "" })
     ] }, name)),
-    /* @__PURE__ */ jsxs22("label", { children: [
+    /* @__PURE__ */ jsxs23("label", { children: [
       "\u5141\u8BB8\u8865\u53D1\u5206\u949F",
-      /* @__PURE__ */ jsx22("input", { type: "number", name: "late_grace_minutes", "aria-label": "\u5141\u8BB8\u8865\u53D1\u5206\u949F", min: 0, max: 10080, defaultValue: settings.late_grace_minutes, required: true })
+      /* @__PURE__ */ jsx23("input", { type: "number", name: "late_grace_minutes", "aria-label": "\u5141\u8BB8\u8865\u53D1\u5206\u949F", min: 0, max: 10080, defaultValue: settings.late_grace_minutes, required: true })
     ] }),
-    /* @__PURE__ */ jsx22(Button22, { type: "submit", disabled: save.isPending, children: "\u4FDD\u5B58\u63D0\u9192\u8BBE\u7F6E" }),
-    save.isSuccess && /* @__PURE__ */ jsx22("p", { role: "status", children: "\u63D0\u9192\u8BBE\u7F6E\u5DF2\u4FDD\u5B58" }),
-    save.error && /* @__PURE__ */ jsx22("p", { role: "alert", children: save.error.message })
+    /* @__PURE__ */ jsx23(Button23, { type: "submit", disabled: save.isPending, children: "\u4FDD\u5B58\u63D0\u9192\u8BBE\u7F6E" }),
+    save.isSuccess && /* @__PURE__ */ jsx23("p", { role: "status", children: "\u63D0\u9192\u8BBE\u7F6E\u5DF2\u4FDD\u5B58" }),
+    save.error && /* @__PURE__ */ jsx23("p", { role: "alert", children: save.error.message })
   ] });
 }
 function Reminders({ route }) {
   const queryClient = useQueryClient20();
-  const [offset, setOffset] = useState21(0);
-  const [backgroundVisible, setBackgroundVisible] = useState21(false);
+  const [offset, setOffset] = useState22(0);
+  const [backgroundVisible, setBackgroundVisible] = useState22(false);
   const policy = useQuery22({ queryKey: [...routeKey(route), "reminder-settings"], queryFn: () => call(route, "reminder.settings"), refetchInterval: 3e4 });
   const deliveries = useQuery22({ queryKey: [...routeKey(route), "reminder-deliveries", offset], queryFn: () => call(route, "reminder.list", { offset, limit: 20 }), refetchInterval: 3e4 });
   const background = useQuery22({ queryKey: [...routeKey(route), "reminder-background"], queryFn: () => call(route, "reminder.background.status"), enabled: backgroundVisible });
-  const action = useMutation21({ mutationFn: ({ operation, data = {} }) => call(route, operation, data, crypto.randomUUID()), onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }) });
-  const test = useMutation21({ mutationFn: () => call(route, "reminder.test", {}, crypto.randomUUID()) });
-  return /* @__PURE__ */ jsxs22("section", { "aria-label": "\u63D0\u9192\u4E0E\u5F85\u529E", className: "space-y-6", children: [
-    /* @__PURE__ */ jsx22("h2", { className: "text-xl font-semibold", children: "\u63D0\u9192\u4E0E\u5F85\u529E" }),
-    policy.data && /* @__PURE__ */ jsx22(ReminderPolicy, { route, settings: policy.data }, policy.data.version),
-    /* @__PURE__ */ jsxs22("section", { "aria-label": "\u63D0\u9192\u540E\u53F0", className: "space-y-3", children: [
-      /* @__PURE__ */ jsx22("h3", { children: "Windows \u540E\u53F0" }),
-      /* @__PURE__ */ jsx22("p", { children: "\u542F\u7528\u540E\u53F0\u4F1A\u4E3A\u5F53\u524D Windows \u7528\u6237\u521B\u5EFA\u6BCF\u5206\u949F\u8FD0\u884C\u7684\u4EFB\u52A1\uFF0C\u8C03\u7528\u5F53\u524D\u6559\u5E08\u914D\u7F6E\u7684 Hermes \u539F\u751F\u5B9A\u65F6\u5668\u3002\u5173\u95ED Desktop \u540E\u7EE7\u7EED\u68C0\u67E5\u63D0\u9192\u3002" }),
-      /* @__PURE__ */ jsxs22("div", { className: "flex flex-wrap gap-2", children: [
-        /* @__PURE__ */ jsx22(Button22, { disabled: action.isPending, onClick: () => {
+  const action = useMutation22({ mutationFn: ({ operation, data = {} }) => call(route, operation, data, crypto.randomUUID()), onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }) });
+  const test = useMutation22({ mutationFn: () => call(route, "reminder.test", {}, crypto.randomUUID()) });
+  return /* @__PURE__ */ jsxs23("section", { "aria-label": "\u63D0\u9192\u4E0E\u5F85\u529E", className: "space-y-6", children: [
+    /* @__PURE__ */ jsx23("h2", { className: "text-xl font-semibold", children: "\u63D0\u9192\u4E0E\u5F85\u529E" }),
+    policy.data && /* @__PURE__ */ jsx23(ReminderPolicy, { route, settings: policy.data }, policy.data.version),
+    /* @__PURE__ */ jsxs23("section", { "aria-label": "\u63D0\u9192\u540E\u53F0", className: "space-y-3", children: [
+      /* @__PURE__ */ jsx23("h3", { children: "Windows \u540E\u53F0" }),
+      /* @__PURE__ */ jsx23("p", { children: "\u542F\u7528\u540E\u53F0\u4F1A\u4E3A\u5F53\u524D Windows \u7528\u6237\u521B\u5EFA\u6BCF\u5206\u949F\u8FD0\u884C\u7684\u4EFB\u52A1\uFF0C\u8C03\u7528\u5F53\u524D\u6559\u5E08\u914D\u7F6E\u7684 Hermes \u539F\u751F\u5B9A\u65F6\u5668\u3002\u5173\u95ED Desktop \u540E\u7EE7\u7EED\u68C0\u67E5\u63D0\u9192\u3002" }),
+      /* @__PURE__ */ jsxs23("div", { className: "flex flex-wrap gap-2", children: [
+        /* @__PURE__ */ jsx23(Button23, { disabled: action.isPending, onClick: () => {
           setBackgroundVisible(true);
           action.mutate({ operation: "reminder.background.install" });
         }, children: "\u542F\u7528\u6216\u4FEE\u590D\u540E\u53F0" }),
-        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: action.isPending, onClick: () => {
+        /* @__PURE__ */ jsx23(Button23, { variant: "secondary", disabled: action.isPending, onClick: () => {
           setBackgroundVisible(true);
           action.mutate({ operation: "reminder.background.remove" });
         }, children: "\u505C\u7528\u540E\u53F0" }),
-        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", onClick: () => {
+        /* @__PURE__ */ jsx23(Button23, { variant: "secondary", onClick: () => {
           setBackgroundVisible(true);
           void background.refetch();
         }, children: "\u5237\u65B0\u540E\u53F0\u72B6\u6001" }),
-        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: test.isPending, onClick: () => test.mutate(), children: "\u53D1\u9001\u672C\u673A\u6D4B\u8BD5\u901A\u77E5" })
+        /* @__PURE__ */ jsx23(Button23, { variant: "secondary", disabled: test.isPending, onClick: () => test.mutate(), children: "\u53D1\u9001\u672C\u673A\u6D4B\u8BD5\u901A\u77E5" })
       ] }),
-      background.data && /* @__PURE__ */ jsxs22("div", { children: [
-        /* @__PURE__ */ jsxs22("p", { children: [
+      background.data && /* @__PURE__ */ jsxs23("div", { children: [
+        /* @__PURE__ */ jsxs23("p", { children: [
           "Windows\u4EFB\u52A1",
           background.data.windows.installed ? background.data.windows.enabled ? "\u5DF2\u542F\u7528" : "\u5DF2\u505C\u7528" : "\u5C1A\u672A\u5B89\u88C5",
           " \xB7 Hermes\u4EFB\u52A1",
           background.data.cron?.enabled ? "\u5DF2\u542F\u7528" : "\u672A\u542F\u7528"
         ] }),
-        /* @__PURE__ */ jsxs22("p", { children: [
+        /* @__PURE__ */ jsxs23("p", { children: [
           "\u6700\u8FD1\u68C0\u67E5 ",
           background.data.last_tick_at?.replace("T", " ") ?? "\u5C1A\u65E0\u8BB0\u5F55"
         ] }),
-        background.data.windows.next_run_at && /* @__PURE__ */ jsxs22("p", { children: [
+        background.data.windows.next_run_at && /* @__PURE__ */ jsxs23("p", { children: [
           "\u4E0B\u6B21\u540E\u53F0\u68C0\u67E5 ",
           background.data.windows.next_run_at.replace("T", " ")
         ] }),
-        background.data.windows.last_result !== void 0 && /* @__PURE__ */ jsxs22("p", { children: [
+        background.data.windows.last_result !== void 0 && /* @__PURE__ */ jsxs23("p", { children: [
           "Windows\u6700\u8FD1\u8FD0\u884C\u7ED3\u679C\u7801 ",
           background.data.windows.last_result
         ] }),
-        background.data.last_tick_error && /* @__PURE__ */ jsx22("p", { role: "alert", children: background.data.last_tick_error }),
-        background.data.cron?.last_error && /* @__PURE__ */ jsx22("p", { role: "alert", children: background.data.cron.last_error })
+        background.data.last_tick_error && /* @__PURE__ */ jsx23("p", { role: "alert", children: background.data.last_tick_error }),
+        background.data.cron?.last_error && /* @__PURE__ */ jsx23("p", { role: "alert", children: background.data.cron.last_error })
       ] }),
-      test.isSuccess && /* @__PURE__ */ jsxs22("p", { role: "status", children: [
+      test.isSuccess && /* @__PURE__ */ jsxs23("p", { role: "status", children: [
         "Windows\u5DF2\u63A5\u53D7\u6D4B\u8BD5\u901A\u77E5",
         test.data.history_contains_tag ? "\uFF0C\u5DF2\u5728\u672C\u673A\u901A\u77E5\u5386\u53F2\u6838\u5BF9" : ""
       ] }),
-      /* @__PURE__ */ jsx22("p", { children: "\u7CFB\u7EDF\u63A5\u53D7\u8BB0\u5F55\u540E\u4ECD\u53EF\u80FD\u53D7\u4E13\u6CE8\u6A21\u5F0F\u6216\u7CFB\u7EDF\u663E\u793A\u8BBE\u7F6E\u5F71\u54CD\uFF0C\u9605\u8BFB\u72B6\u6001\u7531\u7528\u6237\u786E\u8BA4\u3002" })
+      /* @__PURE__ */ jsx23("p", { children: "\u7CFB\u7EDF\u63A5\u53D7\u8BB0\u5F55\u540E\u4ECD\u53EF\u80FD\u53D7\u4E13\u6CE8\u6A21\u5F0F\u6216\u7CFB\u7EDF\u663E\u793A\u8BBE\u7F6E\u5F71\u54CD\uFF0C\u9605\u8BFB\u72B6\u6001\u7531\u7528\u6237\u786E\u8BA4\u3002" })
     ] }),
-    /* @__PURE__ */ jsx22(TeacherTodos, { route }),
-    /* @__PURE__ */ jsxs22("section", { "aria-label": "\u63D0\u9192\u8BB0\u5F55", className: "space-y-3", children: [
-      /* @__PURE__ */ jsx22("h3", { children: "\u63D0\u9192\u8BB0\u5F55" }),
-      /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: action.isPending, onClick: () => action.mutate({ operation: "reminder.refresh" }), children: "\u6309\u6700\u65B0\u8BFE\u8868\u548C\u5F85\u529E\u5237\u65B0\u63D0\u9192" }),
-      policy.data && /* @__PURE__ */ jsxs22("p", { children: [
+    /* @__PURE__ */ jsx23(TeacherTodos, { route }),
+    /* @__PURE__ */ jsxs23("section", { "aria-label": "\u63D0\u9192\u8BB0\u5F55", className: "space-y-3", children: [
+      /* @__PURE__ */ jsx23("h3", { children: "\u63D0\u9192\u8BB0\u5F55" }),
+      /* @__PURE__ */ jsx23(Button23, { variant: "secondary", disabled: action.isPending, onClick: () => action.mutate({ operation: "reminder.refresh" }), children: "\u6309\u6700\u65B0\u8BFE\u8868\u548C\u5F85\u529E\u5237\u65B0\u63D0\u9192" }),
+      policy.data && /* @__PURE__ */ jsxs23("p", { children: [
         "\u6559\u5B66\u63D0\u9192",
         policy.data.enabled ? "\u5DF2\u5F00\u542F" : "\u5DF2\u5173\u95ED",
         " \xB7 \u6700\u8FD1\u68C0\u67E5 ",
         policy.data.last_tick_at?.replace("T", " ") ?? "\u5C1A\u65E0\u8BB0\u5F55"
       ] }),
-      deliveries.data?.items.map((item) => /* @__PURE__ */ jsxs22("article", { className: "space-y-1 rounded border border-(--ui-border) p-3", children: [
-        /* @__PURE__ */ jsxs22("p", { children: [
+      deliveries.data?.items.map((item) => /* @__PURE__ */ jsxs23("article", { className: "space-y-1 rounded border border-(--ui-border) p-3", children: [
+        /* @__PURE__ */ jsxs23("p", { children: [
           item.title,
           " \xB7 ",
           DELIVERY_STATES[item.state]
         ] }),
-        /* @__PURE__ */ jsxs22("p", { children: [
+        /* @__PURE__ */ jsxs23("p", { children: [
           item.due_at.replace("T", " "),
           " \xB7 ",
           item.body
         ] }),
-        item.error_code && /* @__PURE__ */ jsx22("p", { role: "alert", children: item.error_code }),
-        ["failed", "dispatching"].includes(item.state) && /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: action.isPending, onClick: () => action.mutate({ operation: "reminder.retry", data: { id: item.id } }), children: "\u91CD\u65B0\u6392\u961F\u6B64\u63D0\u9192" })
+        item.error_code && /* @__PURE__ */ jsx23("p", { role: "alert", children: item.error_code }),
+        ["failed", "dispatching"].includes(item.state) && /* @__PURE__ */ jsx23(Button23, { variant: "secondary", disabled: action.isPending, onClick: () => action.mutate({ operation: "reminder.retry", data: { id: item.id } }), children: "\u91CD\u65B0\u6392\u961F\u6B64\u63D0\u9192" })
       ] }, item.id)),
-      deliveries.data?.total === 0 && /* @__PURE__ */ jsx22("p", { children: "\u5C1A\u65E0\u63D0\u9192\u8BB0\u5F55\uFF0C\u53EF\u6309\u6700\u65B0\u8BFE\u8868\u548C\u5F85\u529E\u5237\u65B0\u3002" }),
-      /* @__PURE__ */ jsxs22("div", { className: "flex gap-2", children: [
-        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u63D0\u9192" }),
-        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: deliveries.data?.next_offset == null, onClick: () => setOffset(deliveries.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u63D0\u9192" })
+      deliveries.data?.total === 0 && /* @__PURE__ */ jsx23("p", { children: "\u5C1A\u65E0\u63D0\u9192\u8BB0\u5F55\uFF0C\u53EF\u6309\u6700\u65B0\u8BFE\u8868\u548C\u5F85\u529E\u5237\u65B0\u3002" }),
+      /* @__PURE__ */ jsxs23("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsx23(Button23, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u63D0\u9192" }),
+        /* @__PURE__ */ jsx23(Button23, { variant: "secondary", disabled: deliveries.data?.next_offset == null, onClick: () => setOffset(deliveries.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u63D0\u9192" })
       ] })
     ] }),
-    [policy.error, deliveries.error, background.error, action.error, test.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx22("p", { role: "alert", children: error?.message }, index))
+    [policy.error, deliveries.error, background.error, action.error, test.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx23("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { jsx as jsx23, jsxs as jsxs23 } from "react/jsx-runtime";
+import { jsx as jsx24, jsxs as jsxs24 } from "react/jsx-runtime";
 var PAGES = [
   ["course", "\u6211\u7684\u8BFE\u7A0B"],
   ["class", "\u73ED\u7EA7"],
@@ -2905,7 +2987,7 @@ var PAGES = [
 function TeacherWorkspace() {
   const profile = useValue(host7.state.profile);
   const connectionId = useValue(host7.state.connectionId);
-  const [page, setPage] = useState22("course");
+  const [page, setPage] = useState23("course");
   const routing = useQuery23({
     queryKey: ["teacher-route", connectionId, profile],
     queryFn: async () => {
@@ -2916,29 +2998,29 @@ function TeacherWorkspace() {
     }
   });
   const route = routing.data;
-  return /* @__PURE__ */ jsxs23("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
-    /* @__PURE__ */ jsxs23("header", { className: "mb-6 space-y-2", children: [
-      /* @__PURE__ */ jsx23("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
-      /* @__PURE__ */ jsxs23("p", { children: [
+  return /* @__PURE__ */ jsxs24("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
+    /* @__PURE__ */ jsxs24("header", { className: "mb-6 space-y-2", children: [
+      /* @__PURE__ */ jsx24("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
+      /* @__PURE__ */ jsxs24("p", { children: [
         "\u5F53\u524D\u914D\u7F6E \xB7 ",
         profile,
         " \xB7 \u672C\u5730\u6559\u5B66\u6570\u636E\u4E0E Hermes \u4F1A\u8BDD\u5206\u5F00\u4FDD\u5B58"
       ] })
     ] }),
-    /* @__PURE__ */ jsx23("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx23(Button23, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
-    routing.isPending && /* @__PURE__ */ jsx23("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
-    routing.error && /* @__PURE__ */ jsx23("p", { role: "alert", children: routing.error.message }),
-    route && /* @__PURE__ */ jsxs23("div", { children: [
-      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx23(RecordEditor, { route, entity: page }),
-      page === "roster" && /* @__PURE__ */ jsx23(CourseRoster, { route }),
-      page === "tasks" && /* @__PURE__ */ jsx23(Tasks, { route }),
-      page === "textbooks" && /* @__PURE__ */ jsx23(Textbooks, { route }),
-      page === "preparation" && /* @__PURE__ */ jsx23(Preparation, { route }),
-      page === "slides" && /* @__PURE__ */ jsx23(SlidesWorkspace, { route }),
-      page === "planning" && /* @__PURE__ */ jsx23(Planning, { route }),
-      page === "timetable" && /* @__PURE__ */ jsx23(Timetable, { route }),
-      page === "reminders" && /* @__PURE__ */ jsx23(Reminders, { route }),
-      page === "settings" && /* @__PURE__ */ jsx23(Settings, { route })
+    /* @__PURE__ */ jsx24("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx24(Button24, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
+    routing.isPending && /* @__PURE__ */ jsx24("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
+    routing.error && /* @__PURE__ */ jsx24("p", { role: "alert", children: routing.error.message }),
+    route && /* @__PURE__ */ jsxs24("div", { children: [
+      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx24(RecordEditor, { route, entity: page }),
+      page === "roster" && /* @__PURE__ */ jsx24(CourseRoster, { route }),
+      page === "tasks" && /* @__PURE__ */ jsx24(Tasks, { route }),
+      page === "textbooks" && /* @__PURE__ */ jsx24(Textbooks, { route }),
+      page === "preparation" && /* @__PURE__ */ jsx24(Preparation, { route }),
+      page === "slides" && /* @__PURE__ */ jsx24(SlidesWorkspace, { route }),
+      page === "planning" && /* @__PURE__ */ jsx24(Planning, { route }),
+      page === "timetable" && /* @__PURE__ */ jsx24(Timetable, { route }),
+      page === "reminders" && /* @__PURE__ */ jsx24(Reminders, { route }),
+      page === "settings" && /* @__PURE__ */ jsx24(Settings, { route })
     ] }, `${route.connectionId}:${route.profile}:${route.targetProfile}:${page}`)
   ] });
 }
@@ -2947,7 +3029,7 @@ var plugin_default = {
   name: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0",
   register(ctx) {
     ctx.registerMany([
-      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx23(TeacherWorkspace, {}) },
+      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx24(TeacherWorkspace, {}) },
       { id: "navigation", area: SIDEBAR_NAV_AREA, data: { path: "/teacher", label: "\u6559\u5E08\u5DE5\u4F5C\u53F0", codicon: "mortar-board" } }
     ]);
   }

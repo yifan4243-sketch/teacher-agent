@@ -15,6 +15,10 @@ export interface Progress {
 export interface Publication { id: string; active: number; plan_id: string; events: CalendarEvent[]; progress: Progress }
 export interface PublicationLink { id: string; plan_id: string }
 export interface CalendarResult { items: CalendarEvent[]; progress: Progress }
+export interface PreparationStatus {
+  lesson_id: string | null; script_approved: boolean; plan_approved: boolean; blueprint_id: string | null
+  blueprint_version: number | null; slide_pages: number; approved_slide_pages: number
+}
 export const EVENT_STATUS = { scheduled: '待授课', completed: '已完成', cancelled: '已取消' }
 export const PERIOD_KIND: Record<string, string> = { teaching: '教学', break: '休息', assessment: '考核' }
 

@@ -14,6 +14,8 @@ class ReminderSettings(Input):
     preclass_minutes: int | None = Field(default=15, ge=0, le=10080, strict=True)
     preparation_minutes: int | None = Field(default=1440, ge=0, le=10080, strict=True)
     exam_minutes: int | None = Field(default=60, ge=0, le=10080, strict=True)
+    break_lead_minutes: int | None = Field(default=None, ge=0, le=10080, strict=True)
+    end_lead_minutes: int | None = Field(default=None, ge=0, le=10080, strict=True)
     late_grace_minutes: int = Field(default=60, ge=0, le=10080, strict=True)
 
 

@@ -3,6 +3,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 import importlib
+import hashlib
+import json
 import runpy
 from threading import Event
 
@@ -10,6 +12,7 @@ import pytest
 
 from tests.extensions.test_teacher_foundation import saved, teacher, tool
 from tests.extensions.test_teacher_timetable import calendar_workspace
+from tests.extensions.test_teacher_blueprints import preparation_fixture
 
 __all__ = ["calendar_workspace", "teacher"]
 
@@ -181,3 +184,52 @@ def test_native_cron_configuration_recovery_parallel_setup_and_plugin_disable(te
         conn.execute("UPDATE reminder_settings SET last_tick_at='before-disabled' WHERE id=1")
     runpy.run_path(str(script), run_name="__main__")
     assert call("reminder.settings")["data"]["last_tick_at"] == "before-disabled"
+
+
+def test_break_end_times_preparation_pages_and_legacy_settings_receipt(teacher, tmp_path, monkeypatch):
+    _, manager, call = teacher
+    lesson, _, _, blueprint_params = preparation_fixture(call, tmp_path)
+    blueprint = saved(call, "document.save", blueprint_params)
+    saved(call, "document.review", {"id": blueprint["id"], "decision": "approved"})
+    saved(call, "slide.deck.from_blueprint", {"id": blueprint["id"]})
+    page = call("slide.page.list", {"blueprint_id": blueprint["id"]})["data"]["items"][0]
+    saved(call, "slide.page.review", {"id": page["id"], "decision": "approved", "note": "审核真实结构化页面"})
+    plan = saved(call, "plan.save", {"course_id": lesson["course_id"], "textbook_version_id": lesson["version_id"], "title": "课间下课提醒测试",
+        "start_date": "2026-11-02", "end_date": "2026-11-16", "weekly_slots": [{"weekday": 0, "start_time": "08:20"}]})
+    publication = saved(call, "plan.publish", {"id": plan["id"], "review_note": "测试实际时段"})
+    event = publication["events"][0]
+    linked = saved(call, "calendar.progress", {"id": event["id"], "version": 1, "publication_id": publication["id"], "status": "scheduled", "lesson_id": lesson["id"], "note": "关联已审核备课材料"})
+    readiness = call("calendar.preparation", {"id": event["id"]})["data"]
+    assert readiness["script_approved"] and readiness["plan_approved"]
+    assert readiness["slide_pages"] == 8 and readiness["approved_slide_pages"] == 1
+    prefix = manager._plugins["teacher-assistant"].module.__name__ + ".teaching"
+    module = importlib.import_module(prefix + ".reminders")
+    adapter = importlib.import_module(prefix + ".windows_notifications")
+    schema = importlib.import_module(prefix + ".reminder_models")
+    database = importlib.import_module(prefix + ".database").database
+    start = datetime.fromisoformat(event["starts_at"])
+    monkeypatch.setattr(module, "local_now", lambda: start)
+    params = {"version": 1, "enabled": True}
+    original = saved(call, "reminder.set_settings", params, "legacy-reminder-settings")
+    old_payload = schema.ReminderSettings.model_validate(params).model_dump(mode="json", exclude={"break_lead_minutes", "end_lead_minutes"})
+    old_fingerprint = hashlib.sha256(json.dumps(old_payload, ensure_ascii=False, sort_keys=True, allow_nan=False).encode()).hexdigest()
+    with database() as conn:
+        conn.execute("UPDATE command_receipts SET fingerprint=? WHERE request_id='legacy-reminder-settings'", (old_fingerprint,))
+    assert saved(call, "reminder.set_settings", params, "legacy-reminder-settings")["version"] == original["version"]
+    enabled(call, preparation_minutes=0, break_lead_minutes=0, end_lead_minutes=0)
+    saved(call, "reminder.refresh", {})
+    entries = [item for item in call("reminder.list")["data"]["items"] if item["event_id"] == event["id"]]
+    pause = next(item for item in entries if item["kind"] == "class_break")
+    end = next(item for item in entries if item["kind"] == "class_end")
+    assert pause["due_at"] == (start + timedelta(minutes=40)).isoformat()
+    assert end["due_at"] == (start + timedelta(minutes=90)).isoformat()
+    prep = next(item for item in entries if item["kind"] == "preparation")
+    assert "PPT已审核1/8页" in prep["body"] and "授课稿已审核" in prep["body"]
+    monkeypatch.setattr(adapter, "notify", lambda *args: {"ok": True, "provider": "offline OS boundary"})
+    module.tick(now=start + timedelta(minutes=40))
+    assert call("reminder.get", {"id": pause["id"]})["data"]["state"] == "accepted"
+    saved(call, "calendar.move", {"id": event["id"], "version": linked["version"], "publication_id": publication["id"], "starts_at": (start + timedelta(days=1)).isoformat(), "note": "调课后按实际课间和下课时间重新排队"})
+    saved(call, "reminder.refresh", {})
+    assert call("reminder.get", {"id": end["id"]})["data"]["state"] == "cancelled"
+    entries = call("reminder.list")["data"]["items"]
+    assert any(item["event_id"] == event["id"] and item["kind"] == "class_break" and item["due_at"] == (start + timedelta(days=1, minutes=40)).isoformat() and item["state"] == "queued" for item in entries)

@@ -16,12 +16,13 @@ function ReminderPolicy({ route, settings }: SettingsProps) {
     const form = new FormData(event.currentTarget)
     const lead = (key: string) => form.get(key) === '' ? null : Number(form.get(key))
     save.mutate({ version: settings.version, enabled: form.has('enabled'), preclass_minutes: lead('preclass_minutes'),
-      preparation_minutes: lead('preparation_minutes'), exam_minutes: lead('exam_minutes'), late_grace_minutes: Number(form.get('late_grace_minutes')) })
+      preparation_minutes: lead('preparation_minutes'), exam_minutes: lead('exam_minutes'),
+      break_lead_minutes: lead('break_lead_minutes'), end_lead_minutes: lead('end_lead_minutes'), late_grace_minutes: Number(form.get('late_grace_minutes')) })
   }
   return <form aria-label="提醒设置" onSubmit={submit} className="grid max-w-3xl gap-3">
     <label><input type="checkbox" name="enabled" aria-label="启用教学提醒" defaultChecked={settings.enabled} />启用教学提醒</label>
     <p>课表提醒的提前分钟留空可关闭该类提醒。后台任务每分钟检查到期项目，电脑关机或退出 Windows 登录后暂停。</p>
-    {[['preclass_minutes', '课前提前分钟'], ['preparation_minutes', '备课提前分钟'], ['exam_minutes', '考试提前分钟']].map(([name, label]) => <label key={name}>{label}<input type="number" name={name} aria-label={label} min={0} max={10080} defaultValue={settings[name as 'preclass_minutes'] ?? ''} /></label>)}
+    {([['preclass_minutes', '课前提前分钟'], ['preparation_minutes', '备课提前分钟'], ['exam_minutes', '考试提前分钟'], ['break_lead_minutes', '课间提前分钟'], ['end_lead_minutes', '下课提前分钟']] as const).map(([name, label]) => <label key={name}>{label}<input type="number" name={name} aria-label={label} min={0} max={10080} defaultValue={settings[name] ?? ''} /></label>)}
     <label>允许补发分钟<input type="number" name="late_grace_minutes" aria-label="允许补发分钟" min={0} max={10080} defaultValue={settings.late_grace_minutes} required /></label>
     <Button type="submit" disabled={save.isPending}>保存提醒设置</Button>
     {save.isSuccess && <p role="status">提醒设置已保存</p>}

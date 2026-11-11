@@ -1,6 +1,7 @@
 """Explicit semester dates, local weekly slots and textbook chapter difficulty weights."""
 
 from datetime import date
+from typing import Literal
 
 from pydantic import Field, model_validator
 
@@ -17,6 +18,18 @@ class ChapterWeight(Input):
     difficulty: int = Field(default=1, ge=1, le=10, strict=True)
 
 
+class SessionContent(Input):
+    kind: Literal["teaching", "practice", "review", "exam"]
+    chapter_id: str | None = Field(default=None, min_length=1, max_length=64)
+    title: str = Field(min_length=1, max_length=200)
+
+    @model_validator(mode="after")
+    def chapter_for_teaching(self):
+        if (self.kind == "teaching") != (self.chapter_id is not None):
+            raise ValueError("教学课次需关联教材章节，练习、复习和考核的章节关联留空")
+        return self
+
+
 class PlanSave(Input):
     course_id: str = Field(min_length=1, max_length=64)
     textbook_version_id: str = Field(min_length=1, max_length=64)
@@ -31,6 +44,7 @@ class PlanSave(Input):
     exam_sessions: int = Field(default=0, ge=0, le=20, strict=True)
     exam_minutes: int = Field(default=90, ge=1, le=480, strict=True)
     parent_id: str | None = Field(default=None, min_length=1, max_length=64)
+    session_content: list[SessionContent] = Field(default_factory=list, max_length=2000)
 
     @model_validator(mode="after")
     def bounded_calendar(self):

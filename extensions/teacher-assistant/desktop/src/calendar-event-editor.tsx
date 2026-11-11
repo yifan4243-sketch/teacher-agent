@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react'
 
 import { call, routeKey } from './api'
 import type { Lesson } from './preparation-api'
-import { EVENT_STATUS, PERIOD_KIND, type CalendarEvent } from './timetable-api'
+import { EVENT_STATUS, PERIOD_KIND, type CalendarEvent, type PreparationStatus } from './timetable-api'
 
 interface Props { route: PluginProfileRoute; event: CalendarEvent; onMoved: (event: CalendarEvent) => void }
 interface History { items: { sequence: number; action: string; actor: string; created_at: string; before: CalendarEvent; after: CalendarEvent }[] }
@@ -13,6 +13,7 @@ export function CalendarEventEditor({ route, event, onMoved }: Props) {
   const [status, setStatus] = useState(event.status)
   const [showHistory, setShowHistory] = useState(false)
   const lessons = useQuery({ queryKey: [...routeKey(route), 'lessons', event.course_id], queryFn: () => call<{ items: Lesson[] }>(route, 'lesson.list', { course_id: event.course_id }) })
+  const readiness = useQuery({ queryKey: [...routeKey(route), 'calendar-preparation', event.id, event.version], queryFn: () => call<PreparationStatus>(route, 'calendar.preparation', { id: event.id }) })
   const history = useQuery({ queryKey: [...routeKey(route), 'calendar-history', event.id, event.version], queryFn: () => call<History>(route, 'calendar.history', { id: event.id }), enabled: showHistory })
   const invalidate = () => queryClient.invalidateQueries({ queryKey: routeKey(route) })
   const move = useMutation({ mutationFn: (data: object) => call<CalendarEvent>(route, 'calendar.move', { ...data, id: event.id, version: event.version, publication_id: event.active_publication_id }, crypto.randomUUID()), onSuccess: async updated => { onMoved(updated); await invalidate() } })
@@ -29,6 +30,9 @@ export function CalendarEventEditor({ route, event, onMoved }: Props) {
     <h3>{event.course_title} · 第{event.ordinal}次课 · {event.title}</h3>
     <p>{event.starts_at.replace('T', ' ')}–{event.ends_at.slice(11)} · {EVENT_STATUS[event.status]}</p>
     <p>{event.periods.map(part => `${PERIOD_KIND[part.kind]} ${part.start.slice(11, 16)}–${part.end.slice(11, 16)}`).join(' · ')}</p>
+    {readiness.data && <p aria-label="课次备课准备状态">{readiness.data.lesson_id ? '' : '尚未关联备课课次 · '}
+      {readiness.data.script_approved ? '授课稿已审核' : '授课稿待准备'} · {readiness.data.plan_approved ? '教案已审核' : '教案待准备'} ·
+      {readiness.data.blueprint_id ? `PPT已审核${readiness.data.approved_slide_pages}/${readiness.data.slide_pages}页 · 蓝图v${readiness.data.blueprint_version}` : 'PPT尚无审核蓝图'}</p>}
     {event.status === 'scheduled' && <form onSubmit={reschedule} className="grid max-w-3xl gap-2">
       <label>调课开始时间<input name="starts_at" aria-label="调课开始时间" type="datetime-local" defaultValue={event.starts_at.slice(0, 16)} required /></label>
       <label>调课原因<input name="note" aria-label="调课原因" maxLength={4000} required /></label>
@@ -48,6 +52,6 @@ export function CalendarEventEditor({ route, event, onMoved }: Props) {
       <p>说明：{item.after.note}</p>
     </article>)}
     {showHistory && history.data?.items.length === 0 && <p>此课次尚无调课或进度修改记录。</p>}
-    {[lessons.error, history.error, move.error, progress.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
+    {[lessons.error, readiness.error, history.error, move.error, progress.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
   </section>
 }

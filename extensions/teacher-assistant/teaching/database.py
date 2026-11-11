@@ -21,7 +21,7 @@ from .reference_schema import SCHEMA as REFERENCE_SCHEMA
 from .planning_schema import SCHEMA as PLANNING_SCHEMA
 from .timetable_schema import SCHEMA as TIMETABLE_SCHEMA
 from .plan_export_schema import SCHEMA as PLAN_EXPORT_SCHEMA
-from .reminder_schema import SCHEMA as REMINDER_SCHEMA
+from .reminder_schema import SCHEMA as REMINDER_SCHEMA, TIMING_SCHEMA as REMINDER_TIMING_SCHEMA
 
 
 SCHEMA = (
@@ -94,7 +94,7 @@ def database():
     conn = plugin_db("teacher-assistant", "teaching.db")
     conn.row_factory = sqlite3.Row
     try:
-        migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA, RENDER_SCHEMA, REPAIR_SCHEMA, TEMPLATE_SCHEMA, REFERENCE_SCHEMA, PLANNING_SCHEMA, TIMETABLE_SCHEMA, PLAN_EXPORT_SCHEMA, REMINDER_SCHEMA)
+        migrations = (SCHEMA, KNOWLEDGE_SCHEMA, DOCUMENT_SCHEMA, SLIDE_SCHEMA, IMAGE_SCHEMA, IMAGE_ASSET_SCHEMA, IMAGE_ANALYSIS_SCHEMA, RECONSTRUCTION_SCHEMA, RENDER_SCHEMA, REPAIR_SCHEMA, TEMPLATE_SCHEMA, REFERENCE_SCHEMA, PLANNING_SCHEMA, TIMETABLE_SCHEMA, PLAN_EXPORT_SCHEMA, REMINDER_SCHEMA, REMINDER_TIMING_SCHEMA)
         if conn.execute("PRAGMA user_version").fetchone()[0] > len(migrations):
             raise ValueError("教学数据库来自更新版本，请升级教师插件")
         if conn.execute("PRAGMA user_version").fetchone()[0] < len(migrations):

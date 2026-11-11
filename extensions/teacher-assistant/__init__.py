@@ -16,7 +16,7 @@ def register(ctx):
     preparation_operations = sorted(op for op in {**READS, **WRITES} if op.startswith(preparation_prefixes))
     slide_operations = sorted(op for op in {**READS, **WRITES, **service.external_writes} if op.startswith("slide."))
     for name, description, operations in (
-        ("teacher_records", "Manage local courses, classes, student-course associations and dated semester plans.", ["schema", *record_operations]),
+        ("teacher_records", "Manage local courses, class links, dated plans, calendar preparation and teacher reminders.", ["schema", *record_operations]),
         ("teacher_tasks", "Run durable teaching tasks and wait for teacher review.", task_operations),
         ("teacher_knowledge", "Import textbooks and retrieve verifiable chapter sources.", ["schema", *knowledge_operations]),
         ("teacher_preparation", "Save full teaching scripts and template-based lesson plans as reviewable DOCX versions.", ["schema", *preparation_operations]),

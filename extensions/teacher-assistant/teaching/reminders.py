@@ -8,10 +8,10 @@ from zoneinfo import ZoneInfo
 
 from .database import audit, database, encode, new_id
 from .models import DomainError, Identifier
-from . import windows_notifications
+from . import preparation_status, windows_notifications
 
 
-KINDS = {"preclass": "课前提醒", "preparation": "备课提醒", "exam": "考试提醒", "homework": "作业提醒", "personal": "个人待办"}
+KINDS = {"preclass": "课前提醒", "preparation": "备课提醒", "exam": "考试提醒", "homework": "作业提醒", "personal": "个人待办", "class_break": "课间提醒", "class_end": "下课提醒"}
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +30,8 @@ def save_settings(conn, data, actor):
     if before["version"] != data.version:
         raise DomainError("version_conflict", "提醒设置已有更新，请刷新后保存")
     conn.execute("""UPDATE reminder_settings SET enabled=?,preclass_minutes=?,preparation_minutes=?,exam_minutes=?,late_grace_minutes=?,
-        version=version+1 WHERE id=1""", (data.enabled, data.preclass_minutes, data.preparation_minutes, data.exam_minutes, data.late_grace_minutes))
+        break_lead_minutes=?,end_lead_minutes=?,version=version+1 WHERE id=1""", (data.enabled, data.preclass_minutes,
+        data.preparation_minutes, data.exam_minutes, data.late_grace_minutes, data.break_lead_minutes, data.end_lead_minutes))
     result = settings(conn)
     audit(conn, "reminder_settings", "1", "update", actor, before, result)
     return result
@@ -45,7 +46,7 @@ def _entry(source, kind, starts_at, lead, title, body, *, event_id=None, todo_id
 
 def wanted(conn, policy):
     result = {}
-    events = conn.execute("""SELECT DISTINCT e.id,e.starts_at,e.lesson_id,s.kind,s.title,c.title AS course_title FROM timetable_events e
+    events = conn.execute("""SELECT DISTINCT e.id,e.starts_at,e.ends_at,e.timing_json,e.lesson_id,s.kind,s.title,c.title AS course_title FROM timetable_events e
         JOIN timetable_members m ON m.event_id=e.id JOIN timetable_publications p ON p.id=m.publication_id
         JOIN planned_sessions s ON s.id=m.planned_session_id JOIN semester_plans t ON t.id=p.plan_id
         JOIN courses c ON c.id=t.course_id WHERE p.active=1 AND e.status='scheduled'""").fetchall()
@@ -57,12 +58,16 @@ def wanted(conn, policy):
                 continue
             body = f"{event['starts_at'].replace('T', ' ')}　{event['title']}"
             if kind == "preparation":
-                approved = {row[0] for row in conn.execute("SELECT DISTINCT kind FROM teaching_documents WHERE lesson_id=? AND status='approved'", (event["lesson_id"],))}
-                missing = [label for key, label in (("script", "授课稿"), ("lesson_plan", "教案")) if key not in approved]
-                body += "　" + ("待审核准备材料 " + "、".join(missing) if missing else "授课稿与教案已审核")
-                if not event["lesson_id"]:
-                    body += "，请在课表关联备课课次"
+                body += "　" + preparation_status.summary(preparation_status.lesson_status(conn, event["lesson_id"]))
             item = _entry(event["id"], kind, event["starts_at"], lead, KINDS[kind] + " " + event["course_title"], body, event_id=event["id"])
+            result[item["occurrence_key"]] = item
+        boundaries = [("class_break", part["start"], policy["break_lead_minutes"]) for part in json.loads(event["timing_json"]) if part["kind"] == "break"]
+        boundaries.append(("class_end", event["ends_at"], policy["end_lead_minutes"]))
+        for kind, at, lead in boundaries:
+            if lead is None:
+                continue
+            item = _entry(event["id"], kind, at, lead, KINDS[kind] + " " + event["course_title"],
+                at.replace("T", " ") + "　" + event["title"], event_id=event["id"])
             result[item["occurrence_key"]] = item
     for todo in conn.execute("SELECT * FROM teacher_todos WHERE status='pending'"):
         item = _entry(todo["id"], todo["kind"], todo["due_at"], todo["lead_minutes"], KINDS[todo["kind"]] + " " + todo["title"],

@@ -614,6 +614,8 @@ print(json.dumps({'formats':['docx','xlsx','pdf'],'semester_sessions':9,'weekly_
     await eventEditor.getByLabel('授课进度说明', { exact: true }).fill('教师记录测试课次实际教学70分钟')
     await eventEditor.getByRole('button', { name: '保存授课进度', exact: true }).click()
     await expect(calendar.getByRole('status')).toContainText('实际教学70分钟 · 已完成课次教学偏差-10分钟')
+    await expect(eventEditor.getByLabel('课次备课准备状态', { exact: true })).toContainText('授课稿已审核')
+    await expect(eventEditor.getByLabel('课次备课准备状态', { exact: true })).toContainText('PPT已审核')
     await eventEditor.getByRole('button', { name: '查看课次修改记录', exact: true }).click()
     await expect(eventEditor.getByText('说明：测试教师调课并保留40+10+40', { exact: true })).toBeVisible()
     await expect(eventEditor.getByText('说明：教师记录测试课次实际教学70分钟', { exact: true })).toBeVisible()
@@ -650,6 +652,8 @@ print(json.dumps({'events':len(events),'actual_instruction_minutes':completed['a
     await expect(reminders.getByLabel('启用教学提醒', { exact: true })).not.toBeChecked()
     await reminders.getByLabel('启用教学提醒', { exact: true }).check()
     await reminders.getByLabel('备课提前分钟', { exact: true }).fill('720')
+    await reminders.getByLabel('课间提前分钟', { exact: true }).fill('0')
+    await reminders.getByLabel('下课提前分钟', { exact: true }).fill('5')
     await reminders.getByRole('button', { name: '保存提醒设置', exact: true }).click()
     await expect(reminders.getByText(/教学提醒已开启/)).toBeVisible()
     const todoEditor = reminders.getByRole('form', { name: '待办编辑', exact: true })
@@ -687,6 +691,8 @@ print(json.dumps({'events':len(events),'actual_instruction_minutes':completed['a
     await page.getByRole('button', { name: '提醒与待办', exact: true }).click()
     await expect(reminders.getByLabel('启用教学提醒', { exact: true })).toBeChecked()
     await expect(reminders.getByLabel('备课提前分钟', { exact: true })).toHaveValue('720')
+    await expect(reminders.getByLabel('课间提前分钟', { exact: true })).toHaveValue('0')
+    await expect(reminders.getByLabel('下课提前分钟', { exact: true })).toHaveValue('5')
     await reminders.getByLabel('待办筛选', { exact: true }).selectOption('completed')
     await expect(reminders.getByRole('button', { name: 'UI虚构作业收取', exact: true })).toBeVisible()
     const reminderProbe = spawnSync(python, ['-c', `
@@ -704,6 +710,52 @@ print(json.dumps({'todo':todo,'todo_reminder_states':[row['state'] for row in re
 `, home], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
     expect(reminderProbe.status, reminderProbe.stderr).toBe(0)
     writeFileSync(testInfo.outputPath('reminder-receipt.json'), reminderProbe.stdout)
+    await page.getByRole('button', { name: '教学计划', exact: true }).click()
+    await planning.getByLabel('计划所属课程', { exact: true }).selectOption({ label: 'UI虚构测试课程' })
+    await planning.getByLabel('计划版本', { exact: true }).selectOption(latestPlan)
+    await expect(planning.getByRole('heading', { name: 'UI实际日期测试学期 · v2', exact: true })).toBeVisible()
+    const contentEditor = planning.getByRole('region', { name: '人工调整章节进度', exact: true })
+    await contentEditor.getByRole('button', { name: '调整章节进度与课次内容', exact: true }).click()
+    await contentEditor.getByLabel('课次内容 1', { exact: true }).fill('UI教师调整后的章节导入与巩固')
+    await contentEditor.getByRole('button', { name: '上移第7次课内容', exact: true }).click()
+    await expect(contentEditor.getByLabel('课次内容 6', { exact: true })).toHaveValue('综合练习')
+    await contentEditor.getByRole('button', { name: '保存内容调整新版本', exact: true }).click()
+    await expect(planning.getByRole('heading', { name: 'UI实际日期测试学期 · v3', exact: true })).toBeVisible()
+    await expect(planning.getByLabel('保留人工课次内容', { exact: true })).toBeChecked()
+    await expect(planning.getByRole('status')).toHaveText('课次9 · 实际教学640分钟 · 日历占用840分钟 · 考核120分钟')
+    await expect(publicationPanel.getByText('同一学期已有其他版本的实际课表', { exact: true })).toBeVisible()
+    await publicationPanel.getByLabel(/已核对实际日期、章节与课时/).check()
+    await publicationPanel.getByLabel('发布审核说明', { exact: true }).fill('教师调整未来练习顺序并保留已有调课与实际70分钟')
+    await publicationPanel.getByRole('button', { name: '审核并发布到课表', exact: true }).click()
+    await expect(publicationPanel.getByText('当前计划版本已发布到实际课表', { exact: true })).toBeVisible()
+    await expect(publicationPanel.getByText(/实际教学70分钟/)).toBeVisible()
+    const manualPath = testInfo.outputPath('manual-content-plan.xlsx')
+    await app.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }) }, manualPath)
+    await planning.getByLabel('计划导出格式', { exact: true }).selectOption('xlsx')
+    await planning.getByRole('button', { name: '导出所选范围计划', exact: true }).click()
+    await expect.poll(() => existsSync(manualPath)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath('teacher-plan-content.jpg'), type: 'jpeg', quality: 85 })
+    const contentProbe = spawnSync(python, ['-c', `
+import json,sqlite3,sys
+from pathlib import Path
+from openpyxl import load_workbook
+with sqlite3.connect(Path(sys.argv[1])/'plugin-data/teacher-assistant/teaching.db') as conn:
+    conn.row_factory=sqlite3.Row
+    plans=[dict(row) for row in conn.execute('SELECT * FROM semester_plans ORDER BY version')]
+    current=plans[-1]
+    sessions=[dict(row) for row in conn.execute('SELECT * FROM planned_sessions WHERE plan_id=? ORDER BY ordinal',(current['id'],))]
+    publication=dict(conn.execute('SELECT * FROM timetable_publications WHERE active=1').fetchone())
+    completed=dict(conn.execute("SELECT * FROM timetable_events WHERE status='completed'").fetchone())
+assert len(plans)==3 and current['version']==3 and publication['plan_id']==current['id']
+assert sessions[0]['title']=='UI教师调整后的章节导入与巩固' and sessions[5]['kind']=='practice'
+assert len(json.loads(current['config_json'])['session_content'])==9
+assert completed['actual_minutes']==70 and completed['starts_at']=='2026-11-03T10:00:00'
+sheet=load_workbook(sys.argv[2]).active
+assert sheet.cell(6,4).value=='教学 UI教师调整后的章节导入与巩固'
+print(json.dumps({'versions':len(plans),'manual_sessions':len(sessions),'practice_ordinal':6,'preserved_actual_minutes':70,'preserved_reschedule':completed['starts_at'],'manual_title_in_xlsx':True},ensure_ascii=False))
+`, home, manualPath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(contentProbe.status, contentProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('plan-content-receipt.json'), contentProbe.stdout)
     writeFileSync(testInfo.outputPath('receipt.json'), JSON.stringify({ home, backend: 'real Hermes Gateway', database: 'real SQLite', model: 'loopback scripted test provider', operations_verified: ['course.create', 'course.update', 'class.create', 'student.create', 'course.assign_class', 'enrollment.create', 'task.create', 'task.run', 'task.review', 'reload persistence'] }, null, 2))
   } catch (error) {
     if (app) {

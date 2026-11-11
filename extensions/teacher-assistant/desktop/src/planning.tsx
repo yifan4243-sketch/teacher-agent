@@ -4,23 +4,28 @@ import { useState, type FormEvent } from 'react'
 import { call, routeKey, type TeacherRecord } from './api'
 import type { BookVersion, Textbook } from './textbook-api'
 import { PlanPublication } from './plan-publication'
+import { PlanContentEditor } from './plan-content-editor'
 import type { PublicationLink } from './timetable-api'
 
 interface Slot { weekday: number; start_time: string }
 interface ChapterWeight { chapter_id: string; difficulty: number }
+export interface SessionContent { kind: string; chapter_id: string | null; title: string }
 interface Config {
   title: string; start_date: string; end_date: string; weekly_slots: Slot[]; excluded_dates: string[]; chapters: ChapterWeight[]
   practice_sessions: number; review_sessions: number; exam_sessions: number; exam_minutes: number
+  session_content?: SessionContent[]
 }
 interface Session {
   id: string; ordinal: number; title: string; kind: string; starts_at: string; ends_at: string; instruction_minutes: number; assessment_minutes: number
   periods: { kind: string; start: string; end: string }[]
+  chapter_id: string | null
 }
-interface Plan {
+export interface Plan {
   id: string; title: string; version: number; textbook_version_id: string; config: Config; sessions: Session[]
   latest_version: number; publication: PublicationLink | null
   weeks: Record<string, string[]>; months: Record<string, string[]>
   totals: { sessions: number; instruction_minutes: number; assessment_minutes: number; calendar_minutes: number }
+  course_id: string
 }
 interface Summary { id: string; title: string; version: number; textbook_version_id: string }
 interface PlanningProps { route: PluginProfileRoute }
@@ -39,7 +44,8 @@ function PlanForm({ route, courseId, book, plan, onSaved }: PlanFormProps) {
       weekly_slots: slots, excluded_dates: String(form.get('excluded_dates')).split(/[\s,，]+/).filter(Boolean),
       chapters: book.chapters.filter(chapter => form.has(`chapter-${chapter.id}`)).map(chapter => ({ chapter_id: chapter.id, difficulty: Number(form.get(`weight-${chapter.id}`)) })),
       practice_sessions: Number(form.get('practice_sessions')), review_sessions: Number(form.get('review_sessions')), exam_sessions: Number(form.get('exam_sessions')),
-      exam_minutes: Number(form.get('exam_minutes')), parent_id: plan?.id ?? null })
+      exam_minutes: Number(form.get('exam_minutes')), parent_id: plan?.id ?? null,
+      session_content: form.has('keep_content') ? config?.session_content ?? [] : [] })
   }
   return <form onSubmit={submit} className="grid max-w-4xl gap-3">
     <label>学期计划名称<input name="title" aria-label="学期计划名称" defaultValue={config?.title} maxLength={200} required /></label>
@@ -57,6 +63,7 @@ function PlanForm({ route, courseId, book, plan, onSaved }: PlanFormProps) {
     </div>)}</fieldset>
     {([['practice_sessions', '综合练习课次'], ['review_sessions', '复习课次'], ['exam_sessions', '考核课次']] as const).map(([field, label]) => <label key={field}>{label}<input type="number" name={field} aria-label={label} min="0" max={field === 'exam_sessions' ? 20 : 100} defaultValue={config?.[field] ?? 0} required /></label>)}
     <label>每次考核时长（分钟）<input type="number" name="exam_minutes" aria-label="每次考核时长（分钟）" min="1" max="480" defaultValue={config?.exam_minutes ?? 90} required /></label>
+    {!!config?.session_content?.length && <label><input type="checkbox" name="keep_content" aria-label="保留人工课次内容" defaultChecked />保留人工课次内容，取消勾选会按章节难度重新分配并保存新版本</label>}
     <Button type="submit" disabled={save.isPending}>{plan ? '重新计算并保存新版本' : '计算并保存学期计划'}</Button>
     {save.error && <p role="alert">{save.error.message}</p>}
   </form>
@@ -85,10 +92,10 @@ function PlanResults({ route, plan }: PlanResultsProps) {
     <label>计划导出格式<select aria-label="计划导出格式" value={format} onChange={event => setFormat(event.target.value)}><option value="docx">DOCX</option><option value="xlsx">XLSX</option><option value="pdf">PDF</option></select></label>
     <Button disabled={download.isPending} onClick={() => download.mutate()}>导出所选范围计划</Button>
     {download.error && <p role="alert">{download.error.message}</p>}
-    <table><thead><tr><th>课次</th><th>开始/结束</th><th>内容</th><th>教学与休息</th></tr></thead><tbody>{plan.sessions.filter(session => !allowed || allowed.includes(session.id)).map(session => <tr key={session.id}>
-      <td>{session.ordinal}</td><td>{session.starts_at.replace('T', ' ')}<br />{session.ends_at.replace('T', ' ')}</td><td>{KINDS[session.kind]} · {session.title}</td>
-      <td>{session.periods.map((part, index) => <p key={index}>{KINDS[part.kind]} {part.start.slice(11, 16)}–{part.end.slice(11, 16)}</p>)}</td>
-    </tr>)}</tbody></table>
+    <div className="overflow-x-auto"><table className="w-full min-w-176 table-fixed border-collapse text-left"><thead><tr><th className="w-14 p-2">课次</th><th className="w-48 p-2">开始/结束</th><th className="p-2">内容</th><th className="w-60 p-2">教学与休息</th></tr></thead><tbody>{plan.sessions.filter(session => !allowed || allowed.includes(session.id)).map(session => <tr key={session.id} className="border-t border-(--ui-border)">
+      <td className="p-2 align-top">{session.ordinal}</td><td className="whitespace-nowrap p-2 align-top">{session.starts_at.replace('T', ' ')}<br />{session.ends_at.replace('T', ' ')}</td><td className="wrap-break-word p-2 align-top">{KINDS[session.kind]} · {session.title}</td>
+      <td className="p-2 align-top">{session.periods.map((part, index) => <p key={index}>{KINDS[part.kind]} {part.start.slice(11, 16)}–{part.end.slice(11, 16)}</p>)}</td>
+    </tr>)}</tbody></table></div>
   </section>
 }
 
@@ -113,6 +120,7 @@ export function Planning({ route }: PlanningProps) {
     {planId && plan.isPending && <p role="status">正在读取计划版本</p>}
     {book.data && (!planId || plan.data) && <PlanForm key={`${planId}:${bookId}`} route={route} courseId={courseId} book={book.data} plan={plan.data} onSaved={saved} />}
     {plan.data && <PlanResults key={`results:${planId}`} route={route} plan={plan.data} />}
+    {plan.data && book.data && plan.data.textbook_version_id === bookId && <PlanContentEditor key={`content:${planId}`} route={route} plan={plan.data} book={book.data} onSaved={saved} />}
     {plan.data && <PlanPublication key={`publication:${planId}`} route={route} planId={planId} latest={plan.data.version === plan.data.latest_version} current={plan.data.publication} />}
     {[courses.error, books.error, plans.error, plan.error, book.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
   </section>

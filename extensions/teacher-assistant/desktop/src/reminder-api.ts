@@ -4,6 +4,8 @@ export interface ReminderSettings {
   preclass_minutes: number | null
   preparation_minutes: number | null
   exam_minutes: number | null
+  break_lead_minutes: number | null
+  end_lead_minutes: number | null
   late_grace_minutes: number
   last_tick_at: string | null
   last_tick_error: string | null

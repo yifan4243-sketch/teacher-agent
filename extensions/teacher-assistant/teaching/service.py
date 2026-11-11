@@ -15,6 +15,7 @@ from . import planning, planning_models
 from . import publication, timetable, timetable_models
 from . import plan_export
 from . import reminder_models, reminders, reminder_schedule, todos, windows_notifications
+from . import preparation_status
 
 
 READS = {
@@ -54,6 +55,7 @@ READS = {
     "calendar.get": (models.Identifier, timetable.get_event),
     "calendar.history": (models.Identifier, timetable.history),
     "calendar.publication": (models.Identifier, timetable.get_publication),
+    "calendar.preparation": (models.Identifier, preparation_status.for_event),
     "reminder.settings": (models.Input, reminders.settings),
     "reminder.list": (reminder_models.ReminderList, reminders.list_deliveries),
     "reminder.get": (models.Identifier, reminders.get_delivery),
@@ -199,6 +201,10 @@ class TeachingService:
                 if operation == "document.save" and payload.kind in {"script", "lesson_plan"} and payload.plan_id is None:
                     # Schema 3 receipts predate the optional blueprint-plan association.
                     fingerprints.add(hashlib.sha256(encode(payload.model_dump(exclude={"plan_id"})).encode("utf-8")).hexdigest())
+                if operation == "plan.save" and not payload.session_content:
+                    fingerprints.add(hashlib.sha256(encode(payload.model_dump(mode="json", exclude={"session_content"})).encode("utf-8")).hexdigest())
+                if operation == "reminder.set_settings" and payload.break_lead_minutes is None and payload.end_lead_minutes is None:
+                    fingerprints.add(hashlib.sha256(encode(payload.model_dump(mode="json", exclude={"break_lead_minutes", "end_lead_minutes"})).encode("utf-8")).hexdigest())
                 if receipt["operation"] != operation or receipt["fingerprint"] not in fingerprints:
                     raise models.DomainError("idempotency_conflict", "同一 request_id 的操作和内容必须一致")
                 return json.loads(receipt["result_json"])

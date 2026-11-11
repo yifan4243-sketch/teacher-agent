@@ -1,6 +1,6 @@
 """Deterministic calendar allocation; no model invents dates, hours or chapter sources."""
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, time, timedelta
 import json
 
@@ -67,13 +67,27 @@ def _periods(start, course):
     return result, current
 
 
-def _build(conn, data, course):
-    chapters = _chapters(conn, data)
-    dates = _dates(data)
+def _content(data, chapters, dates):
     counts = _chapter_counts(chapters, len(dates) - data.practice_sessions - data.review_sessions - data.exam_sessions)
     content = [("teaching", chapter["id"], chapter["title"]) for (chapter, _), count in zip(chapters, counts) for _ in range(count)]
     for kind, count, title in (("practice", data.practice_sessions, "综合练习"), ("review", data.review_sessions, "课程复习"), ("exam", data.exam_sessions, "课程考核")):
         content.extend([(kind, None, title)] * count)
+    if not data.session_content:
+        return content
+    if len(data.session_content) != len(dates):
+        raise DomainError("plan_content_count", "人工内容的课次数与可用日期不一致，请调整内容或取消保留人工内容后重新计算")
+    if Counter(item.kind for item in data.session_content) != Counter(item[0] for item in content):
+        raise DomainError("plan_content_kinds", "人工内容的教学、练习、复习和考核课次数需与计划配置一致，可通过交换课次调整顺序")
+    chapter_ids = {chapter["id"] for chapter, _ in chapters}
+    if {item.chapter_id for item in data.session_content if item.kind == "teaching"} != chapter_ids:
+        raise DomainError("plan_content_chapters", "人工内容需覆盖所选教材章节，并使用当前计划的章节分配单元")
+    return [(item.kind, item.chapter_id, item.title) for item in data.session_content]
+
+
+def _build(conn, data, course):
+    chapters = _chapters(conn, data)
+    dates = _dates(data)
+    content = _content(data, chapters, dates)
     sessions, previous_end = [], None
     for ordinal, (start, (kind, chapter_id, title)) in enumerate(zip(dates, content), 1):
         periods, end = _periods(start, course)

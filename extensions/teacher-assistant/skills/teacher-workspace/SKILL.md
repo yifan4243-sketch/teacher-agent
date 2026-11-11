@@ -1,6 +1,6 @@
 ---
 name: teacher-workspace
-description: Manage courses and reviewable teaching tasks.
+description: Manage teaching courses, plans, reminders and tasks.
 version: 0.1.0
 author: yifan4243-sketch
 license: MIT
@@ -51,6 +51,10 @@ response, and use a new ID for a changed command.
   Reference real chapters from the chosen textbook version. Omitted chapters
   use top-level chapters, while an explicit selection must contain at least one.
   Recalculation passes the latest plan ID as parent_id and preserves old versions.
+- `plan.save` accepts `session_content` for a complete ordered list of lesson
+  contents. Use actual chapter IDs, cover the selected chapters and preserve
+  configured teaching, practice, review and exam counts. Reordering recalculates
+  each date's periods and exam end time. Supply the latest plan as parent_id.
 - `calendar.list` reads the published day/week/month range; `calendar.get`,
   `calendar.publication` and `calendar.history` expose actual scheduled events,
   recorded progress and audit history. Publishing, rescheduling and progress
@@ -60,6 +64,16 @@ response, and use a new ID for a changed command.
   historical plans and excludes later actual calendar moves. Scope keys must
   exist in plan.get. This export does not change the DOCX-only rule for teaching
   scripts and formal lesson plans.
+- `todo.create`, `todo.update`, `todo.list` and `todo.get` manage homework,
+  exam, preparation and personal deadlines. Convert the user's natural-language
+  deadline to an explicit Asia/Shanghai local date and minute. A course link is
+  optional. Updates include the current version and all editable todo fields.
+- `reminder.settings`, `reminder.list` and `reminder.get` expose policy and
+  delivery history. `reminder.refresh` derives the queue from current records,
+  and `reminder.retry` queues another attempt for failed or interrupted delivery.
+  The teacher enables notifications and Windows background operation in Desktop.
+- `calendar.preparation` reports the linked lesson's approved script, lesson
+  plan and PPT page counts. Read these records when reporting preparation work.
 
 ## Procedure
 
@@ -85,6 +99,11 @@ response, and use a new ID for a changed command.
     means the teacher recorded it; never infer completion from a past date.
     Report instruction and assessment minutes separately, and preserve the
     difference between original source ordinal and the current plan ordinal.
+11. For a reminder request, resolve the deadline and title from the user's
+    instruction, create the local todo and return its ID and saved deadline.
+    Check reminder.settings and explain its current enabled state. Local queued
+    reminders run on the configured background scheduler. Windows accepted
+    records describe the system API result, while the user confirms reading.
 
 ## Pitfalls
 

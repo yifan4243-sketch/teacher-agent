@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 
 def main():
@@ -19,6 +20,7 @@ def main():
     handler = RotatingFileHandler(logs / "teacher-reminder-background.log", maxBytes=1000000, backupCount=2, encoding="utf-8")
     logging.basicConfig(handlers=[handler], level=logging.INFO)
     try:
+        started = time.monotonic()
         # Use the same activation command as activate.ps1. Its JSON is kept in
         # process memory because the composed environment can include secrets.
         environment = {**os.environ, "PYTHONPATH": str(core), "PYTHONUTF8": "1", "HERMES_DISABLE_LAZY_INSTALLS": "1"}
@@ -29,7 +31,7 @@ def main():
         result = subprocess.run([sys.executable, "-m", "hermes_cli.main", "cron", "tick"],
             cwd=core, env=environment, timeout=180, check=False, capture_output=True, text=True, encoding="utf-8", errors="replace",
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-        logging.info("Native cron tick returned %s\n%s\n%s", result.returncode, result.stdout[-20000:], result.stderr[-20000:])
+        logging.info("Native cron tick returned %s in %.2fs\n%s\n%s", result.returncode, time.monotonic() - started, result.stdout[-20000:], result.stderr[-20000:])
     except Exception:
         logging.exception("Native cron tick could not start")
         raise SystemExit(1)

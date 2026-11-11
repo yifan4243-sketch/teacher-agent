@@ -28,3 +28,9 @@ SCHEMA = (
     "CREATE INDEX reminder_due_index ON reminder_deliveries(state,due_at)",
     "CREATE INDEX todo_due_index ON teacher_todos(status,due_at)",
 )
+
+
+TIMING_SCHEMA = (
+    "ALTER TABLE reminder_settings ADD COLUMN break_lead_minutes INTEGER",
+    "ALTER TABLE reminder_settings ADD COLUMN end_lead_minutes INTEGER",
+)

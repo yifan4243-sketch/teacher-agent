@@ -1,5 +1,9 @@
 # 测试记录
 
+## Phase 6最终阶段回归
+
+完整教师插件15文件64项通过，最后补充定向9项及原生Skill入口1项通过。真实Desktop完成v3人工内容调整、重新发布、保留调课及实际70分钟、原生下载含新内容的XLSX，验证备课/PPT状态和课间/下课提醒设置。TypeScript、插件验证与仓库15项检查通过。详见PHASE6_REPORT.md。
+
 ## Phase 6提醒与待办
 
 完整教师回归15文件62项通过，最终增补定向5项通过。真实Desktop创建、修改和完成待办，取消两条旧提醒，刷新设置持久化，测试通知由Windows接受且系统历史核对成功。独立Profile在未启动Desktop时由真实Windows任务按分钟调用Hermes原生无模型cron，成功发送到期通知。最终TypeScript、插件验证与仓库15项检查通过。见PHASE6_REMINDERS_CHECKPOINT.md。

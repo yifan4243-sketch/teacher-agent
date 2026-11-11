@@ -1,8 +1,8 @@
 // Generated from desktop/src by scripts/build_desktop.mjs.
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { Button as Button36, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery30, useValue } from "@hermes/plugin-sdk";
-import { useState as useState32 } from "react";
+import { Button as Button38, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery33, useValue } from "@hermes/plugin-sdk";
+import { useState as useState34 } from "react";
 
 // extensions/teacher-assistant/desktop/src/records.tsx
 import { Button, Input, useMutation, useQuery, useQueryClient } from "@hermes/plugin-sdk";
@@ -342,17 +342,15 @@ function Tasks({ route }) {
 import { Button as Button5, Input as Input5, useMutation as useMutation5, useQuery as useQuery5, useQueryClient as useQueryClient5 } from "@hermes/plugin-sdk";
 import { useState as useState4 } from "react";
 
-// extensions/teacher-assistant/desktop/src/textbook-api.ts
-async function uploadTextbook(route, file, courseId, title, textbookId, progress) {
-  if (file.size === 0 || file.size > 50 * 1024 * 1024) throw new Error("\u6559\u6750\u6587\u4EF6\u9700\u5927\u4E8E0\u4E14\u4E0D\u8D85\u8FC750MB");
+// extensions/teacher-assistant/desktop/src/file-upload.ts
+async function uploadFile(route, prefix, file, fields, progress) {
+  if (!file.size || file.size > 50 * 1024 * 1024) throw new Error("\u4E0A\u4F20\u6587\u4EF6\u9700\u5927\u4E8E0\u4E14\u4E0D\u8D85\u8FC750MB");
   const bytes = new Uint8Array(await file.arrayBuffer());
   const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
   const sha256 = Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("");
   const requestId = crypto.randomUUID();
-  const upload = await call(route, "textbook.upload.begin", {
-    course_id: courseId,
-    textbook_id: textbookId || null,
-    title,
+  const upload = await call(route, `${prefix}.begin`, {
+    ...fields,
     filename: file.name,
     total_bytes: bytes.length,
     sha256
@@ -361,11 +359,16 @@ async function uploadTextbook(route, file, courseId, title, textbookId, progress
     const chunk = bytes.subarray(offset, offset + 128 * 1024);
     let binary = "";
     for (const byte of chunk) binary += String.fromCharCode(byte);
-    await call(route, "textbook.upload.chunk", { id: upload.id, offset, content_base64: btoa(binary) }, `${requestId}:${offset}`);
+    await call(route, `${prefix}.chunk`, { id: upload.id, offset, content_base64: btoa(binary) }, `${requestId}:${offset}`);
     progress(`\u5DF2\u4E0A\u4F20 ${Math.round((offset + chunk.length) / bytes.length * 100)}%`);
   }
-  progress("\u6B63\u5728\u89E3\u6790\u6559\u6750\u5E76\u5EFA\u7ACB\u7D22\u5F15\u2026");
-  return call(route, "textbook.upload.finish", { id: upload.id }, `${requestId}:finish`);
+  progress("\u6B63\u5728\u6821\u9A8C\u5E76\u5904\u7406\u6587\u4EF6\u2026");
+  return call(route, `${prefix}.finish`, { id: upload.id }, `${requestId}:finish`);
+}
+
+// extensions/teacher-assistant/desktop/src/textbook-api.ts
+function uploadTextbook(route, file, courseId, title, textbookId, progress) {
+  return uploadFile(route, "textbook.upload", file, { course_id: courseId, textbook_id: textbookId || null, title }, progress);
 }
 
 // extensions/teacher-assistant/desktop/src/textbook-version.tsx
@@ -3962,30 +3965,35 @@ function ExamAgent({ route, plan, onPaper }) {
 }
 
 // extensions/teacher-assistant/desktop/src/grading-workspace.tsx
-import { Button as Button35, useMutation as useMutation32, useQuery as useQuery29, useQueryClient as useQueryClient27 } from "@hermes/plugin-sdk";
-import { useState as useState31 } from "react";
+import { Button as Button37, useMutation as useMutation34, useQuery as useQuery32, useQueryClient as useQueryClient29 } from "@hermes/plugin-sdk";
+import { useState as useState33 } from "react";
 
 // extensions/teacher-assistant/desktop/src/answer-editor.tsx
 import { Button as Button32, useMutation as useMutation29 } from "@hermes/plugin-sdk";
 import { jsx as jsx32, jsxs as jsxs32 } from "react/jsx-runtime";
-function AnswerEditor({ route, paper, studentId, submission, onSaved }) {
-  const write = useMutation29({ mutationFn: (data) => call(route, "submission.save", data, crypto.randomUUID()), onSuccess: onSaved });
+function AnswerEditor({ route, paper, studentId, submission, recognition, onSaved }) {
+  const write = useMutation29({ mutationFn: (data) => call(route, recognition ? "recognition.apply" : "submission.save", data, crypto.randomUUID()), onSuccess: onSaved });
   function save(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const answers = paper.questions.map((question) => ({ question_id: question.id, content: readAnswer(form, question) }));
-    write.mutate({ paper_id: paper.id, student_id: studentId, expected_version: submission?.version ?? 0, answers, note: String(form.get("note")) });
+    const source = recognition ? { file_id: recognition.file_id, job_ids: recognition.source_jobs.map((job) => job.id), reviewed_uncertain: form.has("reviewed_uncertain") } : {};
+    write.mutate({ paper_id: paper.id, student_id: studentId, expected_version: recognition?.expected_version ?? submission?.version ?? 0, answers, note: String(form.get("note")), ...source });
   }
   return /* @__PURE__ */ jsxs32("form", { "aria-label": "\u5B66\u751F\u7B54\u5377\u5F55\u5165", className: "space-y-4 rounded border border-(--ui-border) p-4", onSubmit: save, children: [
     /* @__PURE__ */ jsxs32("h3", { children: [
       "\u7B54\u5377",
-      (submission?.version ?? 0) + 1,
+      (recognition?.expected_version ?? submission?.version ?? 0) + 1,
       "\u7248"
     ] }),
-    paper.questions.map((question, index) => /* @__PURE__ */ jsx32(AnswerFields, { question, ordinal: index + 1, initial: submission?.answers.find((answer) => answer.question_id === question.id) }, question.id)),
+    paper.questions.map((question, index) => /* @__PURE__ */ jsx32(AnswerFields, { question, ordinal: index + 1, initial: (recognition?.answers ?? submission?.answers)?.find((answer) => answer.question_id === question.id) }, question.id)),
     /* @__PURE__ */ jsxs32("label", { children: [
       "\u7B54\u5377\u5907\u6CE8",
       /* @__PURE__ */ jsx32("textarea", { "aria-label": "\u7B54\u5377\u5907\u6CE8", name: "note", maxLength: 4e3, defaultValue: submission?.note ?? "" })
+    ] }),
+    recognition && /* @__PURE__ */ jsxs32("label", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx32("input", { type: "checkbox", name: "reviewed_uncertain", required: true }),
+      "\u5DF2\u5BF9\u7167\u539F\u9875\u590D\u6838\u8BC6\u522B\u6587\u5B57\u3001\u4F4E\u7F6E\u4FE1\u3001\u8DE8\u9875\u548C\u5F85\u8865\u5168\u5185\u5BB9"
     ] }),
     /* @__PURE__ */ jsx32(Button32, { type: "submit", disabled: write.isPending, children: "\u4FDD\u5B58\u5B66\u751F\u7B54\u5377" }),
     write.error && /* @__PURE__ */ jsx32("p", { role: "alert", children: write.error.message })
@@ -4183,89 +4191,369 @@ function GradeReview({ route, paper, submission, draft, onPublished }) {
   ] });
 }
 
+// extensions/teacher-assistant/desktop/src/recognition-workspace.tsx
+import { Button as Button36, useMutation as useMutation33, useQuery as useQuery31, useQueryClient as useQueryClient28 } from "@hermes/plugin-sdk";
+import { useState as useState32 } from "react";
+
+// extensions/teacher-assistant/desktop/src/recognition-api.ts
+function uploadAnswer(route, file, paperId, studentId, progress) {
+  return uploadFile(route, "answer.upload", file, { paper_id: paperId, student_id: studentId }, progress);
+}
+
+// extensions/teacher-assistant/desktop/src/recognition-jobs.tsx
+import { Button as Button35, useMutation as useMutation32, useQuery as useQuery30, useQueryClient as useQueryClient27 } from "@hermes/plugin-sdk";
+import { useState as useState31 } from "react";
+
+// extensions/teacher-assistant/desktop/src/recognition-review.tsx
+import { useQuery as useQuery29 } from "@hermes/plugin-sdk";
+import { jsx as jsx35, jsxs as jsxs35 } from "react/jsx-runtime";
+function RecognitionReview({ route, paper, proposal, onSaved }) {
+  return /* @__PURE__ */ jsxs35("section", { "aria-label": "\u7B54\u5377\u8BC6\u522B\u6821\u5BF9", className: "space-y-3", children: [
+    /* @__PURE__ */ jsx35("h3", { children: "\u5BF9\u7167\u539F\u9875\u6821\u5BF9\u7B54\u6848" }),
+    proposal.source_jobs.map((job) => /* @__PURE__ */ jsx35(SourceJob, { route, id: job.id, page: job.page_number, paper }, job.id)),
+    proposal.warnings.map((item) => /* @__PURE__ */ jsxs35("p", { role: "status", children: [
+      "\u7B2C",
+      paper.questions.findIndex((question) => question.id === item.question_id) + 1,
+      "\u9898 \xB7 ",
+      item.message
+    ] }, item.question_id)),
+    proposal.unassigned.map((item) => /* @__PURE__ */ jsxs35("p", { className: "whitespace-pre-wrap", children: [
+      "\u7B2C",
+      item.page_number,
+      "\u9875\u672A\u5B9A\u4F4D\u4F5C\u7B54 \xB7 ",
+      item.text
+    ] }, item.page_number)),
+    /* @__PURE__ */ jsx35(AnswerEditor, { route, paper, studentId: proposal.student_id, recognition: proposal, onSaved })
+  ] });
+}
+function SourceJob({ route, id, page, paper }) {
+  const job = useQuery29({ queryKey: [...routeKey(route), "recognition-source", id], queryFn: () => call(route, "recognition.get", { id }), staleTime: Infinity });
+  return /* @__PURE__ */ jsxs35("details", { children: [
+    /* @__PURE__ */ jsxs35("summary", { children: [
+      "\u7B2C",
+      page,
+      "\u9875\u8BC6\u522B\u539F\u6587\u4E0E\u7F6E\u4FE1\u5EA6"
+    ] }),
+    job.data?.result.answers?.map((answer) => /* @__PURE__ */ jsxs35("article", { children: [
+      /* @__PURE__ */ jsxs35("p", { children: [
+        "\u7B2C",
+        paper.questions.findIndex((question) => question.id === answer.question_id) + 1,
+        "\u9898 \xB7 \u7F6E\u4FE1\u5EA6",
+        Math.round(answer.confidence * 100),
+        "%"
+      ] }),
+      /* @__PURE__ */ jsx35("p", { className: "whitespace-pre-wrap", children: answer.observed_text }),
+      answer.note && /* @__PURE__ */ jsx35("p", { children: answer.note })
+    ] }, answer.question_id)),
+    job.data?.result.note && /* @__PURE__ */ jsx35("p", { children: job.data.result.note }),
+    job.error && /* @__PURE__ */ jsx35("p", { role: "alert", children: job.error.message })
+  ] });
+}
+
+// extensions/teacher-assistant/desktop/src/recognition-jobs.tsx
+import { Fragment as Fragment12, jsx as jsx36, jsxs as jsxs36 } from "react/jsx-runtime";
+var STATES = { queued: "\u5DF2\u6392\u961F", running: "\u6267\u884C\u4E2D", succeeded: "\u6210\u529F", failed: "\u5931\u8D25", cancelled: "\u5DF2\u53D6\u6D88" };
+function RecognitionJobs({ route, file, paper, onSaved }) {
+  const queryClient = useQueryClient27();
+  const [offset, setOffset] = useState31(0);
+  const [selected, setSelected] = useState31([]);
+  const [proposal, setProposal] = useState31(null);
+  const [acknowledgeCost, setAcknowledgeCost] = useState31(false);
+  const [pageError, setPageError] = useState31("");
+  const refresh = () => queryClient.invalidateQueries({ queryKey: [...routeKey(route), "recognition"] });
+  const jobs = useQuery30({ queryKey: [...routeKey(route), "recognition", "jobs", file.id, offset], queryFn: () => call(route, "recognition.list", { id: file.id, offset, limit: 20 }), refetchInterval: 3e3 });
+  const costs = useQuery30({ queryKey: [...routeKey(route), "recognition", "budget", file.id], queryFn: () => call(route, "recognition.budget", { id: file.id }), refetchInterval: 3e3 });
+  const budget = useMutation32({ mutationFn: (value) => call(route, "recognition.set_budget", { id: file.id, budget_micro_usd: value }, crypto.randomUUID()), onSuccess: refresh });
+  const reserve = useMutation32({
+    mutationFn: (data) => call(route, "recognition.reserve", { id: file.id, ...data }, crypto.randomUUID()),
+    onSuccess: async (result) => {
+      setSelected(result.items.map((job) => job.id));
+      setProposal(null);
+      setOffset(0);
+      await refresh();
+    }
+  });
+  const run = useMutation32({ mutationFn: async () => {
+    for (const id of selected) {
+      const result = await call(route, "recognition.run", { id }, id);
+      await refresh();
+      if (result.state === "failed") throw new Error(`\u7B2C${result.page_number}\u9875\u8BC6\u522B\u5931\u8D25 \xB7 ${result.error_code}`);
+    }
+  }, onSettled: refresh });
+  const cancel = useMutation32({ mutationFn: (id) => call(route, "recognition.cancel", { id, acknowledge_possible_cost: acknowledgeCost }, crypto.randomUUID()), onSuccess: refresh });
+  const compose = useMutation32({ mutationFn: () => call(route, "recognition.compose", { id: file.id, job_ids: selected }), onSuccess: setProposal });
+  function setBudget(event) {
+    event.preventDefault();
+    budget.mutate(Math.round(Number(new FormData(event.currentTarget).get("budget")) * 1e6));
+  }
+  function queue(event) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const first = Number(data.get("first"));
+    const last = Number(data.get("last"));
+    if (last < first) {
+      setPageError("\u8BC6\u522B\u7ED3\u675F\u9875\u4E0D\u80FD\u5C0F\u4E8E\u8D77\u59CB\u9875");
+      return;
+    }
+    setPageError("");
+    reserve.mutate({ pages: Array.from({ length: last - first + 1 }, (_, index) => first + index), estimated_micro_usd: Math.round(Number(data.get("estimate")) * 1e6), allow_model_call: data.has("authorize"), force_regenerate: data.has("regenerate") });
+  }
+  function toggle(id) {
+    setSelected((values) => values.includes(id) ? values.filter((value) => value !== id) : [...values, id]);
+    setProposal(null);
+  }
+  return /* @__PURE__ */ jsxs36("section", { "aria-label": "\u7B54\u5377\u8BC6\u522B\u4EFB\u52A1", className: "space-y-4", children: [
+    costs.data && /* @__PURE__ */ jsxs36(Fragment12, { children: [
+      /* @__PURE__ */ jsxs36("p", { children: [
+        "\u9884\u7B97 $",
+        (costs.data.budget_micro_usd / 1e6).toFixed(6),
+        " \xB7 \u9884\u7559 $",
+        (costs.data.reserved_micro_usd / 1e6).toFixed(6),
+        " \xB7 \u5DF2\u8BB0\u5F55 $",
+        (costs.data.spent_micro_usd / 1e6).toFixed(6)
+      ] }),
+      /* @__PURE__ */ jsx36("p", { children: costs.data.cost_basis })
+    ] }),
+    /* @__PURE__ */ jsxs36("form", { onSubmit: setBudget, className: "flex flex-wrap gap-2", children: [
+      /* @__PURE__ */ jsxs36("label", { children: [
+        "\u8BC6\u522B\u9884\u7B97\uFF08\u7F8E\u5143\uFF09",
+        /* @__PURE__ */ jsx36("input", { name: "budget", "aria-label": "\u8BC6\u522B\u9884\u7B97\uFF08\u7F8E\u5143\uFF09", type: "number", min: "0", max: "1000000", step: "0.000001", required: true })
+      ] }),
+      /* @__PURE__ */ jsx36(Button35, { type: "submit", disabled: budget.isPending, children: "\u4FDD\u5B58\u8BC6\u522B\u9884\u7B97" })
+    ] }),
+    /* @__PURE__ */ jsxs36("form", { onSubmit: queue, className: "grid gap-2", children: [
+      /* @__PURE__ */ jsxs36("label", { children: [
+        "\u8BC6\u522B\u8D77\u59CB\u9875",
+        /* @__PURE__ */ jsx36("input", { name: "first", "aria-label": "\u8BC6\u522B\u8D77\u59CB\u9875", type: "number", min: 1, max: file.page_count, defaultValue: 1, required: true })
+      ] }),
+      /* @__PURE__ */ jsxs36("label", { children: [
+        "\u8BC6\u522B\u7ED3\u675F\u9875",
+        /* @__PURE__ */ jsx36("input", { name: "last", "aria-label": "\u8BC6\u522B\u7ED3\u675F\u9875", type: "number", min: 1, max: file.page_count, defaultValue: file.page_count, required: true })
+      ] }),
+      /* @__PURE__ */ jsxs36("label", { children: [
+        "\u6BCF\u9875\u4F30\u7B97\uFF08\u7F8E\u5143\uFF09",
+        /* @__PURE__ */ jsx36("input", { name: "estimate", "aria-label": "\u6BCF\u9875\u4F30\u7B97\uFF08\u7F8E\u5143\uFF09", type: "number", min: "0.000001", max: "1000", step: "0.000001", required: true })
+      ] }),
+      /* @__PURE__ */ jsxs36("label", { children: [
+        /* @__PURE__ */ jsx36("input", { name: "authorize", type: "checkbox", required: true }),
+        "\u5141\u8BB8\u5C06\u6240\u9009\u5B66\u751F\u7B54\u5377\u9875\u9762\u53D1\u9001\u7ED9\u5DF2\u914D\u7F6E\u7684\u6279\u6539\u89C6\u89C9\u6A21\u578B\uFF0C\u5E76\u63A5\u53D7\u4F30\u7B97\u8D39\u7528"
+      ] }),
+      /* @__PURE__ */ jsxs36("label", { children: [
+        /* @__PURE__ */ jsx36("input", { name: "regenerate", type: "checkbox" }),
+        "\u4E3A\u6240\u9009\u9875\u91CD\u65B0\u8BC6\u522B\u5E76\u53E6\u8BA1\u8D39\u7528"
+      ] }),
+      /* @__PURE__ */ jsx36(Button35, { type: "submit", disabled: reserve.isPending || run.isPending, children: "\u9884\u7559\u8BC6\u522B\u4EFB\u52A1" }),
+      pageError && /* @__PURE__ */ jsx36("p", { role: "alert", children: pageError })
+    ] }),
+    /* @__PURE__ */ jsxs36("p", { children: [
+      "\u5DF2\u9009 ",
+      selected.length,
+      " \u4E2A\u4EFB\u52A1"
+    ] }),
+    jobs.data?.items.map((job) => /* @__PURE__ */ jsxs36("article", { className: "space-y-2 rounded border border-(--ui-border) p-3", children: [
+      /* @__PURE__ */ jsxs36("label", { children: [
+        /* @__PURE__ */ jsx36("input", { type: "checkbox", checked: selected.includes(job.id), disabled: run.isPending, onChange: () => toggle(job.id) }),
+        "\u7B2C",
+        job.page_number,
+        "\u9875 \xB7 ",
+        STATES[job.state],
+        " \xB7 ",
+        job.id.slice(0, 8)
+      ] }),
+      /* @__PURE__ */ jsxs36("p", { children: [
+        job.model.provider || "\u9ED8\u8BA4\u670D\u52A1\u5546",
+        " \xB7 ",
+        job.model.model || "\u9ED8\u8BA4\u6A21\u578B",
+        " \xB7 ",
+        job.reported_micro_usd == null ? `\u4F30\u7B97 $${(job.estimated_micro_usd / 1e6).toFixed(6)}` : `\u56DE\u6267 $${(job.reported_micro_usd / 1e6).toFixed(6)}`
+      ] }),
+      job.error_code && /* @__PURE__ */ jsx36("p", { role: "status", children: job.error_code }),
+      ["queued", "running"].includes(job.state) && /* @__PURE__ */ jsxs36(Button35, { variant: "secondary", disabled: cancel.isPending, onClick: () => cancel.mutate(job.id), children: [
+        "\u53D6\u6D88\u7B2C",
+        job.page_number,
+        "\u9875\u4EFB\u52A1"
+      ] })
+    ] }, job.id)),
+    /* @__PURE__ */ jsxs36("div", { className: "flex flex-wrap gap-2", children: [
+      /* @__PURE__ */ jsx36(Button35, { variant: "secondary", disabled: !offset, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u8BC6\u522B\u4EFB\u52A1" }),
+      /* @__PURE__ */ jsx36(Button35, { variant: "secondary", disabled: jobs.data?.next_offset == null, onClick: () => setOffset(jobs.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u8BC6\u522B\u4EFB\u52A1" })
+    ] }),
+    /* @__PURE__ */ jsxs36("label", { children: [
+      /* @__PURE__ */ jsx36("input", { type: "checkbox", checked: acknowledgeCost, onChange: (event) => setAcknowledgeCost(event.target.checked) }),
+      "\u53D6\u6D88\u6267\u884C\u4E2D\u8BF7\u6C42\u65F6\uFF0C\u786E\u8BA4\u670D\u52A1\u5546\u4ECD\u53EF\u80FD\u8BA1\u8D39"
+    ] }),
+    /* @__PURE__ */ jsxs36("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx36(Button35, { disabled: !selected.length || run.isPending, onClick: () => run.mutate(), children: "\u8FD0\u884C\u5DF2\u9009\u8BC6\u522B\u4EFB\u52A1" }),
+      /* @__PURE__ */ jsx36(Button35, { variant: "secondary", disabled: !selected.length || compose.isPending || run.isPending, onClick: () => compose.mutate(), children: "\u5408\u5E76\u5DF2\u9009\u7ED3\u679C\u5E76\u6821\u5BF9" })
+    ] }),
+    run.isPending && /* @__PURE__ */ jsx36("p", { role: "status", children: "\u6B63\u5728\u6309\u9875\u8BC6\u522B\u7B54\u5377\uFF0C\u4EFB\u52A1\u72B6\u6001\u4E0E\u8D39\u7528\u4F1A\u6301\u7EED\u4FDD\u5B58" }),
+    proposal && /* @__PURE__ */ jsx36(RecognitionReview, { route, paper, proposal, onSaved: (value) => {
+      setProposal(null);
+      onSaved(value);
+    } }, JSON.stringify(proposal.source_jobs)),
+    [jobs.error, costs.error, budget.error, reserve.error, run.error, cancel.error, compose.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx36("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+
+// extensions/teacher-assistant/desktop/src/recognition-workspace.tsx
+import { jsx as jsx37, jsxs as jsxs37 } from "react/jsx-runtime";
+function RecognitionWorkspace({ route, paper, studentId, onSaved }) {
+  const queryClient = useQueryClient28();
+  const [offset, setOffset] = useState32(0);
+  const [fileId, setFileId] = useState32("");
+  const [progress, setProgress] = useState32("");
+  const files = useQuery31({ queryKey: [...routeKey(route), "answer-files", paper.id, studentId, offset], queryFn: () => call(route, "answer.file.list", { id: paper.id, student_id: studentId, offset, limit: 20 }) });
+  const selected = useQuery31({ queryKey: [...routeKey(route), "answer-file", fileId], queryFn: () => call(route, "answer.file.get", { id: fileId }), enabled: !!fileId });
+  const upload = useMutation33({
+    mutationFn: (file) => uploadAnswer(route, file, paper.id, studentId, setProgress),
+    onSuccess: async (file) => {
+      await queryClient.invalidateQueries({ queryKey: [...routeKey(route), "answer-files"] });
+      setFileId(file.id);
+      setProgress("\u7B54\u5377\u539F\u4EF6\u5DF2\u4FDD\u5B58");
+    },
+    onError: () => setProgress("")
+  });
+  function submit(event) {
+    event.preventDefault();
+    const file = new FormData(event.currentTarget).get("file");
+    if (file instanceof File) upload.mutate(file);
+  }
+  return /* @__PURE__ */ jsxs37("section", { "aria-label": "\u56FE\u7247\u4E0E\u626B\u63CF\u7B54\u5377\u8BC6\u522B", className: "space-y-4 rounded border border-(--ui-border) p-4", children: [
+    /* @__PURE__ */ jsx37("h3", { children: "\u56FE\u7247\u4E0E\u626B\u63CF\u7B54\u5377\u8BC6\u522B" }),
+    /* @__PURE__ */ jsxs37("form", { className: "space-y-2", onSubmit: submit, children: [
+      /* @__PURE__ */ jsxs37("label", { children: [
+        "\u7B54\u5377\u56FE\u7247\u6216PDF",
+        /* @__PURE__ */ jsx37("input", { name: "file", "aria-label": "\u7B54\u5377\u56FE\u7247\u6216PDF", type: "file", accept: ".png,.jpg,.jpeg,.webp,.pdf", required: true, disabled: upload.isPending })
+      ] }),
+      /* @__PURE__ */ jsx37(Button36, { type: "submit", disabled: upload.isPending, children: "\u4E0A\u4F20\u7B54\u5377\u539F\u4EF6" }),
+      progress && /* @__PURE__ */ jsx37("p", { role: "status", children: progress })
+    ] }),
+    files.data?.items.map((file) => /* @__PURE__ */ jsxs37(Button36, { variant: "ghost", onClick: () => setFileId(file.id), children: [
+      file.filename,
+      " \xB7 ",
+      file.page_count,
+      "\u9875"
+    ] }, file.id)),
+    /* @__PURE__ */ jsxs37("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx37(Button36, { variant: "secondary", disabled: !offset, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u7B54\u5377\u539F\u4EF6" }),
+      /* @__PURE__ */ jsx37(Button36, { variant: "secondary", disabled: files.data?.next_offset == null, onClick: () => setOffset(files.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u7B54\u5377\u539F\u4EF6" })
+    ] }),
+    selected.data && /* @__PURE__ */ jsx37(AnswerFilePages, { route, file: selected.data }, fileId),
+    selected.data && /* @__PURE__ */ jsx37(RecognitionJobs, { route, file: selected.data, paper, onSaved }, fileId),
+    [files.error, selected.error, upload.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx37("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+function AnswerFilePages({ route, file }) {
+  const [page, setPage] = useState32(1);
+  const preview = useQuery31({ queryKey: [...routeKey(route), "answer-preview", file.id, page], queryFn: () => call(route, "answer.file.preview", { id: file.id, page_number: page }, crypto.randomUUID()), staleTime: Infinity });
+  return /* @__PURE__ */ jsxs37("div", { className: "space-y-2", children: [
+    /* @__PURE__ */ jsxs37("p", { children: [
+      file.filename,
+      " \xB7 ",
+      file.page_count,
+      "\u9875"
+    ] }),
+    /* @__PURE__ */ jsxs37("p", { className: "break-all text-sm", children: [
+      "\u539F\u4EF6 SHA-256 ",
+      file.sha256
+    ] }),
+    /* @__PURE__ */ jsxs37("label", { children: [
+      "\u7B54\u5377\u9884\u89C8\u9875\u53F7",
+      /* @__PURE__ */ jsx37("input", { type: "number", "aria-label": "\u7B54\u5377\u9884\u89C8\u9875\u53F7", min: 1, max: file.page_count, value: page, onChange: (event) => {
+        const value = event.target.valueAsNumber;
+        if (Number.isInteger(value) && value >= 1 && value <= file.page_count) setPage(value);
+      } })
+    ] }),
+    preview.data && /* @__PURE__ */ jsx37("img", { className: "max-h-[640px] max-w-full object-contain", alt: `\u7B54\u5377\u539F\u9875\u7B2C${page}\u9875\u9884\u89C8`, src: `data:${preview.data.mime_type};base64,${preview.data.content_base64}` }),
+    preview.isPending && /* @__PURE__ */ jsx37("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u7B54\u5377\u9875\u9762" }),
+    preview.error && /* @__PURE__ */ jsx37("p", { role: "alert", children: preview.error.message })
+  ] });
+}
+
 // extensions/teacher-assistant/desktop/src/grading-workspace.tsx
-import { Fragment as Fragment12, jsx as jsx35, jsxs as jsxs35 } from "react/jsx-runtime";
+import { Fragment as Fragment13, jsx as jsx38, jsxs as jsxs38 } from "react/jsx-runtime";
 function GradingWorkspace({ route }) {
-  const [courseId, setCourseId] = useState31("");
-  const courses = useQuery29({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
-  return /* @__PURE__ */ jsxs35("section", { "aria-label": "\u7B54\u5377\u8BC4\u5206\u5DE5\u4F5C\u53F0", className: "space-y-4", children: [
-    /* @__PURE__ */ jsx35("h2", { className: "text-xl font-semibold", children: "\u7B54\u5377\u4E0E\u6210\u7EE9" }),
-    /* @__PURE__ */ jsxs35("label", { children: [
+  const [courseId, setCourseId] = useState33("");
+  const courses = useQuery32({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
+  return /* @__PURE__ */ jsxs38("section", { "aria-label": "\u7B54\u5377\u8BC4\u5206\u5DE5\u4F5C\u53F0", className: "space-y-4", children: [
+    /* @__PURE__ */ jsx38("h2", { className: "text-xl font-semibold", children: "\u7B54\u5377\u4E0E\u6210\u7EE9" }),
+    /* @__PURE__ */ jsxs38("label", { children: [
       "\u6279\u6539\u8BFE\u7A0B",
-      /* @__PURE__ */ jsxs35("select", { "aria-label": "\u6279\u6539\u8BFE\u7A0B", value: courseId, onChange: (event) => setCourseId(event.target.value), children: [
-        /* @__PURE__ */ jsx35("option", { value: "", children: "\u9009\u62E9\u8BFE\u7A0B" }),
-        courses.data?.items.map((course) => /* @__PURE__ */ jsx35("option", { value: course.id, children: course.title }, course.id))
+      /* @__PURE__ */ jsxs38("select", { "aria-label": "\u6279\u6539\u8BFE\u7A0B", value: courseId, onChange: (event) => setCourseId(event.target.value), children: [
+        /* @__PURE__ */ jsx38("option", { value: "", children: "\u9009\u62E9\u8BFE\u7A0B" }),
+        courses.data?.items.map((course) => /* @__PURE__ */ jsx38("option", { value: course.id, children: course.title }, course.id))
       ] })
     ] }),
-    courseId && /* @__PURE__ */ jsx35(CourseGrading, { route, courseId }, courseId),
-    courses.error && /* @__PURE__ */ jsx35("p", { role: "alert", children: courses.error.message })
+    courseId && /* @__PURE__ */ jsx38(CourseGrading, { route, courseId }, courseId),
+    courses.error && /* @__PURE__ */ jsx38("p", { role: "alert", children: courses.error.message })
   ] });
 }
 function CourseGrading({ route, courseId }) {
-  const [paperId, setPaperId] = useState31("");
-  const [offset, setOffset] = useState31(0);
-  const papers = useQuery29({ queryKey: [...routeKey(route), "exam-papers", courseId, offset], queryFn: () => call(route, "exam.paper.list", { course_id: courseId, offset, limit: 20 }) });
-  return /* @__PURE__ */ jsxs35("div", { className: "space-y-4", children: [
-    /* @__PURE__ */ jsxs35("label", { children: [
+  const [paperId, setPaperId] = useState33("");
+  const [offset, setOffset] = useState33(0);
+  const papers = useQuery32({ queryKey: [...routeKey(route), "exam-papers", courseId, offset], queryFn: () => call(route, "exam.paper.list", { course_id: courseId, offset, limit: 20 }) });
+  return /* @__PURE__ */ jsxs38("div", { className: "space-y-4", children: [
+    /* @__PURE__ */ jsxs38("label", { children: [
       "\u6279\u6539\u8BD5\u5377\u7248\u672C",
-      /* @__PURE__ */ jsxs35("select", { "aria-label": "\u6279\u6539\u8BD5\u5377\u7248\u672C", value: paperId, onChange: (event) => setPaperId(event.target.value), children: [
-        /* @__PURE__ */ jsx35("option", { value: "", children: "\u9009\u62E9\u5DF2\u5BA1\u6838\u8BD5\u5377" }),
-        papers.data?.items.filter((paper) => paper.status === "approved").map((paper) => /* @__PURE__ */ jsxs35("option", { value: paper.id, children: [
+      /* @__PURE__ */ jsxs38("select", { "aria-label": "\u6279\u6539\u8BD5\u5377\u7248\u672C", value: paperId, onChange: (event) => setPaperId(event.target.value), children: [
+        /* @__PURE__ */ jsx38("option", { value: "", children: "\u9009\u62E9\u5DF2\u5BA1\u6838\u8BD5\u5377" }),
+        papers.data?.items.filter((paper) => paper.status === "approved").map((paper) => /* @__PURE__ */ jsxs38("option", { value: paper.id, children: [
           paper.title,
           " \xB7 v",
           paper.version
         ] }, paper.id))
       ] })
     ] }),
-    /* @__PURE__ */ jsxs35("div", { className: "flex gap-2", children: [
-      /* @__PURE__ */ jsx35(Button35, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u6279\u6539\u8BD5\u5377" }),
-      /* @__PURE__ */ jsx35(Button35, { variant: "secondary", disabled: papers.data?.next_offset == null, onClick: () => setOffset(papers.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u6279\u6539\u8BD5\u5377" })
+    /* @__PURE__ */ jsxs38("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx38(Button37, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u6279\u6539\u8BD5\u5377" }),
+      /* @__PURE__ */ jsx38(Button37, { variant: "secondary", disabled: papers.data?.next_offset == null, onClick: () => setOffset(papers.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u6279\u6539\u8BD5\u5377" })
     ] }),
-    paperId && /* @__PURE__ */ jsx35(PaperGrading, { route, courseId, paperId }, paperId),
-    papers.error && /* @__PURE__ */ jsx35("p", { role: "alert", children: papers.error.message })
+    paperId && /* @__PURE__ */ jsx38(PaperGrading, { route, courseId, paperId }, paperId),
+    papers.error && /* @__PURE__ */ jsx38("p", { role: "alert", children: papers.error.message })
   ] });
 }
 function PaperGrading({ route, courseId, paperId }) {
-  const queryClient = useQueryClient27();
-  const [studentId, setStudentId] = useState31("");
-  const [submissionId, setSubmissionId] = useState31("");
-  const [editing, setEditing] = useState31(false);
-  const [offset, setOffset] = useState31(0);
-  const [gradeId, setGradeId] = useState31("");
-  const paper = useQuery29({ queryKey: [...routeKey(route), "exam-paper", paperId], queryFn: () => call(route, "exam.paper.get", { id: paperId }) });
-  const students = useQuery29({ queryKey: [...routeKey(route), "student"], queryFn: () => call(route, "student.list") });
-  const enrollments = useQuery29({ queryKey: [...routeKey(route), "enrollments", courseId], queryFn: () => call(route, "enrollment.list", { course_id: courseId }) });
-  const submissions = useQuery29({ queryKey: [...routeKey(route), "submissions", paperId, offset], queryFn: () => call(route, "submission.list", { id: paperId, offset, limit: 20 }) });
-  const selected = useQuery29({ queryKey: [...routeKey(route), "submission", submissionId], queryFn: () => call(route, "submission.get", { id: submissionId }), enabled: !!submissionId });
+  const queryClient = useQueryClient29();
+  const [studentId, setStudentId] = useState33("");
+  const [submissionId, setSubmissionId] = useState33("");
+  const [editing, setEditing] = useState33(false);
+  const [offset, setOffset] = useState33(0);
+  const [gradeId, setGradeId] = useState33("");
+  const paper = useQuery32({ queryKey: [...routeKey(route), "exam-paper", paperId], queryFn: () => call(route, "exam.paper.get", { id: paperId }) });
+  const students = useQuery32({ queryKey: [...routeKey(route), "student"], queryFn: () => call(route, "student.list") });
+  const enrollments = useQuery32({ queryKey: [...routeKey(route), "enrollments", courseId], queryFn: () => call(route, "enrollment.list", { course_id: courseId }) });
+  const submissions = useQuery32({ queryKey: [...routeKey(route), "submissions", paperId, offset], queryFn: () => call(route, "submission.list", { id: paperId, offset, limit: 20 }) });
+  const selected = useQuery32({ queryKey: [...routeKey(route), "submission", submissionId], queryFn: () => call(route, "submission.get", { id: submissionId }), enabled: !!submissionId });
   async function saved(value) {
     await queryClient.invalidateQueries({ queryKey: routeKey(route) });
     setSubmissionId(value.id);
     setStudentId(value.student_id);
     setEditing(false);
   }
-  return /* @__PURE__ */ jsxs35("div", { className: "space-y-4", children: [
-    /* @__PURE__ */ jsx35(Button35, { variant: "secondary", onClick: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }), children: "\u5237\u65B0\u7B54\u5377\u4E0E\u6210\u7EE9" }),
-    /* @__PURE__ */ jsxs35("label", { children: [
+  return /* @__PURE__ */ jsxs38("div", { className: "space-y-4", children: [
+    /* @__PURE__ */ jsx38(Button37, { variant: "secondary", onClick: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }), children: "\u5237\u65B0\u7B54\u5377\u4E0E\u6210\u7EE9" }),
+    /* @__PURE__ */ jsxs38("label", { children: [
       "\u7B54\u5377\u5B66\u751F",
-      /* @__PURE__ */ jsxs35("select", { "aria-label": "\u7B54\u5377\u5B66\u751F", value: studentId, onChange: (event) => {
+      /* @__PURE__ */ jsxs38("select", { "aria-label": "\u7B54\u5377\u5B66\u751F", value: studentId, onChange: (event) => {
         setStudentId(event.target.value);
         setSubmissionId("");
         setEditing(false);
       }, children: [
-        /* @__PURE__ */ jsx35("option", { value: "", children: "\u9009\u62E9\u5DF2\u9009\u8BFE\u5B66\u751F" }),
-        students.data?.items.filter((student) => enrollments.data?.items.some((item) => item.student_id === student.id)).map((student) => /* @__PURE__ */ jsxs35("option", { value: student.id, children: [
+        /* @__PURE__ */ jsx38("option", { value: "", children: "\u9009\u62E9\u5DF2\u9009\u8BFE\u5B66\u751F" }),
+        students.data?.items.filter((student) => enrollments.data?.items.some((item) => item.student_id === student.id)).map((student) => /* @__PURE__ */ jsxs38("option", { value: student.id, children: [
           student.name,
           " \xB7 ",
           student.student_number
         ] }, student.id))
       ] })
     ] }),
-    /* @__PURE__ */ jsx35(Button35, { disabled: !studentId || !paper.data, onClick: () => {
+    /* @__PURE__ */ jsx38(Button37, { disabled: !studentId || !paper.data, onClick: () => {
       setSubmissionId("");
       setEditing(true);
     }, children: "\u5F55\u5165\u5B66\u751F\u7B54\u5377" }),
-    /* @__PURE__ */ jsx35("h3", { children: "\u5DF2\u4FDD\u5B58\u7B54\u5377" }),
-    submissions.data?.items.map((item) => /* @__PURE__ */ jsxs35(Button35, { variant: "ghost", onClick: () => {
+    paper.data && studentId && /* @__PURE__ */ jsx38(RecognitionWorkspace, { route, paper: paper.data, studentId, onSaved: saved }, studentId),
+    /* @__PURE__ */ jsx38("h3", { children: "\u5DF2\u4FDD\u5B58\u7B54\u5377" }),
+    submissions.data?.items.map((item) => /* @__PURE__ */ jsxs38(Button37, { variant: "ghost", onClick: () => {
       setSubmissionId(item.id);
       setStudentId(item.student_id);
       setEditing(false);
@@ -4274,68 +4562,68 @@ function PaperGrading({ route, courseId, paperId }) {
       " \xB7 \u7B54\u5377v",
       item.version
     ] }, item.id)),
-    /* @__PURE__ */ jsxs35("div", { className: "flex gap-2", children: [
-      /* @__PURE__ */ jsx35(Button35, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u7B54\u5377" }),
-      /* @__PURE__ */ jsx35(Button35, { variant: "secondary", disabled: submissions.data?.next_offset == null, onClick: () => setOffset(submissions.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u7B54\u5377" })
+    /* @__PURE__ */ jsxs38("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx38(Button37, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u7B54\u5377" }),
+      /* @__PURE__ */ jsx38(Button37, { variant: "secondary", disabled: submissions.data?.next_offset == null, onClick: () => setOffset(submissions.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u7B54\u5377" })
     ] }),
-    selected.data && /* @__PURE__ */ jsxs35("p", { children: [
+    selected.data && /* @__PURE__ */ jsxs38("p", { children: [
       "\u5F53\u524D\u7B54\u5377v",
       selected.data.version,
       " \xB7 \u6700\u65B0v",
       selected.data.latest_version
     ] }),
-    selected.data?.version === selected.data?.latest_version && selected.data && /* @__PURE__ */ jsx35(Button35, { variant: "secondary", onClick: () => setEditing(true), children: "\u66F4\u6B63\u7B54\u5377\u53E6\u5B58\u7248\u672C" }),
-    editing && paper.data && studentId && /* @__PURE__ */ jsx35(AnswerEditor, { route, paper: paper.data, studentId, submission: selected.data, onSaved: saved }, submissionId || studentId),
-    paper.data && selected.data && /* @__PURE__ */ jsx35(SubmissionGrading, { route, paper: paper.data, submission: selected.data, onPublished: (value) => setGradeId(value.id) }),
-    paper.data && /* @__PURE__ */ jsx35(GradeRecords, { route, courseId, paper: paper.data, gradeId, onGrade: setGradeId }),
-    [paper.error, students.error, enrollments.error, submissions.error, selected.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx35("p", { role: "alert", children: error?.message }, index))
+    selected.data?.version === selected.data?.latest_version && selected.data && /* @__PURE__ */ jsx38(Button37, { variant: "secondary", onClick: () => setEditing(true), children: "\u66F4\u6B63\u7B54\u5377\u53E6\u5B58\u7248\u672C" }),
+    editing && paper.data && studentId && /* @__PURE__ */ jsx38(AnswerEditor, { route, paper: paper.data, studentId, submission: selected.data, onSaved: saved }, submissionId || studentId),
+    paper.data && selected.data && /* @__PURE__ */ jsx38(SubmissionGrading, { route, paper: paper.data, submission: selected.data, onPublished: (value) => setGradeId(value.id) }),
+    paper.data && /* @__PURE__ */ jsx38(GradeRecords, { route, courseId, paper: paper.data, gradeId, onGrade: setGradeId }),
+    [paper.error, students.error, enrollments.error, submissions.error, selected.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx38("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 function SubmissionGrading({ route, paper, submission, onPublished }) {
-  const queryClient = useQueryClient27();
-  const draft = useQuery29({ queryKey: [...routeKey(route), "grade-draft", submission.latest_draft_id], queryFn: () => call(route, "grading.draft.get", { id: submission.latest_draft_id }), enabled: !!submission.latest_draft_id });
-  const score = useMutation32({ mutationFn: () => call(route, "grading.score", { id: submission.id, expected_version: draft.data?.version ?? 0 }, crypto.randomUUID()), onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }) });
-  return /* @__PURE__ */ jsxs35("section", { "aria-label": "\u7B54\u5377\u8BC4\u5206\u4E0E\u590D\u6838", className: "space-y-4", children: [
-    /* @__PURE__ */ jsx35(Button35, { disabled: score.isPending || !!submission.latest_draft_id && draft.isPending || submission.version !== submission.latest_version, onClick: () => score.mutate(), children: draft.data ? "\u91CD\u65B0\u8BA1\u7B97\u8BC4\u5206\u8349\u7A3F" : "\u8BA1\u7B97\u8BC4\u5206\u8349\u7A3F" }),
-    draft.data && /* @__PURE__ */ jsxs35(Fragment12, { children: [
-      draft.data.report.subjective_count > 0 && /* @__PURE__ */ jsx35(GradingAgent, { route, draft: draft.data }, draft.data.id),
-      draft.data.published_grade_id ? /* @__PURE__ */ jsx35("p", { children: "\u8BE5\u8BC4\u5206\u8349\u7A3F\u5DF2\u53D1\u5E03\u6B63\u5F0F\u6210\u7EE9\u3002\u66F4\u6B63\u65F6\u5148\u91CD\u65B0\u8BA1\u7B97\u8BC4\u5206\u8349\u7A3F\uFF0C\u5DF2\u6709\u6210\u7EE9\u4FDD\u7559\u5728\u590D\u6838\u5386\u53F2\u4E2D\u3002" }) : /* @__PURE__ */ jsx35(GradeReview, { route, paper, submission, draft: draft.data, onPublished }, `${draft.data.id}:${draft.data.current_grade_id}`)
+  const queryClient = useQueryClient29();
+  const draft = useQuery32({ queryKey: [...routeKey(route), "grade-draft", submission.latest_draft_id], queryFn: () => call(route, "grading.draft.get", { id: submission.latest_draft_id }), enabled: !!submission.latest_draft_id });
+  const score = useMutation34({ mutationFn: () => call(route, "grading.score", { id: submission.id, expected_version: draft.data?.version ?? 0 }, crypto.randomUUID()), onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }) });
+  return /* @__PURE__ */ jsxs38("section", { "aria-label": "\u7B54\u5377\u8BC4\u5206\u4E0E\u590D\u6838", className: "space-y-4", children: [
+    /* @__PURE__ */ jsx38(Button37, { disabled: score.isPending || !!submission.latest_draft_id && draft.isPending || submission.version !== submission.latest_version, onClick: () => score.mutate(), children: draft.data ? "\u91CD\u65B0\u8BA1\u7B97\u8BC4\u5206\u8349\u7A3F" : "\u8BA1\u7B97\u8BC4\u5206\u8349\u7A3F" }),
+    draft.data && /* @__PURE__ */ jsxs38(Fragment13, { children: [
+      draft.data.report.subjective_count > 0 && /* @__PURE__ */ jsx38(GradingAgent, { route, draft: draft.data }, draft.data.id),
+      draft.data.published_grade_id ? /* @__PURE__ */ jsx38("p", { children: "\u8BE5\u8BC4\u5206\u8349\u7A3F\u5DF2\u53D1\u5E03\u6B63\u5F0F\u6210\u7EE9\u3002\u66F4\u6B63\u65F6\u5148\u91CD\u65B0\u8BA1\u7B97\u8BC4\u5206\u8349\u7A3F\uFF0C\u5DF2\u6709\u6210\u7EE9\u4FDD\u7559\u5728\u590D\u6838\u5386\u53F2\u4E2D\u3002" }) : /* @__PURE__ */ jsx38(GradeReview, { route, paper, submission, draft: draft.data, onPublished }, `${draft.data.id}:${draft.data.current_grade_id}`)
     ] }),
-    [draft.error, score.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx35("p", { role: "alert", children: error?.message }, index))
+    [draft.error, score.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx38("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 function GradeRecords({ route, courseId, paper, gradeId, onGrade }) {
-  const [offset, setOffset] = useState31(0);
-  const [format, setFormat] = useState31("docx");
-  const grades = useQuery29({ queryKey: [...routeKey(route), "grades", courseId, paper.id, offset], queryFn: () => call(route, "grade.list", { course_id: courseId, paper_id: paper.id, offset, limit: 20 }) });
-  const grade = useQuery29({ queryKey: [...routeKey(route), "grade", gradeId], queryFn: () => call(route, "grade.get", { id: gradeId }), enabled: !!gradeId });
-  const download = useMutation32({ mutationFn: () => downloadGradeReport(route, gradeId, format) });
-  return /* @__PURE__ */ jsxs35("section", { "aria-label": "\u6B63\u5F0F\u6210\u7EE9\u8BB0\u5F55", className: "space-y-3", children: [
-    /* @__PURE__ */ jsx35("h3", { children: "\u6B63\u5F0F\u6210\u7EE9" }),
-    grades.data?.items.map((item) => /* @__PURE__ */ jsxs35(Button35, { variant: "ghost", onClick: () => onGrade(item.id), children: [
+  const [offset, setOffset] = useState33(0);
+  const [format, setFormat] = useState33("docx");
+  const grades = useQuery32({ queryKey: [...routeKey(route), "grades", courseId, paper.id, offset], queryFn: () => call(route, "grade.list", { course_id: courseId, paper_id: paper.id, offset, limit: 20 }) });
+  const grade = useQuery32({ queryKey: [...routeKey(route), "grade", gradeId], queryFn: () => call(route, "grade.get", { id: gradeId }), enabled: !!gradeId });
+  const download = useMutation34({ mutationFn: () => downloadGradeReport(route, gradeId, format) });
+  return /* @__PURE__ */ jsxs38("section", { "aria-label": "\u6B63\u5F0F\u6210\u7EE9\u8BB0\u5F55", className: "space-y-3", children: [
+    /* @__PURE__ */ jsx38("h3", { children: "\u6B63\u5F0F\u6210\u7EE9" }),
+    grades.data?.items.map((item) => /* @__PURE__ */ jsxs38(Button37, { variant: "ghost", onClick: () => onGrade(item.id), children: [
       item.name,
       " \xB7 ",
       (item.total_points_centi / 100).toFixed(2),
       "\u5206"
     ] }, item.id)),
-    grades.data?.total === 0 && /* @__PURE__ */ jsx35("p", { children: "\u5F53\u524D\u8BD5\u5377\u5C1A\u672A\u53D1\u5E03\u6B63\u5F0F\u6210\u7EE9\u3002" }),
-    /* @__PURE__ */ jsxs35("div", { className: "flex gap-2", children: [
-      /* @__PURE__ */ jsx35(Button35, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u6210\u7EE9" }),
-      /* @__PURE__ */ jsx35(Button35, { variant: "secondary", disabled: grades.data?.next_offset == null, onClick: () => setOffset(grades.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u6210\u7EE9" })
+    grades.data?.total === 0 && /* @__PURE__ */ jsx38("p", { children: "\u5F53\u524D\u8BD5\u5377\u5C1A\u672A\u53D1\u5E03\u6B63\u5F0F\u6210\u7EE9\u3002" }),
+    /* @__PURE__ */ jsxs38("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx38(Button37, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u6210\u7EE9" }),
+      /* @__PURE__ */ jsx38(Button37, { variant: "secondary", disabled: grades.data?.next_offset == null, onClick: () => setOffset(grades.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u6210\u7EE9" })
     ] }),
-    grade.data && /* @__PURE__ */ jsxs35("article", { className: "space-y-2", children: [
-      /* @__PURE__ */ jsxs35("p", { children: [
+    grade.data && /* @__PURE__ */ jsxs38("article", { className: "space-y-2", children: [
+      /* @__PURE__ */ jsxs38("p", { children: [
         "\u590D\u6838\u603B\u5206 ",
         (grade.data.total_points_centi / 100).toFixed(2),
         "\u5206 \xB7 ",
         grade.data.active ? "\u5F53\u524D\u6210\u7EE9" : "\u5386\u53F2\u6210\u7EE9"
       ] }),
-      /* @__PURE__ */ jsxs35("p", { children: [
+      /* @__PURE__ */ jsxs38("p", { children: [
         grade.data.note,
         " \xB7 ",
         grade.data.created_at
       ] }),
-      grade.data.scores.map((score, index) => /* @__PURE__ */ jsxs35("p", { children: [
+      grade.data.scores.map((score, index) => /* @__PURE__ */ jsxs38("p", { children: [
         "\u7B2C",
         index + 1,
         "\u9898 \xB7 ",
@@ -4343,31 +4631,31 @@ function GradeRecords({ route, courseId, paper, gradeId, onGrade }) {
         "\u5206 \xB7 ",
         score.comment
       ] }, score.question_id)),
-      /* @__PURE__ */ jsx35("h4", { children: "\u9519\u9898\u8BB0\u5F55" }),
-      grade.data.wrong_questions.map((item) => /* @__PURE__ */ jsxs35("p", { children: [
+      /* @__PURE__ */ jsx38("h4", { children: "\u9519\u9898\u8BB0\u5F55" }),
+      grade.data.wrong_questions.map((item) => /* @__PURE__ */ jsxs38("p", { children: [
         paper.questions.find((question) => question.id === item.question_id)?.prompt,
         " \xB7 \u5931\u5206",
         (item.lost_points_centi / 100).toFixed(2),
         "\u5206"
       ] }, item.question_id)),
-      grade.data.previous_id && /* @__PURE__ */ jsx35(Button35, { variant: "secondary", onClick: () => onGrade(grade.data.previous_id), children: "\u67E5\u770B\u524D\u6B21\u6210\u7EE9" })
+      grade.data.previous_id && /* @__PURE__ */ jsx38(Button37, { variant: "secondary", onClick: () => onGrade(grade.data.previous_id), children: "\u67E5\u770B\u524D\u6B21\u6210\u7EE9" })
     ] }),
-    grade.data && /* @__PURE__ */ jsxs35("div", { className: "flex gap-3", children: [
-      /* @__PURE__ */ jsxs35("label", { children: [
+    grade.data && /* @__PURE__ */ jsxs38("div", { className: "flex gap-3", children: [
+      /* @__PURE__ */ jsxs38("label", { children: [
         "\u6279\u6539\u62A5\u544A\u683C\u5F0F",
-        /* @__PURE__ */ jsxs35("select", { "aria-label": "\u6279\u6539\u62A5\u544A\u683C\u5F0F", value: format, onChange: (event) => setFormat(event.target.value), children: [
-          /* @__PURE__ */ jsx35("option", { value: "docx", children: "DOCX" }),
-          /* @__PURE__ */ jsx35("option", { value: "pdf", children: "PDF" })
+        /* @__PURE__ */ jsxs38("select", { "aria-label": "\u6279\u6539\u62A5\u544A\u683C\u5F0F", value: format, onChange: (event) => setFormat(event.target.value), children: [
+          /* @__PURE__ */ jsx38("option", { value: "docx", children: "DOCX" }),
+          /* @__PURE__ */ jsx38("option", { value: "pdf", children: "PDF" })
         ] })
       ] }),
-      /* @__PURE__ */ jsx35(Button35, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u4E0B\u8F7D\u6279\u6539\u62A5\u544A" })
+      /* @__PURE__ */ jsx38(Button37, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u4E0B\u8F7D\u6279\u6539\u62A5\u544A" })
     ] }),
-    [grades.error, grade.error, download.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx35("p", { role: "alert", children: error?.message }, index))
+    [grades.error, grade.error, download.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx38("p", { role: "alert", children: error?.message }, index))
   ] });
 }
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { jsx as jsx36, jsxs as jsxs36 } from "react/jsx-runtime";
+import { jsx as jsx39, jsxs as jsxs39 } from "react/jsx-runtime";
 var PAGES = [
   ["course", "\u6211\u7684\u8BFE\u7A0B"],
   ["class", "\u73ED\u7EA7"],
@@ -4388,8 +4676,8 @@ var PAGES = [
 function TeacherWorkspace() {
   const profile = useValue(host7.state.profile);
   const connectionId = useValue(host7.state.connectionId);
-  const [page, setPage] = useState32("course");
-  const routing = useQuery30({
+  const [page, setPage] = useState34("course");
+  const routing = useQuery33({
     queryKey: ["teacher-route", connectionId, profile],
     queryFn: async () => {
       const routes = await host7.profileRoutes();
@@ -4399,32 +4687,32 @@ function TeacherWorkspace() {
     }
   });
   const route = routing.data;
-  return /* @__PURE__ */ jsxs36("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
-    /* @__PURE__ */ jsxs36("header", { className: "mb-6 space-y-2", children: [
-      /* @__PURE__ */ jsx36("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
-      /* @__PURE__ */ jsxs36("p", { children: [
+  return /* @__PURE__ */ jsxs39("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
+    /* @__PURE__ */ jsxs39("header", { className: "mb-6 space-y-2", children: [
+      /* @__PURE__ */ jsx39("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
+      /* @__PURE__ */ jsxs39("p", { children: [
         "\u5F53\u524D\u914D\u7F6E \xB7 ",
         profile,
         " \xB7 \u672C\u5730\u6559\u5B66\u6570\u636E\u4E0E Hermes \u4F1A\u8BDD\u5206\u5F00\u4FDD\u5B58"
       ] })
     ] }),
-    /* @__PURE__ */ jsx36("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx36(Button36, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
-    routing.isPending && /* @__PURE__ */ jsx36("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
-    routing.error && /* @__PURE__ */ jsx36("p", { role: "alert", children: routing.error.message }),
-    route && /* @__PURE__ */ jsxs36("div", { children: [
-      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx36(RecordEditor, { route, entity: page }),
-      page === "roster" && /* @__PURE__ */ jsx36(CourseRoster, { route }),
-      page === "tasks" && /* @__PURE__ */ jsx36(Tasks, { route }),
-      page === "textbooks" && /* @__PURE__ */ jsx36(Textbooks, { route }),
-      page === "preparation" && /* @__PURE__ */ jsx36(Preparation, { route }),
-      page === "slides" && /* @__PURE__ */ jsx36(SlidesWorkspace, { route }),
-      page === "planning" && /* @__PURE__ */ jsx36(Planning, { route }),
-      page === "timetable" && /* @__PURE__ */ jsx36(Timetable, { route }),
-      page === "reminders" && /* @__PURE__ */ jsx36(Reminders, { route }),
-      page === "questions" && /* @__PURE__ */ jsx36(QuestionBank, { route }),
-      page === "exams" && /* @__PURE__ */ jsx36(ExamsWorkspace, { route }),
-      page === "grading" && /* @__PURE__ */ jsx36(GradingWorkspace, { route }),
-      page === "settings" && /* @__PURE__ */ jsx36(Settings, { route })
+    /* @__PURE__ */ jsx39("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx39(Button38, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
+    routing.isPending && /* @__PURE__ */ jsx39("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
+    routing.error && /* @__PURE__ */ jsx39("p", { role: "alert", children: routing.error.message }),
+    route && /* @__PURE__ */ jsxs39("div", { children: [
+      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx39(RecordEditor, { route, entity: page }),
+      page === "roster" && /* @__PURE__ */ jsx39(CourseRoster, { route }),
+      page === "tasks" && /* @__PURE__ */ jsx39(Tasks, { route }),
+      page === "textbooks" && /* @__PURE__ */ jsx39(Textbooks, { route }),
+      page === "preparation" && /* @__PURE__ */ jsx39(Preparation, { route }),
+      page === "slides" && /* @__PURE__ */ jsx39(SlidesWorkspace, { route }),
+      page === "planning" && /* @__PURE__ */ jsx39(Planning, { route }),
+      page === "timetable" && /* @__PURE__ */ jsx39(Timetable, { route }),
+      page === "reminders" && /* @__PURE__ */ jsx39(Reminders, { route }),
+      page === "questions" && /* @__PURE__ */ jsx39(QuestionBank, { route }),
+      page === "exams" && /* @__PURE__ */ jsx39(ExamsWorkspace, { route }),
+      page === "grading" && /* @__PURE__ */ jsx39(GradingWorkspace, { route }),
+      page === "settings" && /* @__PURE__ */ jsx39(Settings, { route })
     ] }, `${route.connectionId}:${route.profile}:${route.targetProfile}:${page}`)
   ] });
 }
@@ -4433,7 +4721,7 @@ var plugin_default = {
   name: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0",
   register(ctx) {
     ctx.registerMany([
-      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx36(TeacherWorkspace, {}) },
+      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx39(TeacherWorkspace, {}) },
       { id: "navigation", area: SIDEBAR_NAV_AREA, data: { path: "/teacher", label: "\u6559\u5E08\u5DE5\u4F5C\u53F0", codicon: "mortar-board" } }
     ]);
   }

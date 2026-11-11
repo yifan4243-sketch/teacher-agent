@@ -17,3 +17,4 @@ python_dependencies:
   - openpyxl>=3.1,<4
   - reportlab>=5.1,<6
   - pillow>=13,<14
+  - pypdfium2>=5.14,<6

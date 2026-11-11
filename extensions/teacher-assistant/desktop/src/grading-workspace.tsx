@@ -7,6 +7,7 @@ import type { ExamPaper, ExamSummary } from './exam-api'
 import { downloadGradeReport, type GradeDraft, type GradeSummary, type PublishedGrade, type Submission, type SubmissionSummary } from './grading-api'
 import { GradingAgent } from './grading-agent'
 import { GradeReview } from './grade-review'
+import { RecognitionWorkspace } from './recognition-workspace'
 import type { Page } from './textbook-api'
 
 export function GradingWorkspace({ route }: { route: PluginProfileRoute }) {
@@ -49,6 +50,7 @@ function PaperGrading({ route, courseId, paperId }: { route: PluginProfileRoute;
     <Button variant="secondary" onClick={() => queryClient.invalidateQueries({ queryKey: routeKey(route) })}>刷新答卷与成绩</Button>
     <label>答卷学生<select aria-label="答卷学生" value={studentId} onChange={event => { setStudentId(event.target.value); setSubmissionId(''); setEditing(false) }}><option value="">选择已选课学生</option>{students.data?.items.filter(student => enrollments.data?.items.some(item => item.student_id === student.id)).map(student => <option key={student.id} value={student.id}>{student.name} · {student.student_number}</option>)}</select></label>
     <Button disabled={!studentId || !paper.data} onClick={() => { setSubmissionId(''); setEditing(true) }}>录入学生答卷</Button>
+    {paper.data && studentId && <RecognitionWorkspace key={studentId} route={route} paper={paper.data} studentId={studentId} onSaved={saved} />}
     <h3>已保存答卷</h3>
     {submissions.data?.items.map(item => <Button key={item.id} variant="ghost" onClick={() => { setSubmissionId(item.id); setStudentId(item.student_id); setEditing(false) }}>{item.name} · 答卷v{item.version}</Button>)}
     <div className="flex gap-2"><Button variant="secondary" disabled={offset === 0} onClick={() => setOffset(value => Math.max(0, value - 20))}>上一页答卷</Button><Button variant="secondary" disabled={submissions.data?.next_offset == null} onClick={() => setOffset(submissions.data?.next_offset ?? 0)}>下一页答卷</Button></div>

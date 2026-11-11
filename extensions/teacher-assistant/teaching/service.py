@@ -130,10 +130,19 @@ class TeachingService:
         self.external_writes = {"slide.image.run": Operation('models.Identifier', 'images.execute', {'ctx': ctx}),
                                 "slide.render.run": Operation('models.Identifier', 'rendering.execute')}
         self.human_external_writes = {
+            "recognition.run": Operation('models.Identifier', 'recognition_run.run', {'ctx': ctx}),
             "reminder.background.install": Operation('models.Input', 'reminder_schedule.install'),
             "reminder.background.remove": Operation('models.Input', 'reminder_schedule.remove'),
         }
         self.human_writes = {
+            "answer.upload.begin": Operation('recognition_models.AnswerUpload', 'answer_assets.begin_upload'),
+            "answer.upload.chunk": Operation('knowledge_models.UploadChunk', 'answer_assets.upload_chunk'),
+            "answer.upload.finish": Operation('models.Identifier', 'answer_assets.finish_upload'),
+            "answer.file.preview": Operation('recognition_models.AnswerPage', 'answer_assets.preview'),
+            "recognition.set_budget": Operation('recognition_models.RecognitionBudget', 'recognition.set_budget'),
+            "recognition.reserve": Operation('recognition_models.RecognitionReserve', 'recognition.reserve', {'ctx': ctx}),
+            "recognition.cancel": Operation('image_models.ImageAbandon', 'recognition.cancel'),
+            "recognition.apply": Operation('recognition_models.RecognitionApply', 'recognition_review.apply'),
             "grade.export": Operation('grade_reports.GradeExport', 'grade_reports.export'),
             "submission.save": Operation('grading_models.SubmissionSave', 'submissions.save'),
             "grading.score": Operation('grading_models.GradeScore', 'grading.score_submission'),
@@ -193,6 +202,12 @@ class TeachingService:
         writes = {**WRITES, **self.external_writes, **(self.human_writes if human else {}),
                   **(self.human_external_writes if human else {})}
         reads = {**self.reads, "document.file": Operation('models.Identifier', 'documents.read_export'),
+                 "answer.file.get": Operation('models.Identifier', 'answer_assets.get_file'),
+                 "answer.file.list": Operation('recognition_models.AnswerFileList', 'answer_assets.list_files'),
+                 "recognition.get": Operation('models.Identifier', 'recognition.get_job'),
+                 "recognition.list": Operation('grading_models.SubmissionList', 'recognition.list_jobs'),
+                 "recognition.budget": Operation('models.Identifier', 'recognition.budget'),
+                 "recognition.compose": Operation('recognition_models.RecognitionSelection', 'recognition_review.compose'),
                  "submission.get": Operation('models.Identifier', 'submissions.get_submission'),
                  "submission.list": Operation('grading_models.SubmissionList', 'submissions.list_submissions'),
                  "grading.draft.get": Operation('models.Identifier', 'grading.get_draft'),

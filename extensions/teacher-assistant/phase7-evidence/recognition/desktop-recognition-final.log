@@ -1,0 +1,8 @@
+
+Running 1 test using 1 worker
+
+(node:44988) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 ..\..\extensions\teacher-assistant\desktop\tests\recognition.spec.mjs:7:1 › 教师上传扫描答卷、取消重试、核对低置信答案并发布成绩 (1.4m)
+
+  1 passed (1.4m)

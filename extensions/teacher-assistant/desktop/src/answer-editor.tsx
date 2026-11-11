@@ -5,21 +5,24 @@ import { call } from './api'
 import type { ExamPaper } from './exam-api'
 import type { StudentAnswer, Submission } from './grading-api'
 import { QUESTION_KINDS, type Question } from './question-api'
+import type { RecognitionProposal } from './recognition-api'
 
-interface Props { route: PluginProfileRoute; paper: ExamPaper; studentId: string; submission?: Submission; onSaved: (value: Submission) => void }
+interface Props { route: PluginProfileRoute; paper: ExamPaper; studentId: string; submission?: Submission; recognition?: RecognitionProposal; onSaved: (value: Submission) => void }
 
-export function AnswerEditor({ route, paper, studentId, submission, onSaved }: Props) {
-  const write = useMutation({ mutationFn: (data: object) => call<Submission>(route, 'submission.save', data, crypto.randomUUID()), onSuccess: onSaved })
+export function AnswerEditor({ route, paper, studentId, submission, recognition, onSaved }: Props) {
+  const write = useMutation({ mutationFn: (data: object) => call<Submission>(route, recognition ? 'recognition.apply' : 'submission.save', data, crypto.randomUUID()), onSuccess: onSaved })
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const answers = paper.questions.map(question => ({ question_id: question.id, content: readAnswer(form, question) }))
-    write.mutate({ paper_id: paper.id, student_id: studentId, expected_version: submission?.version ?? 0, answers, note: String(form.get('note')) })
+    const source = recognition ? { file_id: recognition.file_id, job_ids: recognition.source_jobs.map(job => job.id), reviewed_uncertain: form.has('reviewed_uncertain') } : {}
+    write.mutate({ paper_id: paper.id, student_id: studentId, expected_version: recognition?.expected_version ?? submission?.version ?? 0, answers, note: String(form.get('note')), ...source })
   }
   return <form aria-label="学生答卷录入" className="space-y-4 rounded border border-(--ui-border) p-4" onSubmit={save}>
-    <h3>答卷{(submission?.version ?? 0) + 1}版</h3>
-    {paper.questions.map((question, index) => <AnswerFields key={question.id} question={question} ordinal={index + 1} initial={submission?.answers.find(answer => answer.question_id === question.id)} />)}
+    <h3>答卷{(recognition?.expected_version ?? submission?.version ?? 0) + 1}版</h3>
+    {paper.questions.map((question, index) => <AnswerFields key={question.id} question={question} ordinal={index + 1} initial={(recognition?.answers ?? submission?.answers)?.find(answer => answer.question_id === question.id)} />)}
     <label>答卷备注<textarea aria-label="答卷备注" name="note" maxLength={4000} defaultValue={submission?.note ?? ''} /></label>
+    {recognition && <label className="flex gap-2"><input type="checkbox" name="reviewed_uncertain" required />已对照原页复核识别文字、低置信、跨页和待补全内容</label>}
     <Button type="submit" disabled={write.isPending}>保存学生答卷</Button>
     {write.error && <p role="alert">{write.error.message}</p>}
   </form>

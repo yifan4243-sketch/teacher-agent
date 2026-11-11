@@ -13,6 +13,7 @@ from tests.extensions.test_teacher_documents import plan_fixture, script_fixture
 from tests.extensions.test_teacher_blueprints import blueprint_fixture
 from tests.extensions.test_teacher_slides import sample_layout
 from tests.extensions.test_teacher_questions import question_params
+from tests.extensions.test_teacher_grading import assessment_fixture
 
 
 def exam_responder(home):
@@ -58,6 +59,8 @@ def document_responder(home):
 
     def respond(record):
         messages = record["body"]["messages"]
+        if any("将本页答卷中的印刷、扫描或手写作答逐字转录" in str(message.get("content", "")) for message in messages):
+            return answer_transcription(messages)
         grading_match = next((re.search(r"批改任务ID ([0-9a-f-]+)", str(message.get("content", "")))
                               for message in reversed(messages) if message["role"] == "user"), None)
         if grading_match:
@@ -114,6 +117,37 @@ def document_responder(home):
     return respond
 
 
+def answer_transcription(messages):
+    for message in messages:
+        for block in message.get("content", []) if isinstance(message.get("content"), list) else []:
+            if block.get("type") != "text" or not block.get("text", "").startswith('{"page_number"'):
+                continue
+            payload = json.loads(block["text"])
+            responses = {"single_choice": {"selected_ids": ["A"]}, "multiple_choice": {"selected_ids": ["A", "B"]},
+                "true_false": {"answer": True}, "fill_blank": {"values": ["自由度", "工作空间"]},
+                "short_answer": {"text": "Independent motion count"}}
+            answers = [{"question_id": question["question_id"], "content": {"kind": question["kind"], **responses[question["kind"]]},
+                "observed_text": "Independent motion count" if question["kind"] == "short_answer" else "scripted transcription",
+                "confidence": 0.4 if question["kind"] == "short_answer" else 0.95, "note": "本机模拟识别响应"}
+                for question in payload["questions"]]
+            return Text(json.dumps({"answers": answers, "unassigned_text": "", "note": "模拟视觉输出，用于集成测试"}, ensure_ascii=False))
+    raise AssertionError("Missing question context in recognition request")
+
+
+def seed_recognition(home):
+    from hermes_cli.plugins import PluginManager
+    from tests.extensions.test_teacher_recognition import scanned_pdf
+
+    manager = PluginManager()
+    manager.discover_and_load()
+    rpc = manager._plugin_rpc_methods["plugin.teacher-assistant.call"]
+    def call(operation, data=None, request_id=None):
+        return rpc({"operation": operation, "data": data, "request_id": request_id}, session_id=None)
+    assessment_fixture(call, home)
+    (home / "synthetic-scanned-answer.pdf").write_bytes(scanned_pdf())
+    manager.unload("teacher-assistant")
+
+
 def grading_responder(home):
     stages = {}
 
@@ -156,6 +190,8 @@ def main():
     responder = document_responder(home)
     with FakeLLMServer(responder, aux=responder, default_text="本地界面测试模型。") as server:
         write_hermes_home(home, server.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + "plugins:\n  enabled: [teacher-assistant, teacher-ui-image]\nimage_gen:\n  provider: teacher-ui-image\nonboarding:\n  run: false\n")
+        if "--recognition-fixture" in sys.argv:
+            seed_recognition(home)
         print(json.dumps({"ready": True}), flush=True)
         sys.stdin.readline()
         print(json.dumps({"model_requests": len(server.main_requests())}), flush=True)

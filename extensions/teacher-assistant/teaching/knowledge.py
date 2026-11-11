@@ -1,15 +1,12 @@
 """Textbook versions, deterministic extraction and verifiable source retrieval."""
 
-import base64
-import binascii
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
 
 from .database import audit, encode, new_id
-from .files import store_bytes, upload_path
+from .files import store_bytes, upload_path, write_upload_chunk
 from .models import DomainError
 from .parsers import PARSERS, parse_book
 from .records import get_record, require_active
@@ -194,28 +191,7 @@ def _upload(conn, identifier):
 
 def upload_chunk(conn, data, actor):
     row = _upload(conn, data.id)
-    if row["status"] != "uploading":
-        raise DomainError("invalid_transition", "上传已结束")
-    try:
-        content = base64.b64decode(data.content_base64, validate=True)
-    except (binascii.Error, ValueError):
-        raise DomainError("invalid_input", "上传内容不是有效Base64") from None
-    if not 0 < len(content) <= 512 * 1024 or data.offset + len(content) > row["total_bytes"]:
-        raise DomainError("invalid_file_size", "上传分块大小不正确")
-    path = upload_path(row["id"])
-    with path.open("r+b") as stream:
-        if path.stat().st_size < row["bytes_received"] or data.offset > row["bytes_received"]:
-            raise DomainError("upload_conflict", "上传偏移与已保存数据不一致")
-        stream.seek(data.offset)
-        if data.offset < row["bytes_received"]:
-            if data.offset + len(content) > row["bytes_received"] or stream.read(len(content)) != content:
-                raise DomainError("upload_conflict", "重复分块的内容不一致")
-            return {"id": row["id"], "bytes_received": row["bytes_received"]}
-        stream.write(content)
-        stream.truncate()
-        stream.flush()
-        os.fsync(stream.fileno())
-    received = row["bytes_received"] + len(content)
+    received = write_upload_chunk(row, data)
     conn.execute("UPDATE textbook_uploads SET bytes_received=? WHERE id=?", (received, row["id"]))
     return {"id": row["id"], "bytes_received": received}
 

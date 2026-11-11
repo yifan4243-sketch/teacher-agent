@@ -1,5 +1,7 @@
 """Immutable content-addressed files under the owning Hermes profile."""
 
+import base64
+import binascii
 import hashlib
 import os
 from pathlib import Path
@@ -47,3 +49,28 @@ def upload_path(identifier):
     root = plugin_data_dir("teacher-assistant") / "uploads"
     root.mkdir(exist_ok=True)
     return root / (identifier + ".part")
+
+
+def write_upload_chunk(row, data):
+    if row["status"] != "uploading":
+        raise DomainError("invalid_transition", "上传已结束")
+    try:
+        content = base64.b64decode(data.content_base64, validate=True)
+    except (binascii.Error, ValueError):
+        raise DomainError("invalid_input", "上传内容不是有效Base64") from None
+    if not 0 < len(content) <= 512 * 1024 or data.offset + len(content) > row["total_bytes"]:
+        raise DomainError("invalid_file_size", "上传分块大小不正确")
+    path = upload_path(row["id"])
+    with path.open("r+b") as stream:
+        if path.stat().st_size < row["bytes_received"] or data.offset > row["bytes_received"]:
+            raise DomainError("upload_conflict", "上传偏移与已保存数据不一致")
+        stream.seek(data.offset)
+        if data.offset < row["bytes_received"]:
+            if data.offset + len(content) > row["bytes_received"] or stream.read(len(content)) != content:
+                raise DomainError("upload_conflict", "重复分块的内容不一致")
+            return row["bytes_received"]
+        stream.write(content)
+        stream.truncate()
+        stream.flush()
+        os.fsync(stream.fileno())
+    return row["bytes_received"] + len(content)

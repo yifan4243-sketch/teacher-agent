@@ -1,0 +1,14 @@
+{
+  "source_schema": 21,
+  "target_schema": 22,
+  "original_read_only": true,
+  "all_existing_table_hashes_preserved": true,
+  "existing_tables": 59,
+  "record_counts": {
+    "answer_submissions": 1,
+    "grade_drafts": 3,
+    "grade_publications": 2,
+    "grade_exports": 4
+  },
+  "migration_copy_home": "C:\\Users\\yifan\\AppData\\Local\\Temp\\teacher-recognition-upgrade-v21-gs9sj1cc"
+}

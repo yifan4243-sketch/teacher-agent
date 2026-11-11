@@ -28,6 +28,9 @@ def get_submission(conn, data):
     result["latest_version"] = conn.execute("SELECT MAX(version) FROM answer_submissions WHERE root_id=?", (result["root_id"],)).fetchone()[0]
     latest = conn.execute("SELECT id FROM grade_drafts WHERE submission_id=? ORDER BY version DESC LIMIT 1", (data.id,)).fetchone()
     result["latest_draft_id"] = latest[0] if latest else None
+    result["recognition_sources"] = [dict(item) for item in conn.execute("""SELECT r.job_id,r.reviewed_by,r.reviewed_uncertain,j.page_number,
+        f.id AS file_id,f.filename,f.sha256 FROM submission_recognitions r JOIN recognition_jobs j ON j.id=r.job_id
+        JOIN answer_files f ON f.id=j.file_id WHERE r.submission_id=? ORDER BY j.page_number""", (data.id,))]
     return result
 
 

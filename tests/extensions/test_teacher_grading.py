@@ -18,6 +18,11 @@ __all__ = ["teacher"]
 @pytest.fixture
 def assessment_workspace(teacher, tmp_path):
     home, _, call = teacher
+    lesson, paper, student, answers = assessment_fixture(call, tmp_path)
+    return home, call, lesson, paper, student, answers
+
+
+def assessment_fixture(call, tmp_path):
     lesson = lesson_fixture(call, tmp_path)
     kinds = ("single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer")
     questions, answers = [], []
@@ -42,7 +47,7 @@ def assessment_workspace(teacher, tmp_path):
     student = saved(call, "student.create", {"student_number": "GRADING-001", "name": "虚构评分学生", "class_id": group["id"]})
     saved(call, "course.assign_class", {"course_id": lesson["course_id"], "class_id": group["id"]})
     saved(call, "enrollment.create", {"course_id": lesson["course_id"], "student_id": student["id"]})
-    return home, call, lesson, paper, student, answers
+    return lesson, paper, student, answers
 
 
 def review_payload(draft, subjective=400, current=None):

@@ -43,6 +43,8 @@ def _content(conn, grade):
         instructions=f"教师复核得分 {grade['total_points_centi'] / 100:.2f}分　满分 {paper['plan']['config']['total_points_centi'] / 100:.2f}分",
         intro_lines=[f"答卷版本{submission['version']}　评分草稿版本{draft['version']}　复核时间 {reviewed_at}（北京时间）",
                      "教师复核说明　" + grade["note"], "成绩记录　" + grade["id"]])
+    content["intro_lines"].extend(f"答卷识别来源　{source['filename']}　第{source['page_number']}页　原件SHA-256 {source['sha256']}"
+        for source in submission["recognition_sources"])
     answers = {item["question_id"]: item["content"] for item in submission["answers"]}
     scores = {item["question_id"]: item for item in grade["scores"]}
     proposals = {item["question_id"]: item for item in draft["report"]["scores"]}

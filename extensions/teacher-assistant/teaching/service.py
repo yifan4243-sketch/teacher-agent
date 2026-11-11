@@ -14,6 +14,7 @@ from . import slide_references
 from . import planning, planning_models
 from . import publication, timetable, timetable_models
 from . import plan_export
+from . import reminder_models, reminders, reminder_schedule, todos, windows_notifications
 
 
 READS = {
@@ -53,8 +54,17 @@ READS = {
     "calendar.get": (models.Identifier, timetable.get_event),
     "calendar.history": (models.Identifier, timetable.history),
     "calendar.publication": (models.Identifier, timetable.get_publication),
+    "reminder.settings": (models.Input, reminders.settings),
+    "reminder.list": (reminder_models.ReminderList, reminders.list_deliveries),
+    "reminder.get": (models.Identifier, reminders.get_delivery),
+    "todo.list": (reminder_models.TodoList, todos.list_todos),
+    "todo.get": (models.Identifier, todos.get_todo),
 }
 WRITES = {
+    "todo.create": (reminder_models.TodoCreate, todos.create),
+    "todo.update": (reminder_models.TodoUpdate, todos.update),
+    "reminder.refresh": (models.Input, reminders.refresh),
+    "reminder.retry": (models.Identifier, reminders.retry),
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
     "plan.save": (planning_models.PlanSave, planning.save),
     "plan.export": (plan_export.PlanExport, plan_export.export),
@@ -104,11 +114,17 @@ class TeachingService:
         self.reads = {**READS, "knowledge.semantic": (knowledge_models.SemanticSearch, partial(semantic.search, ctx=ctx))}
         self.external_writes = {"slide.image.run": (models.Identifier, partial(images.execute, ctx=ctx)),
                                 "slide.render.run": (models.Identifier, rendering.execute)}
+        self.human_external_writes = {
+            "reminder.background.install": (models.Input, reminder_schedule.install),
+            "reminder.background.remove": (models.Input, reminder_schedule.remove),
+        }
         self.human_writes = {
             "task.review": (models.TaskReview, workflows.review_task),
             "plan.publish": (timetable_models.PlanPublish, publication.publish),
             "calendar.move": (timetable_models.EventMove, timetable.move),
             "calendar.progress": (timetable_models.ProgressRecord, timetable.record_progress),
+            "reminder.set_settings": (reminder_models.ReminderSettings, reminders.save_settings),
+            "reminder.test": (models.Input, windows_notifications.test_notification),
             "document.review": (document_models.DocumentReview, documents.review_document),
             "document.generation.begin": (document_models.GenerationStart, partial(preparation.begin_generation, ctx=ctx)),
             "document.generation.claim": (document_models.GenerationClaim, preparation.claim_generation),
@@ -144,8 +160,11 @@ class TeachingService:
             return self.settings()
         if operation == "settings.update":
             return self.update_settings(data, human)
-        writes = {**WRITES, **self.external_writes, **(self.human_writes if human else {})}
+        writes = {**WRITES, **self.external_writes, **(self.human_writes if human else {}),
+                  **(self.human_external_writes if human else {})}
         reads = {**self.reads, "document.file": (models.Identifier, documents.read_export),
+                 "reminder.probe": (models.Input, windows_notifications.probe),
+                 "reminder.background.status": (models.Input, reminder_schedule.status),
                  "plan.export.file": (models.Identifier, plan_export.download),
                  "slide.image.preview": (models.Identifier, image_assets.preview),
                  "slide.image.file": (models.Identifier, image_assets.download),
@@ -163,7 +182,7 @@ class TeachingService:
             raise models.DomainError("permission_denied", "知识点确认需要教师在界面复核")
         payload = schema.model_validate(data)
         actor = "desktop:teacher" if human else "agent:" + (session_id or "local")
-        if operation in self.external_writes:
+        if operation in self.external_writes or operation in self.human_external_writes:
             return handler(data=payload, actor=actor, request_id=request_id, session_id=session_id)
         with database() as conn:
             if operation in reads:

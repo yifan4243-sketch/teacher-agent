@@ -1,0 +1,41 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 15 test files (~59 tests) under ['tests\\extensions']; running with -j 8
+[  5.1% |     3/~59 | ✓3 | ✗0] ✓ tests\extensions\test_teacher_documents.py (3✓, 73.6s)
+[ 10.2% |     6/~59 | ✓6 | ✗0] ✓ tests\extensions\test_teacher_templates.py (3✓, 74.0s)
+[ 15.3% |     9/~59 | ✓9 | ✗0] ✓ tests\extensions\test_teacher_layout_repair.py (3✓, 75.2s)
+[ 20.3% |    12/~59 | ✓12 | ✗ 0] ✓ tests\extensions\test_teacher_rendering.py (3✓, 84.3s)
+[ 27.1% |    16/~59 | ✓16 | ✗ 0] ✓ tests\extensions\test_teacher_reconstruction.py (4✓, 94.1s)
+[ 37.3% |    22/~59 | ✓22 | ✗ 0] ✓ tests\extensions\test_teacher_images.py (6✓, 107.2s)
+[ 40.7% |    24/~59 | ✓24 | ✗ 0] ✓ tests\extensions\test_teacher_planning.py (2✓, 34.1s)
+[ 44.1% |    26/~59 | ✓26 | ✗ 0] ✓ tests\extensions\test_teacher_references.py (2✓, 37.1s)
+[ 47.5% |    28/~59 | ✓28 | ✗ 0] ✓ tests\extensions\test_teacher_blueprints.py (2✓, 28.2s)
+[ 50.8% |    30/~59 | ✓30 | ✗ 0] ✓ tests\extensions\test_teacher_slides.py (2✓, 29.5s)
+[ 54.2% |    32/~59 | ✓32 | ✗ 0] ✓ tests\extensions\test_teacher_plan_export.py (2✓, 27.4s)
+[ 59.3% |    35/~59 | ✓35 | ✗ 0] ✓ tests\extensions\test_teacher_timetable.py (3✓, 43.2s)
+[ 72.9% |    43/~59 | ✓46 | ✗ 0] ✓ tests\extensions\test_teacher_knowledge.py (11✓, 138.8s)
+[ 81.4% |    48/~59 | ✓51 | ✗ 0] ✓ tests\extensions\test_teacher_reminders.py (5✓, 76.4s)
+[100.0% |    59/~59 | ✓62 | ✗ 0] ✓ tests\extensions\test_teacher_foundation.py (11✓, 154.1s)
+
+=== Summary: 15 files, 62 tests passed, 0 failed (100% complete) in 155.5s (8 workers) ===
+  Durations cached to test_durations.json (15 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   15
+  Total subprocess CPU-wall: 1077.2s  (runner wall: 155.5s, parallelism: 8x)
+  P50: 73.97s  P90: 138.80s  P95: 154.14s  P99: 154.14s  Max: 154.14s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+    154.14s  tests\extensions\test_teacher_foundation.py
+    138.80s  tests\extensions\test_teacher_knowledge.py
+    107.24s  tests\extensions\test_teacher_images.py
+     94.08s  tests\extensions\test_teacher_reconstruction.py
+     84.31s  tests\extensions\test_teacher_rendering.py
+     76.43s  tests\extensions\test_teacher_reminders.py
+     75.20s  tests\extensions\test_teacher_layout_repair.py
+     73.97s  tests\extensions\test_teacher_templates.py
+     73.61s  tests\extensions\test_teacher_documents.py
+     43.24s  tests\extensions\test_teacher_timetable.py

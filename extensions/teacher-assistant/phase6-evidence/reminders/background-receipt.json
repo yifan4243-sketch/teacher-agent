@@ -1,0 +1,64 @@
+{
+  "status": {
+    "cron_job_id": "94e466f23ebb",
+    "background_task_name": "TeacherAgentPro-1418cb4f2a068865",
+    "last_tick_at": "2026-11-11T14:09:03",
+    "last_tick_error": null,
+    "windows": {
+      "last_run_at": "2026-11-11T14:08:57",
+      "enabled": true,
+      "last_result": 0,
+      "state": 3,
+      "name": "TeacherAgentPro-1418cb4f2a068865",
+      "ok": true,
+      "next_run_at": "2026-11-11T14:09:56",
+      "installed": true
+    },
+    "cron": {
+      "job_id": "94e466f23ebb",
+      "name": "TeacherAgentPro-1418cb4f2a068865",
+      "skill": null,
+      "skills": [],
+      "prompt_preview": "",
+      "model": null,
+      "provider": null,
+      "pinned": false,
+      "base_url": null,
+      "schedule": "every 1m",
+      "repeat": "forever",
+      "deliver": "local",
+      "next_run_at": "2026-11-11T14:10:04.183176+08:00",
+      "last_run_at": "2026-11-11T14:09:04.183176+08:00",
+      "last_status": "ok",
+      "last_delivery_error": null,
+      "last_delivery_unverified": null,
+      "last_fire_error": null,
+      "last_error": null,
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "script": "teacher-reminder-b8a29576014be2ea571d.py",
+      "no_agent": true
+    }
+  },
+  "deliveries": [
+    {
+      "id": "1c96b228-86a5-4c12-8875-acfe0b2afba9",
+      "occurrence_key": "683aca9566940218ba069f887054de069dabd5634cff304e748f21906f616792",
+      "event_id": null,
+      "todo_id": "d76ee167-ae74-4b47-927f-a62279c9b42c",
+      "kind": "personal",
+      "due_at": "2026-11-11T14:07:00",
+      "title": "个人待办 教师后台真实通知测试",
+      "body": "截止 2026-11-11 14:07:00　关闭Desktop后由Windows任务调用Hermes原生定时器",
+      "state": "accepted",
+      "error_code": null,
+      "receipt_json": "{\"application_id\": \"TeacherAgentPro.Reminders.1418cb4f2a068865\", \"history_checked\": true, \"history_contains_tag\": true, \"ok\": true, \"setting\": \"unknown\", \"tag\": \"1c96b22886a54c12\"}",
+      "parent_id": null,
+      "created_at": "2026-11-11T06:09:03.013Z",
+      "claimed_at": "2026-11-11T14:09:03",
+      "finished_at": "2026-11-11T14:09:04"
+    }
+  ]
+}

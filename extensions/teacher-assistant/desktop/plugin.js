@@ -1,8 +1,8 @@
 // Generated from desktop/src by scripts/build_desktop.mjs.
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { Button as Button21, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery21, useValue } from "@hermes/plugin-sdk";
-import { useState as useState20 } from "react";
+import { Button as Button23, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery23, useValue } from "@hermes/plugin-sdk";
+import { useState as useState22 } from "react";
 
 // extensions/teacher-assistant/desktop/src/records.tsx
 import { Button, Input, useMutation, useQuery, useQueryClient } from "@hermes/plugin-sdk";
@@ -2636,8 +2636,258 @@ function Timetable({ route }) {
   ] });
 }
 
-// extensions/teacher-assistant/desktop/src/plugin.tsx
+// extensions/teacher-assistant/desktop/src/reminders.tsx
+import { Button as Button22, useMutation as useMutation21, useQuery as useQuery22, useQueryClient as useQueryClient20 } from "@hermes/plugin-sdk";
+import { useState as useState21 } from "react";
+
+// extensions/teacher-assistant/desktop/src/reminder-api.ts
+var TODO_KINDS = { homework: "\u4F5C\u4E1A", exam: "\u8003\u8BD5", preparation: "\u5907\u8BFE", personal: "\u4E2A\u4EBA\u4E8B\u52A1" };
+var TODO_STATES = { pending: "\u5F85\u5B8C\u6210", completed: "\u5DF2\u5B8C\u6210", cancelled: "\u5DF2\u53D6\u6D88" };
+var DELIVERY_STATES = { queued: "\u7B49\u5F85\u53D1\u9001", dispatching: "\u6B63\u5728\u53D1\u9001\u6216\u53D1\u9001\u4E2D\u65AD", accepted: "Windows\u5DF2\u63A5\u53D7", failed: "\u53D1\u9001\u5931\u8D25", expired: "\u5DF2\u8FC7\u8865\u53D1\u7A97\u53E3", cancelled: "\u6765\u6E90\u5DF2\u53D8\u66F4" };
+
+// extensions/teacher-assistant/desktop/src/teacher-todos.tsx
+import { Button as Button21, useMutation as useMutation20, useQuery as useQuery21, useQueryClient as useQueryClient19 } from "@hermes/plugin-sdk";
+import { useState as useState20 } from "react";
 import { jsx as jsx21, jsxs as jsxs21 } from "react/jsx-runtime";
+function TodoEditor({ route, todo, onSaved }) {
+  const courses = useQuery21({ queryKey: [...routeKey(route), "course"], queryFn: () => call(route, "course.list") });
+  const queryClient = useQueryClient19();
+  const save = useMutation20({
+    mutationFn: (data) => call(route, todo ? "todo.update" : "todo.create", data, crypto.randomUUID()),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: routeKey(route) });
+      onSaved();
+    }
+  });
+  function submit(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const data = {
+      title: form.get("title"),
+      details: form.get("details"),
+      kind: form.get("kind"),
+      course_id: form.get("course_id") || null,
+      due_at: form.get("due_at"),
+      lead_minutes: Number(form.get("lead_minutes"))
+    };
+    save.mutate(todo ? { ...data, id: todo.id, version: todo.version, status: form.get("status") } : data);
+  }
+  return /* @__PURE__ */ jsxs21("form", { "aria-label": "\u5F85\u529E\u7F16\u8F91", onSubmit: submit, className: "grid max-w-3xl gap-3 rounded border border-(--ui-border) p-4", children: [
+    /* @__PURE__ */ jsx21("h3", { children: todo ? "\u4FEE\u6539\u5F85\u529E" : "\u65B0\u5EFA\u5F85\u529E" }),
+    /* @__PURE__ */ jsxs21("label", { children: [
+      "\u5F85\u529E\u6807\u9898",
+      /* @__PURE__ */ jsx21("input", { name: "title", "aria-label": "\u5F85\u529E\u6807\u9898", defaultValue: todo?.title ?? "", maxLength: 200, required: true })
+    ] }),
+    /* @__PURE__ */ jsxs21("label", { children: [
+      "\u5F85\u529E\u7C7B\u578B",
+      /* @__PURE__ */ jsx21("select", { name: "kind", "aria-label": "\u5F85\u529E\u7C7B\u578B", defaultValue: todo?.kind ?? "personal", children: Object.entries(TODO_KINDS).map(([value, label]) => /* @__PURE__ */ jsx21("option", { value, children: label }, value)) })
+    ] }),
+    /* @__PURE__ */ jsxs21("label", { children: [
+      "\u5F85\u529E\u8BFE\u7A0B",
+      /* @__PURE__ */ jsxs21("select", { name: "course_id", "aria-label": "\u5F85\u529E\u8BFE\u7A0B", defaultValue: todo?.course_id ?? "", children: [
+        /* @__PURE__ */ jsx21("option", { value: "", children: "\u4E2A\u4EBA\u4E8B\u52A1" }),
+        courses.data?.items.map((course) => /* @__PURE__ */ jsx21("option", { value: course.id, children: course.title }, course.id))
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs21("label", { children: [
+      "\u622A\u6B62\u65F6\u95F4\uFF08\u5317\u4EAC\u65F6\u95F4\uFF09",
+      /* @__PURE__ */ jsx21("input", { type: "datetime-local", name: "due_at", "aria-label": "\u5F85\u529E\u622A\u6B62\u65F6\u95F4", defaultValue: todo?.due_at.slice(0, 16) ?? "", required: true })
+    ] }),
+    /* @__PURE__ */ jsxs21("label", { children: [
+      "\u63D0\u524D\u63D0\u9192\u5206\u949F",
+      /* @__PURE__ */ jsx21("input", { type: "number", name: "lead_minutes", "aria-label": "\u5F85\u529E\u63D0\u524D\u5206\u949F", min: 0, max: 10080, defaultValue: todo?.lead_minutes ?? 15, required: true })
+    ] }),
+    /* @__PURE__ */ jsxs21("label", { children: [
+      "\u5F85\u529E\u8BF4\u660E",
+      /* @__PURE__ */ jsx21("textarea", { name: "details", "aria-label": "\u5F85\u529E\u8BF4\u660E", maxLength: 4e3, defaultValue: todo?.details ?? "" })
+    ] }),
+    todo && /* @__PURE__ */ jsxs21("label", { children: [
+      "\u5F85\u529E\u72B6\u6001",
+      /* @__PURE__ */ jsx21("select", { name: "status", "aria-label": "\u5F85\u529E\u72B6\u6001", defaultValue: todo.status, children: Object.entries(TODO_STATES).map(([value, label]) => /* @__PURE__ */ jsx21("option", { value, children: label }, value)) })
+    ] }),
+    /* @__PURE__ */ jsx21(Button21, { type: "submit", disabled: save.isPending, children: "\u4FDD\u5B58\u5F85\u529E" }),
+    [courses.error, save.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx21("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+function TeacherTodos({ route }) {
+  const [status, setStatus] = useState20("pending");
+  const [offset, setOffset] = useState20(0);
+  const [selected, setSelected] = useState20();
+  const [revision, setRevision] = useState20(0);
+  const todos = useQuery21({ queryKey: [...routeKey(route), "todos", status, offset], queryFn: () => call(route, "todo.list", { status: status || null, offset, limit: 20 }) });
+  return /* @__PURE__ */ jsxs21("section", { "aria-label": "\u6559\u5E08\u5F85\u529E", className: "space-y-3", children: [
+    /* @__PURE__ */ jsx21("h2", { className: "text-xl font-semibold", children: "\u5F85\u529E" }),
+    /* @__PURE__ */ jsx21("p", { children: "\u622A\u6B62\u65F6\u95F4\u4F7F\u7528\u5317\u4EAC\u65F6\u95F4\u3002\u4F5C\u4E1A\u3001\u8003\u8BD5\u3001\u5907\u8BFE\u548C\u4E2A\u4EBA\u4E8B\u52A1\u5747\u4FDD\u5B58\u5728\u5F53\u524D\u6559\u5E08\u914D\u7F6E\u3002" }),
+    /* @__PURE__ */ jsxs21("label", { children: [
+      "\u5F85\u529E\u7B5B\u9009",
+      /* @__PURE__ */ jsxs21("select", { "aria-label": "\u5F85\u529E\u7B5B\u9009", value: status, onChange: (event) => {
+        setStatus(event.target.value);
+        setOffset(0);
+      }, children: [
+        /* @__PURE__ */ jsx21("option", { value: "", children: "\u5168\u90E8" }),
+        Object.entries(TODO_STATES).map(([value, label]) => /* @__PURE__ */ jsx21("option", { value, children: label }, value))
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx21(Button21, { variant: "secondary", onClick: () => {
+      setSelected(void 0);
+      setRevision((value) => value + 1);
+    }, children: "\u65B0\u5EFA\u5F85\u529E" }),
+    todos.data?.items.map((todo) => /* @__PURE__ */ jsxs21("article", { className: "rounded border border-(--ui-border) p-3", children: [
+      /* @__PURE__ */ jsx21(Button21, { variant: "ghost", onClick: () => setSelected(todo), children: todo.title }),
+      /* @__PURE__ */ jsxs21("p", { children: [
+        TODO_KINDS[todo.kind],
+        " \xB7 ",
+        todo.due_at.replace("T", " "),
+        " \xB7 ",
+        TODO_STATES[todo.status]
+      ] }),
+      /* @__PURE__ */ jsx21("p", { children: todo.details })
+    ] }, todo.id)),
+    todos.data?.total === 0 && /* @__PURE__ */ jsx21("p", { children: "\u5F53\u524D\u7B5B\u9009\u6CA1\u6709\u5F85\u529E\u3002" }),
+    /* @__PURE__ */ jsxs21("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsx21(Button21, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u5F85\u529E" }),
+      /* @__PURE__ */ jsx21(Button21, { variant: "secondary", disabled: todos.data?.next_offset == null, onClick: () => setOffset(todos.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u5F85\u529E" })
+    ] }),
+    /* @__PURE__ */ jsx21(TodoEditor, { route, todo: selected, onSaved: () => {
+      setSelected(void 0);
+      setRevision((value) => value + 1);
+    } }, `${selected?.id ?? "new"}:${selected?.version ?? revision}`),
+    todos.isPending && /* @__PURE__ */ jsx21("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5F85\u529E" }),
+    todos.error && /* @__PURE__ */ jsx21("p", { role: "alert", children: todos.error.message })
+  ] });
+}
+
+// extensions/teacher-assistant/desktop/src/reminders.tsx
+import { jsx as jsx22, jsxs as jsxs22 } from "react/jsx-runtime";
+function ReminderPolicy({ route, settings }) {
+  const queryClient = useQueryClient20();
+  const save = useMutation21({ mutationFn: (data) => call(route, "reminder.set_settings", data, crypto.randomUUID()), onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }) });
+  function submit(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const lead = (key) => form.get(key) === "" ? null : Number(form.get(key));
+    save.mutate({
+      version: settings.version,
+      enabled: form.has("enabled"),
+      preclass_minutes: lead("preclass_minutes"),
+      preparation_minutes: lead("preparation_minutes"),
+      exam_minutes: lead("exam_minutes"),
+      late_grace_minutes: Number(form.get("late_grace_minutes"))
+    });
+  }
+  return /* @__PURE__ */ jsxs22("form", { "aria-label": "\u63D0\u9192\u8BBE\u7F6E", onSubmit: submit, className: "grid max-w-3xl gap-3", children: [
+    /* @__PURE__ */ jsxs22("label", { children: [
+      /* @__PURE__ */ jsx22("input", { type: "checkbox", name: "enabled", "aria-label": "\u542F\u7528\u6559\u5B66\u63D0\u9192", defaultChecked: settings.enabled }),
+      "\u542F\u7528\u6559\u5B66\u63D0\u9192"
+    ] }),
+    /* @__PURE__ */ jsx22("p", { children: "\u8BFE\u8868\u63D0\u9192\u7684\u63D0\u524D\u5206\u949F\u7559\u7A7A\u53EF\u5173\u95ED\u8BE5\u7C7B\u63D0\u9192\u3002\u540E\u53F0\u4EFB\u52A1\u6BCF\u5206\u949F\u68C0\u67E5\u5230\u671F\u9879\u76EE\uFF0C\u7535\u8111\u5173\u673A\u6216\u9000\u51FA Windows \u767B\u5F55\u540E\u6682\u505C\u3002" }),
+    [["preclass_minutes", "\u8BFE\u524D\u63D0\u524D\u5206\u949F"], ["preparation_minutes", "\u5907\u8BFE\u63D0\u524D\u5206\u949F"], ["exam_minutes", "\u8003\u8BD5\u63D0\u524D\u5206\u949F"]].map(([name, label]) => /* @__PURE__ */ jsxs22("label", { children: [
+      label,
+      /* @__PURE__ */ jsx22("input", { type: "number", name, "aria-label": label, min: 0, max: 10080, defaultValue: settings[name] ?? "" })
+    ] }, name)),
+    /* @__PURE__ */ jsxs22("label", { children: [
+      "\u5141\u8BB8\u8865\u53D1\u5206\u949F",
+      /* @__PURE__ */ jsx22("input", { type: "number", name: "late_grace_minutes", "aria-label": "\u5141\u8BB8\u8865\u53D1\u5206\u949F", min: 0, max: 10080, defaultValue: settings.late_grace_minutes, required: true })
+    ] }),
+    /* @__PURE__ */ jsx22(Button22, { type: "submit", disabled: save.isPending, children: "\u4FDD\u5B58\u63D0\u9192\u8BBE\u7F6E" }),
+    save.isSuccess && /* @__PURE__ */ jsx22("p", { role: "status", children: "\u63D0\u9192\u8BBE\u7F6E\u5DF2\u4FDD\u5B58" }),
+    save.error && /* @__PURE__ */ jsx22("p", { role: "alert", children: save.error.message })
+  ] });
+}
+function Reminders({ route }) {
+  const queryClient = useQueryClient20();
+  const [offset, setOffset] = useState21(0);
+  const [backgroundVisible, setBackgroundVisible] = useState21(false);
+  const policy = useQuery22({ queryKey: [...routeKey(route), "reminder-settings"], queryFn: () => call(route, "reminder.settings"), refetchInterval: 3e4 });
+  const deliveries = useQuery22({ queryKey: [...routeKey(route), "reminder-deliveries", offset], queryFn: () => call(route, "reminder.list", { offset, limit: 20 }), refetchInterval: 3e4 });
+  const background = useQuery22({ queryKey: [...routeKey(route), "reminder-background"], queryFn: () => call(route, "reminder.background.status"), enabled: backgroundVisible });
+  const action = useMutation21({ mutationFn: ({ operation, data = {} }) => call(route, operation, data, crypto.randomUUID()), onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKey(route) }) });
+  const test = useMutation21({ mutationFn: () => call(route, "reminder.test", {}, crypto.randomUUID()) });
+  return /* @__PURE__ */ jsxs22("section", { "aria-label": "\u63D0\u9192\u4E0E\u5F85\u529E", className: "space-y-6", children: [
+    /* @__PURE__ */ jsx22("h2", { className: "text-xl font-semibold", children: "\u63D0\u9192\u4E0E\u5F85\u529E" }),
+    policy.data && /* @__PURE__ */ jsx22(ReminderPolicy, { route, settings: policy.data }, policy.data.version),
+    /* @__PURE__ */ jsxs22("section", { "aria-label": "\u63D0\u9192\u540E\u53F0", className: "space-y-3", children: [
+      /* @__PURE__ */ jsx22("h3", { children: "Windows \u540E\u53F0" }),
+      /* @__PURE__ */ jsx22("p", { children: "\u542F\u7528\u540E\u53F0\u4F1A\u4E3A\u5F53\u524D Windows \u7528\u6237\u521B\u5EFA\u6BCF\u5206\u949F\u8FD0\u884C\u7684\u4EFB\u52A1\uFF0C\u8C03\u7528\u5F53\u524D\u6559\u5E08\u914D\u7F6E\u7684 Hermes \u539F\u751F\u5B9A\u65F6\u5668\u3002\u5173\u95ED Desktop \u540E\u7EE7\u7EED\u68C0\u67E5\u63D0\u9192\u3002" }),
+      /* @__PURE__ */ jsxs22("div", { className: "flex flex-wrap gap-2", children: [
+        /* @__PURE__ */ jsx22(Button22, { disabled: action.isPending, onClick: () => {
+          setBackgroundVisible(true);
+          action.mutate({ operation: "reminder.background.install" });
+        }, children: "\u542F\u7528\u6216\u4FEE\u590D\u540E\u53F0" }),
+        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: action.isPending, onClick: () => {
+          setBackgroundVisible(true);
+          action.mutate({ operation: "reminder.background.remove" });
+        }, children: "\u505C\u7528\u540E\u53F0" }),
+        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", onClick: () => {
+          setBackgroundVisible(true);
+          void background.refetch();
+        }, children: "\u5237\u65B0\u540E\u53F0\u72B6\u6001" }),
+        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: test.isPending, onClick: () => test.mutate(), children: "\u53D1\u9001\u672C\u673A\u6D4B\u8BD5\u901A\u77E5" })
+      ] }),
+      background.data && /* @__PURE__ */ jsxs22("div", { children: [
+        /* @__PURE__ */ jsxs22("p", { children: [
+          "Windows\u4EFB\u52A1",
+          background.data.windows.installed ? background.data.windows.enabled ? "\u5DF2\u542F\u7528" : "\u5DF2\u505C\u7528" : "\u5C1A\u672A\u5B89\u88C5",
+          " \xB7 Hermes\u4EFB\u52A1",
+          background.data.cron?.enabled ? "\u5DF2\u542F\u7528" : "\u672A\u542F\u7528"
+        ] }),
+        /* @__PURE__ */ jsxs22("p", { children: [
+          "\u6700\u8FD1\u68C0\u67E5 ",
+          background.data.last_tick_at?.replace("T", " ") ?? "\u5C1A\u65E0\u8BB0\u5F55"
+        ] }),
+        background.data.windows.next_run_at && /* @__PURE__ */ jsxs22("p", { children: [
+          "\u4E0B\u6B21\u540E\u53F0\u68C0\u67E5 ",
+          background.data.windows.next_run_at.replace("T", " ")
+        ] }),
+        background.data.windows.last_result !== void 0 && /* @__PURE__ */ jsxs22("p", { children: [
+          "Windows\u6700\u8FD1\u8FD0\u884C\u7ED3\u679C\u7801 ",
+          background.data.windows.last_result
+        ] }),
+        background.data.last_tick_error && /* @__PURE__ */ jsx22("p", { role: "alert", children: background.data.last_tick_error }),
+        background.data.cron?.last_error && /* @__PURE__ */ jsx22("p", { role: "alert", children: background.data.cron.last_error })
+      ] }),
+      test.isSuccess && /* @__PURE__ */ jsxs22("p", { role: "status", children: [
+        "Windows\u5DF2\u63A5\u53D7\u6D4B\u8BD5\u901A\u77E5",
+        test.data.history_contains_tag ? "\uFF0C\u5DF2\u5728\u672C\u673A\u901A\u77E5\u5386\u53F2\u6838\u5BF9" : ""
+      ] }),
+      /* @__PURE__ */ jsx22("p", { children: "\u7CFB\u7EDF\u63A5\u53D7\u8BB0\u5F55\u540E\u4ECD\u53EF\u80FD\u53D7\u4E13\u6CE8\u6A21\u5F0F\u6216\u7CFB\u7EDF\u663E\u793A\u8BBE\u7F6E\u5F71\u54CD\uFF0C\u9605\u8BFB\u72B6\u6001\u7531\u7528\u6237\u786E\u8BA4\u3002" })
+    ] }),
+    /* @__PURE__ */ jsx22(TeacherTodos, { route }),
+    /* @__PURE__ */ jsxs22("section", { "aria-label": "\u63D0\u9192\u8BB0\u5F55", className: "space-y-3", children: [
+      /* @__PURE__ */ jsx22("h3", { children: "\u63D0\u9192\u8BB0\u5F55" }),
+      /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: action.isPending, onClick: () => action.mutate({ operation: "reminder.refresh" }), children: "\u6309\u6700\u65B0\u8BFE\u8868\u548C\u5F85\u529E\u5237\u65B0\u63D0\u9192" }),
+      policy.data && /* @__PURE__ */ jsxs22("p", { children: [
+        "\u6559\u5B66\u63D0\u9192",
+        policy.data.enabled ? "\u5DF2\u5F00\u542F" : "\u5DF2\u5173\u95ED",
+        " \xB7 \u6700\u8FD1\u68C0\u67E5 ",
+        policy.data.last_tick_at?.replace("T", " ") ?? "\u5C1A\u65E0\u8BB0\u5F55"
+      ] }),
+      deliveries.data?.items.map((item) => /* @__PURE__ */ jsxs22("article", { className: "space-y-1 rounded border border-(--ui-border) p-3", children: [
+        /* @__PURE__ */ jsxs22("p", { children: [
+          item.title,
+          " \xB7 ",
+          DELIVERY_STATES[item.state]
+        ] }),
+        /* @__PURE__ */ jsxs22("p", { children: [
+          item.due_at.replace("T", " "),
+          " \xB7 ",
+          item.body
+        ] }),
+        item.error_code && /* @__PURE__ */ jsx22("p", { role: "alert", children: item.error_code }),
+        ["failed", "dispatching"].includes(item.state) && /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: action.isPending, onClick: () => action.mutate({ operation: "reminder.retry", data: { id: item.id } }), children: "\u91CD\u65B0\u6392\u961F\u6B64\u63D0\u9192" })
+      ] }, item.id)),
+      deliveries.data?.total === 0 && /* @__PURE__ */ jsx22("p", { children: "\u5C1A\u65E0\u63D0\u9192\u8BB0\u5F55\uFF0C\u53EF\u6309\u6700\u65B0\u8BFE\u8868\u548C\u5F85\u529E\u5237\u65B0\u3002" }),
+      /* @__PURE__ */ jsxs22("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: offset === 0, onClick: () => setOffset((value) => Math.max(0, value - 20)), children: "\u4E0A\u4E00\u9875\u63D0\u9192" }),
+        /* @__PURE__ */ jsx22(Button22, { variant: "secondary", disabled: deliveries.data?.next_offset == null, onClick: () => setOffset(deliveries.data?.next_offset ?? 0), children: "\u4E0B\u4E00\u9875\u63D0\u9192" })
+      ] })
+    ] }),
+    [policy.error, deliveries.error, background.error, action.error, test.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx22("p", { role: "alert", children: error?.message }, index))
+  ] });
+}
+
+// extensions/teacher-assistant/desktop/src/plugin.tsx
+import { jsx as jsx23, jsxs as jsxs23 } from "react/jsx-runtime";
 var PAGES = [
   ["course", "\u6211\u7684\u8BFE\u7A0B"],
   ["class", "\u73ED\u7EA7"],
@@ -2648,14 +2898,15 @@ var PAGES = [
   ["slides", "\u8BFE\u4EF6\u9875\u9762\u84DD\u56FE"],
   ["planning", "\u6559\u5B66\u8BA1\u5212"],
   ["timetable", "\u8BFE\u8868\u4E0E\u8FDB\u5EA6"],
+  ["reminders", "\u63D0\u9192\u4E0E\u5F85\u529E"],
   ["tasks", "\u4EFB\u52A1\u4E0E\u5BA1\u6279"],
   ["settings", "\u6A21\u578B\u4E0E\u6743\u9650"]
 ];
 function TeacherWorkspace() {
   const profile = useValue(host7.state.profile);
   const connectionId = useValue(host7.state.connectionId);
-  const [page, setPage] = useState20("course");
-  const routing = useQuery21({
+  const [page, setPage] = useState22("course");
+  const routing = useQuery23({
     queryKey: ["teacher-route", connectionId, profile],
     queryFn: async () => {
       const routes = await host7.profileRoutes();
@@ -2665,28 +2916,29 @@ function TeacherWorkspace() {
     }
   });
   const route = routing.data;
-  return /* @__PURE__ */ jsxs21("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
-    /* @__PURE__ */ jsxs21("header", { className: "mb-6 space-y-2", children: [
-      /* @__PURE__ */ jsx21("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
-      /* @__PURE__ */ jsxs21("p", { children: [
+  return /* @__PURE__ */ jsxs23("main", { className: "h-full overflow-auto p-6 text-(--ui-text-primary)", "aria-label": "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0", children: [
+    /* @__PURE__ */ jsxs23("header", { className: "mb-6 space-y-2", children: [
+      /* @__PURE__ */ jsx23("h1", { className: "text-2xl font-semibold", children: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0" }),
+      /* @__PURE__ */ jsxs23("p", { children: [
         "\u5F53\u524D\u914D\u7F6E \xB7 ",
         profile,
         " \xB7 \u672C\u5730\u6559\u5B66\u6570\u636E\u4E0E Hermes \u4F1A\u8BDD\u5206\u5F00\u4FDD\u5B58"
       ] })
     ] }),
-    /* @__PURE__ */ jsx21("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx21(Button21, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
-    routing.isPending && /* @__PURE__ */ jsx21("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
-    routing.error && /* @__PURE__ */ jsx21("p", { role: "alert", children: routing.error.message }),
-    route && /* @__PURE__ */ jsxs21("div", { children: [
-      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx21(RecordEditor, { route, entity: page }),
-      page === "roster" && /* @__PURE__ */ jsx21(CourseRoster, { route }),
-      page === "tasks" && /* @__PURE__ */ jsx21(Tasks, { route }),
-      page === "textbooks" && /* @__PURE__ */ jsx21(Textbooks, { route }),
-      page === "preparation" && /* @__PURE__ */ jsx21(Preparation, { route }),
-      page === "slides" && /* @__PURE__ */ jsx21(SlidesWorkspace, { route }),
-      page === "planning" && /* @__PURE__ */ jsx21(Planning, { route }),
-      page === "timetable" && /* @__PURE__ */ jsx21(Timetable, { route }),
-      page === "settings" && /* @__PURE__ */ jsx21(Settings, { route })
+    /* @__PURE__ */ jsx23("nav", { className: "mb-6 flex flex-wrap gap-2", "aria-label": "\u6559\u5E08\u4E1A\u52A1\u5BFC\u822A", children: PAGES.map(([key, label]) => /* @__PURE__ */ jsx23(Button23, { variant: page === key ? "secondary" : "ghost", onClick: () => setPage(key), children: label }, key)) }),
+    routing.isPending && /* @__PURE__ */ jsx23("p", { role: "status", children: "\u6B63\u5728\u8FDE\u63A5\u6559\u5E08\u914D\u7F6E\u2026" }),
+    routing.error && /* @__PURE__ */ jsx23("p", { role: "alert", children: routing.error.message }),
+    route && /* @__PURE__ */ jsxs23("div", { children: [
+      ["course", "class", "student"].includes(page) && /* @__PURE__ */ jsx23(RecordEditor, { route, entity: page }),
+      page === "roster" && /* @__PURE__ */ jsx23(CourseRoster, { route }),
+      page === "tasks" && /* @__PURE__ */ jsx23(Tasks, { route }),
+      page === "textbooks" && /* @__PURE__ */ jsx23(Textbooks, { route }),
+      page === "preparation" && /* @__PURE__ */ jsx23(Preparation, { route }),
+      page === "slides" && /* @__PURE__ */ jsx23(SlidesWorkspace, { route }),
+      page === "planning" && /* @__PURE__ */ jsx23(Planning, { route }),
+      page === "timetable" && /* @__PURE__ */ jsx23(Timetable, { route }),
+      page === "reminders" && /* @__PURE__ */ jsx23(Reminders, { route }),
+      page === "settings" && /* @__PURE__ */ jsx23(Settings, { route })
     ] }, `${route.connectionId}:${route.profile}:${route.targetProfile}:${page}`)
   ] });
 }
@@ -2695,7 +2947,7 @@ var plugin_default = {
   name: "\u6559\u5E08\u4E13\u4E1A\u5DE5\u4F5C\u53F0",
   register(ctx) {
     ctx.registerMany([
-      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx21(TeacherWorkspace, {}) },
+      { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx23(TeacherWorkspace, {}) },
       { id: "navigation", area: SIDEBAR_NAV_AREA, data: { path: "/teacher", label: "\u6559\u5E08\u5DE5\u4F5C\u53F0", codicon: "mortar-board" } }
     ]);
   }

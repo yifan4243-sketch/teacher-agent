@@ -1,0 +1,18 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 1 test files (~5 tests) under ['tests\\extensions\\test_teacher_reminders.py']; running with -j 8
+[100.0% |     5/~5 | ✓5 | ✗0] ✓ tests\extensions\test_teacher_reminders.py (5✓, 64.6s)
+
+=== Summary: 1 files, 5 tests passed, 0 failed (100% complete) in 64.8s (8 workers) ===
+  Durations cached to test_durations.json (1 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   1
+  Total subprocess CPU-wall: 64.6s  (runner wall: 64.8s, parallelism: 8x)
+  P50: 64.57s  P90: 64.57s  P95: 64.57s  P99: 64.57s  Max: 64.57s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     64.57s  tests\extensions\test_teacher_reminders.py

@@ -2,6 +2,8 @@
 
 ## 当前状态
 
+Phase 6提醒与待办已实现，schema 16，真实Windows任务在Desktop关闭时调用Hermes原生无模型cron，成功发送通知并核对系统历史。教师回归62项、补充定向5项、真实Desktop、TypeScript和插件验证通过，详见PHASE6_REMINDERS_CHECKPOINT.md。当前继续人工章节进度调整，再按依赖实施Phase 7–9。上一已同步提交为`338196521b824fba08c9e2a6b95d25bb5e868262`，本模块提交凭据见Git历史。
+
 Phase 6计划DOCX/XLSX/PDF导出已实现，schema 15，支持全学期/月份/教学周和未发布/已发布/历史标注。教师回归57项、真实Desktop原生下载、WPS文字/表格及PDF逐页渲染通过，见PHASE6_PLAN_EXPORT_CHECKPOINT.md。下一步是原生调度与Windows提醒、个人待办及更细粒度内容调整；Phase 6仍未整体完成。上一已同步提交 `8d3d5abe4b0e54c4aaf34c461544fdb6de4d6540`，本模块凭据见Git历史。
 
 Phase 6实际课表增量已实现，schema 14。支持计划审核发布、跨课程冲突、旧发布快照、兼容计划版本保留调课与进度、日/周/月日历、授课登记与审计。完整教师回归55项、补充定向3项及真实Desktop通过，见PHASE6_TIMETABLE_CHECKPOINT.md。下一步是原生调度与Windows提醒、个人待办及计划导出；整个Phase 6尚未完成。上一已同步提交 `33ce8497526b369a39a3716c6d89d150e3c666e4`，本增量凭据见Git历史。
@@ -52,6 +54,8 @@ Phase 4图片模块已接入原生image_generate、预算预留、持久认领�
 schema 9已接入实际办公软件渲染任务、历史记录、三图对照、RGB绝对差指标和PNG下载。WPS 12.0已通过原生Desktop完整链路验证，使用独立PPTX副本保持输入文件哈希。公开入口查找PowerShell，PowerPoint适配器待对应环境验证。自动修复、结构化备用路线和真实模型质量继续实施。
 
 ## 最近成功测试
+
+提醒增量完整教师回归15文件62项通过，最终补充定向5项通过。真实Desktop完成待办创建、改期、完成、取消旧提醒、设置持久性和Windows通知历史核对。独立Profile实机后台已在未启动Desktop时按分钟触发原生cron并发送成功，测试任务已停用。仓库检查与插件验证凭据见提醒增量报告。
 
 计划导出完整教师回归14文件57项通过，最终版式/范围/历史状态定向2项通过。Desktop原生下载DOCX/XLSX/PDF及周计划XLSX，核对9/2课次和640教学/120考核分钟。生产生成器的最终样例经WPS文字、表格和原生PDF渲染，分别为1/2/1页，逐页检查后修正了默认标题蓝线和PDF孤立末行。
 

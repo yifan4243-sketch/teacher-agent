@@ -1,4 +1,4 @@
-import { Button, host, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery, useValue, type HermesPlugin } from '@hermes/plugin-sdk'
+import { Button, host, ROUTES_AREA, SIDEBAR_NAV_AREA, SIDEBAR_NAV_PREFS_AREA, useQuery, useValue, type HermesPlugin } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
 import { RecordEditor, CourseRoster } from './records'
@@ -68,6 +68,7 @@ export default {
     ctx.registerMany([
       { id: 'workspace', area: ROUTES_AREA, data: { path: '/teacher' }, render: () => <TeacherWorkspace /> },
       { id: 'navigation', area: SIDEBAR_NAV_AREA, data: { path: '/teacher', label: '教师工作台', codicon: 'mortar-board' } },
+      { id: 'navigation-order', area: SIDEBAR_NAV_PREFS_AREA, data: { order: ['new-session', 'capabilities', 'messaging', 'teacher-assistant:navigation'] } },
     ])
   },
 } satisfies HermesPlugin

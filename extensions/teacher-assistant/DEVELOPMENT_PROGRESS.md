@@ -2,6 +2,8 @@
 
 ## 当前状态
 
+2026-11-11按用户要求调整教师侧边栏入口。通过原生SIDEBAR_NAV_PREFS_AREA将教师工作台排列在消息平台之后，并在日常Desktop中通过原生插件开关启用，原生状态持久保存。实际窗口中消息平台纵坐标157、教师工作台193，点击后成功显示teacher-pro的课程管理页。TypeScript及原生插件验证通过。本次只提交导航、生成入口与相关说明，Phase 8名册的未提交开发文件继续保留。
+
 Phase 7答卷图片与扫描PDF识别已接入原生模型接口及Desktop，schema 22。保留原件、页面哈希、任务授权、预算、执行回执、默认模型切换校验、低置信/缺题/跨页校对与教师保存来源。最终完整教师回归20文件87项及定向7项通过，真实Electron完成两页扫描、取消重试、逐题校对、25.01分发布及PDF报告下载。原有命题与综合工作台2项Desktop回归通过。schema 21非空数据库副本升级后59张既有表的数据哈希一致，应用PDFium依赖已通过Hermes PM准备。识别响应使用本机模拟视觉服务，真实手写准确率待外部模型联调。最终TypeScript、插件验证与仓库15项检查通过。下一步推进Phase 8–9，Phase 5剩余视觉修复继续保留。基线为cc3172bca77bc5e750f116d8ed1353f432e32995，阶段收据见PHASE7_RECOGNITION_CHECKPOINT.md及Git历史。
 
 Phase 7批改报告已实现，schema 21。正式及历史成绩可导出DOCX/PDF，包含确定版本的作答、得失分、Rubric和教师意见。身份更正创建新的报告文件与内容缓存，文件失败回滚和暂存清理通过测试。完整教师回归80项、最终定向3项、真实Desktop下载与WPS/PDF渲染通过。见PHASE7_REPORTS_CHECKPOINT.md。下一步完成答卷图片、扫描PDF及手写识别与校对，再推进Phase 8–9。已确认现有documents-pdf测试环境有pypdfium2 5.14.0，可复用PDF渲染依赖。当前同步基线885893e430a9109652b3e4ac09f3f20c4f04ec56，本模块提交与同步见Git历史。
@@ -99,7 +101,7 @@ Phase 4首个模块的蓝图与文档测试5项通过。Desktop蓝图集成1项�
 
 ## 恢复入口
 
-用户要求日常Desktop打开后保持运行。2026-11-11已启动Hermes主进程PID40784，复用E:/TeacherAgentData/desktop-user-data，窗口响应正常。后续先核对并复用这个日常实例。
+用户要求日常Desktop打开后保持运行。2026-11-11当前Hermes主进程PID18896，复用E:/TeacherAgentData/desktop-user-data，窗口响应正常。教师工作台已启用，位置在消息平台下方。后续先核对并复用这个日常实例。
 
 先读取正式需求、执行授权、本文件和 Git 状态。Desktop 测试入口为 `pnpm --filter hermes exec playwright test --config ../../extensions/teacher-assistant/desktop/playwright.config.mjs`。统一插件的 Desktop 半部按原生约定默认关闭，测试需在“技能与工具 → 插件”通过原生开关启用，Agent 半部已在测试配置中启用。测试 Python 应使用 `pm.testenv.testenv_python` 解析的管理环境，基础 Python 无法在新临时 home 直接启动 Gateway。
 

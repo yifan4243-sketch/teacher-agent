@@ -1,7 +1,7 @@
 // Generated from desktop/src by scripts/build_desktop.mjs.
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { Button as Button38, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery33, useValue } from "@hermes/plugin-sdk";
+import { Button as Button38, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, SIDEBAR_NAV_PREFS_AREA, useQuery as useQuery33, useValue } from "@hermes/plugin-sdk";
 import { useState as useState34 } from "react";
 
 // extensions/teacher-assistant/desktop/src/records.tsx
@@ -4722,7 +4722,8 @@ var plugin_default = {
   register(ctx) {
     ctx.registerMany([
       { id: "workspace", area: ROUTES_AREA, data: { path: "/teacher" }, render: () => /* @__PURE__ */ jsx39(TeacherWorkspace, {}) },
-      { id: "navigation", area: SIDEBAR_NAV_AREA, data: { path: "/teacher", label: "\u6559\u5E08\u5DE5\u4F5C\u53F0", codicon: "mortar-board" } }
+      { id: "navigation", area: SIDEBAR_NAV_AREA, data: { path: "/teacher", label: "\u6559\u5E08\u5DE5\u4F5C\u53F0", codicon: "mortar-board" } },
+      { id: "navigation-order", area: SIDEBAR_NAV_PREFS_AREA, data: { order: ["new-session", "capabilities", "messaging", "teacher-assistant:navigation"] } }
     ]);
   }
 };

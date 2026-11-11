@@ -1,0 +1,40 @@
+
+Running 1 test using 1 worker
+
+(node:33372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 (3.1m)
+
+
+  1) ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('region', { name: '图片转可编辑课件', exact: true }).getByRole('region', { name: '实际渲染与设计图对照', exact: true }).getByText(/超框区域 9/)
+    Expected: visible
+    Timeout: 120000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('region', { name: '图片转可编辑课件', exact: true }).getByRole('region', { name: '实际渲染与设计图对照', exact: true }).getByText(/超框区域 9/) with timeout 120000ms
+      - waiting for getByRole('region', { name: '图片转可编辑课件', exact: true }).getByRole('region', { name: '实际渲染与设计图对照', exact: true }).getByText(/超框区域 9/)
+
+
+      384 |     await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v6 · 草稿', exact: true })).toBeVisible()
+      385 |     await renderPanel.getByRole('button', { name: '生成实际页面预览', exact: true }).click()
+    > 386 |     await expect(renderPanel.getByText(/超框区域 9/)).toBeVisible({ timeout: 120000 })
+          |                                                   ^
+      387 |     await renderPanel.getByRole('button', { name: '按实测字号修复并生成预览', exact: true }).click()
+      388 |     await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v7 · 草稿', exact: true })).toBeVisible({ timeout: 120000 })
+      389 |     await expect(renderPanel.getByText(/超框区域 0/)).toBeVisible()
+        at C:\Users\yifan\Desktop\teacher_Agent_dev\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:386:51
+
+    Error Context: ..\..\extensions\teacher-assistant\desktop\test-results\workspace-教师工作台通过原生-Gateway-操作教学数据库并审批任务\error-context.md
+
+  1 failed
+    ..\..\extensions\teacher-assistant\desktop\tests\workspace.spec.mjs:13:1 › 教师工作台通过原生 Gateway 操作教学数据库并审批任务 
+Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL
+
+  × "pnpm recursive exec" failed in C:
+  │ \Users\yifan\Desktop\teacher_Agent_dev\apps\desktop
+

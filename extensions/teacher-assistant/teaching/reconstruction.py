@@ -52,6 +52,8 @@ def get_page(conn, data):
     layout = SlideLayout.model_validate(page["layout"])
     page["text_check"] = layout_text_check(layout, _page_content(conn, page["blueprint_id"], page["page_number"]))
     page["object_counts"] = {kind: sum(element.kind == kind for element in layout.elements) for kind in ("text", "shape", "line", "table", "image")}
+    repair = conn.execute("SELECT * FROM slide_page_repairs WHERE page_id=?", (data.id,)).fetchone()
+    page["repair"] = {"render_job_id": repair["render_job_id"], "minimum_font_pixels": repair["minimum_font_pixels"], "report": json.loads(repair["report_json"])} if repair else None
     return page
 
 

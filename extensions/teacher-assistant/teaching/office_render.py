@@ -5,9 +5,11 @@ from pathlib import Path
 import subprocess
 
 from hermes_platform import resolver
+from pydantic import ValidationError
 
 from .database import encode
 from .models import DomainError
+from .layout_repair import OfficeMetadata
 
 
 def powershell_command():
@@ -50,4 +52,9 @@ def render(input_path, work, renderer):
         if image.format != "PNG" or image.size != (1600, 900):
             raise DomainError("render_response_invalid", "本地Office预览图片尺寸或格式不正确")
         image.verify()
-    return output_path.read_bytes(), str(response.get("version", "unknown"))[:100]
+    try:
+        metadata = OfficeMetadata.model_validate({"version": str(response.get("version", "unknown"))[:100],
+            "measurements": response.get("measurements", []), "unmeasured_objects": response.get("unmeasured_objects", [])})
+    except ValidationError as exc:
+        raise DomainError("render_response_invalid", "办公软件返回的文字测量格式不正确") from exc
+    return output_path.read_bytes(), metadata.model_dump()

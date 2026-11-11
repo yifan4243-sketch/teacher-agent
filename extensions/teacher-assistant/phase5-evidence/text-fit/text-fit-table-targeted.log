@@ -1,0 +1,96 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 2 test files (~6 tests) under ['tests\\extensions\\test_teacher_layout_repair.py', 'tests\\extensions\\test_teacher_rendering.py']; running with -j 8
+[ 50.0% |     3/~6 | ✓3 | ✗0] ✓ tests\extensions\test_teacher_rendering.py (3✓, 12.2s)
+[100.0% |     6/~6 | ✓5 | ✗1] ✗ tests\extensions\test_teacher_layout_repair.py (2✓ 1✗, 21.8s)
+
+  ╔╍ Failed: tests\extensions\test_teacher_layout_repair.py ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+  ║ 
+  ║ render_workspace = (<function teacher.<locals>.call at 0x00000263BA2664B0>, {'id': '79d86197-ac43-44ce-a9ee-61d9e3311dac', 'blueprint_id'...\x00\x02\x10\x80\x00\x04 \x00\x01\x08@\x00\x02\x10\x80\x00\x04\xfe\x1f\x8a\xb9u@(+\x11D\x00\x00\x00\x00IEND\xaeB`\x82')
+  ║ 
+  ║     def test_text_and_table_font_fit_uses_measured_bounds_and_readability_floor(render_workspace):
+  ║         module = importlib.import_module(render_workspace[3].__package__ + ".layout_repair")
+  ║         layout = {"width": 960, "elements": [{"kind": "text", "name": "title", "font_size": 100, "text": "fixture", "width": 100, "height": 50},
+  ║                                {"kind": "table", "name": "table", "font_size": 60, "rows": [["a"], ["b"]], "width": 116, "height": 100}]}
+  ║         observed = [measurement("title"), measurement("table", row=0, column=0, content_width=100, content_height=150),
+  ║                     measurement("table", row=1, column=0, content_width=50, content_height=30)]
+  ║         fixed, report = module.fit_fonts(layout, observed, 32)
+  ║         assert layout["elements"][0]["font_size"] == 100 and layout["elements"][1]["font_size"] == 60
+  ║         assert fixed["elements"][0]["font_size"] == 48
+  ║         assert fixed["elements"][1]["font_size"] == 32
+  ║         assert len(report["changes"]) == 2 and report["minimum_limited"] == ["table"]
+  ║         assert report["missing_regions"] == 0
+  ║         _, incomplete = module.fit_fonts(layout, observed[:1], 32)
+  ║         assert incomplete["missing_regions"] == 2
+  ║         with pytest.raises(ValueError):
+  ║             module.TextMeasurement.model_validate({**observed[0], "content_height": float("nan")})
+  ║     
+  ║         expanded = [measurement("table", row=row, column=0, width=100, height=150, content_width=80, content_height=150) for row in range(2)]
+  ║         fixed, expanded_report = module.fit_fonts(layout, expanded, 8)
+  ║         assert len(expanded_report["overflows"]) == 2
+  ║ >       assert fixed["elements"][1]["font_size"] == 19.2
+  ║ E       assert 19.1 == 19.2
+  ║ 
+  ║ tests\extensions\test_teacher_layout_repair.py:40: AssertionError
+  ║ =========================== short test summary info ===========================
+  ║ FAILED tests/extensions/test_teacher_layout_repair.py::test_text_and_table_font_fit_uses_measured_bounds_and_readability_floor
+  ║ 1 failed, 2 passed in 8.30s
+  ║
+  ║  Repro: python -m pytest tests\extensions\test_teacher_layout_repair.py -q
+  ╚╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍
+
+
+=== Summary: 2 files, 5 tests passed, 1 failed; FAILED: 1 of 2 files (100% complete) in 22.0s (8 workers) ===
+  Durations cached to test_durations.json (1 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   2
+  Total subprocess CPU-wall: 34.0s  (runner wall: 22.0s, parallelism: 8x)
+  P50: 21.80s  P90: 21.80s  P95: 21.80s  P99: 21.80s  Max: 21.80s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     21.80s  tests\extensions\test_teacher_layout_repair.py
+     12.24s  tests\extensions\test_teacher_rendering.py
+
+=== Failure output ===
+
+--- tests\extensions\test_teacher_layout_repair.py ---
+F..                                                                      [100%]
+================================== FAILURES ===================================
+___ test_text_and_table_font_fit_uses_measured_bounds_and_readability_floor ___
+
+render_workspace = (<function teacher.<locals>.call at 0x00000263BA2664B0>, {'id': '79d86197-ac43-44ce-a9ee-61d9e3311dac', 'blueprint_id'...\x00\x02\x10\x80\x00\x04 \x00\x01\x08@\x00\x02\x10\x80\x00\x04\xfe\x1f\x8a\xb9u@(+\x11D\x00\x00\x00\x00IEND\xaeB`\x82')
+
+    def test_text_and_table_font_fit_uses_measured_bounds_and_readability_floor(render_workspace):
+        module = importlib.import_module(render_workspace[3].__package__ + ".layout_repair")
+        layout = {"width": 960, "elements": [{"kind": "text", "name": "title", "font_size": 100, "text": "fixture", "width": 100, "height": 50},
+                               {"kind": "table", "name": "table", "font_size": 60, "rows": [["a"], ["b"]], "width": 116, "height": 100}]}
+        observed = [measurement("title"), measurement("table", row=0, column=0, content_width=100, content_height=150),
+                    measurement("table", row=1, column=0, content_width=50, content_height=30)]
+        fixed, report = module.fit_fonts(layout, observed, 32)
+        assert layout["elements"][0]["font_size"] == 100 and layout["elements"][1]["font_size"] == 60
+        assert fixed["elements"][0]["font_size"] == 48
+        assert fixed["elements"][1]["font_size"] == 32
+        assert len(report["changes"]) == 2 and report["minimum_limited"] == ["table"]
+        assert report["missing_regions"] == 0
+        _, incomplete = module.fit_fonts(layout, observed[:1], 32)
+        assert incomplete["missing_regions"] == 2
+        with pytest.raises(ValueError):
+            module.TextMeasurement.model_validate({**observed[0], "content_height": float("nan")})
+    
+        expanded = [measurement("table", row=row, column=0, width=100, height=150, content_width=80, content_height=150) for row in range(2)]
+        fixed, expanded_report = module.fit_fonts(layout, expanded, 8)
+        assert len(expanded_report["overflows"]) == 2
+>       assert fixed["elements"][1]["font_size"] == 19.2
+E       assert 19.1 == 19.2
+
+tests\extensions\test_teacher_layout_repair.py:40: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/extensions/test_teacher_layout_repair.py::test_text_and_table_font_fit_uses_measured_bounds_and_readability_floor
+1 failed, 2 passed in 8.30s
+
+=== 1 file with test failures ===
+  tests\extensions\test_teacher_layout_repair.py  (1 test failed)

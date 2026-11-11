@@ -15,6 +15,7 @@ from .files import file_root, store_bytes
 from .image_assets import read_asset, thumbnail
 from .models import DomainError, Identifier
 from . import office_render, reconstruction
+from .layout_repair import inspect_layout
 
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,11 @@ def list_jobs(conn, data):
     reconstruction.get_page(conn, data)
     rows = conn.execute("SELECT id FROM slide_render_jobs WHERE page_id=? ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?", (data.id, data.limit, data.offset)).fetchall()
     total = conn.execute("SELECT COUNT(*) FROM slide_render_jobs WHERE page_id=?", (data.id,)).fetchone()[0]
-    return {"items": [get_job(conn, Identifier(id=row[0])) for row in rows], "total": total,
+    items = [get_job(conn, Identifier(id=row[0])) for row in rows]
+    for item in items:
+        item["comparison"].pop("measurements", None)
+        item["comparison"].pop("unmeasured_objects", None)
+    return {"items": items, "total": total,
             "next_offset": data.offset + len(rows) if data.offset + len(rows) < total else None}
 
 
@@ -106,13 +111,16 @@ def execute(data, actor, request_id, **_context):
             page = reconstruction.get_page(conn, Identifier(id=job["page_id"]))
             asset, reference = read_asset(conn, Identifier(id=page["asset_id"]))
         with tempfile.TemporaryDirectory(prefix=".slide-render-", dir=file_root()) as folder:
-            content, version = office_render.render(Path(exported["stored_path"]), Path(folder), job["renderer"])
+            content, metadata = office_render.render(Path(exported["stored_path"]), Path(folder), job["renderer"])
         difference, comparison = compare(reference, content)
+        text_report = inspect_layout(page["layout"], metadata.get("measurements", []))
         path, digest = store_bytes(content, ".png")
         diff_path, diff_digest = store_bytes(difference, ".png")
         result = {"stored_path": str(path), "sha256": digest, "byte_size": len(content), "difference_path": str(diff_path),
-                  "difference_sha256": diff_digest, "renderer_version": version,
-                  "comparison": {**comparison, "reference_sha256": asset["sha256"], "pptx_sha256": exported["sha256"]}}
+                  "difference_sha256": diff_digest, "renderer_version": metadata["version"],
+                  "comparison": {**comparison, "reference_sha256": asset["sha256"], "pptx_sha256": exported["sha256"],
+                    "measurements": metadata.get("measurements", []), "unmeasured_objects": metadata.get("unmeasured_objects", []),
+                    "text_bounds": {"measured_regions": text_report["measured_regions"], "missing_regions": text_report["missing_regions"], "overflow_regions": len(text_report["overflows"])}}}
     except DomainError as exc:
         error = exc.code
     except OSError:

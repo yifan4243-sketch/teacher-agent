@@ -68,6 +68,7 @@ export function EditableSlide({ route, pageId, onVersion }: Props) {
       <h4>可编辑第{saved.page_number}页 · v{saved.version} · {PAGE_LABELS[saved.status]}</h4>
       <p>页面对象 {Object.entries(saved.object_counts).map(([kind, count]) => `${OBJECT_LABELS[kind]} ${count}`).join(' · ')}</p>
       <p>文字、形状、连接线与表格为原生对象。照片和复杂插画保存为独立裁切图片，支持移动、缩放和裁切。坐标与尺寸采用原图像素。</p>
+      {saved.repair && <p role="status">此版本依据实际文字边界修复了{saved.repair.report.changes.length}个对象的字号。最小字号设置为{saved.repair.minimum_font_pixels}原图像素，{saved.repair.report.minimum_limited.length}个对象达到该限制，{saved.repair.report.missing_regions}个区域缺少测量。</p>}
       {saved.text_check.missing_text.map((text, i) => <p role="alert" key={i}>页面缺少蓝图文字 {text}</p>)}
       <label>编辑页面对象<select aria-label="编辑页面对象" value={index} onChange={event => setIndex(Number(event.target.value))}>
         {saved.layout.elements.map((element, i) => <option key={element.name} value={i}>{element.name} · {OBJECT_LABELS[element.kind]}</option>)}
@@ -91,7 +92,7 @@ export function EditableSlide({ route, pageId, onVersion }: Props) {
         <Button type="submit" disabled={revise.isPending}>保存页面对象为新版本</Button>
       </form>}
       <Button variant="secondary" disabled={download.isPending} onClick={() => download.mutate()}>{saved.status === 'approved' ? '下载单页可编辑PPTX' : '下载单页草稿PPTX'}</Button>
-      <SlideRenderPreview route={route} pageId={pageId} assetId={saved.asset_id} />
+      <SlideRenderPreview route={route} pageId={pageId} assetId={saved.asset_id} onVersion={onVersion} />
       {saved.status === 'draft' && <form onSubmit={approve} className="grid max-w-3xl gap-2">
         <label className="flex gap-2"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} required />已核对原生文字、图形、表格、位置及教材内容</label>
         <label>可编辑页面审核结果<select name="decision" aria-label="可编辑页面审核结果"><option value="approved">通过</option><option value="rejected">退回修订</option></select></label>

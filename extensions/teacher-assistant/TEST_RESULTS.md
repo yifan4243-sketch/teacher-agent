@@ -70,3 +70,6 @@ TypeScript、原生插件校验和仓库15项检查通过。仓库检查首次�
 TypeScript和真实Desktop回归通过。Desktop使用真实WPS 12.0渲染页面并下载1600×900 PNG，核对下载哈希、输入PPTX哈希和实际差异指标。三图对照截图与收据保存在phase5-evidence。视觉布局响应仍为离线固定模型，PowerPoint环境验证待完成。
 
 私有导入警告已改为公开hermes_platform入口，定向回归3项通过，原生插件校验通过。最终仓库检查记录见render-preview-public-check.log。
+# Phase 5 实测文字字号适配增量
+
+完整教师回归9文件45项通过。真实Electron、Gateway、SQLite与WPS 12.0测得16个文字区域（7个文字框及9个表格单元格），缺测0。标题160→32原图像素，超框1→0；表格100→32原图像素，超框9→0。审核版本v3保持不变，修复分别追加v5和v7草稿。原始失败与最终成功日志、收据和截图保存在 `phase5-evidence/text-fit`；模型边界使用本机模拟服务，WPS渲染及测量真实执行。

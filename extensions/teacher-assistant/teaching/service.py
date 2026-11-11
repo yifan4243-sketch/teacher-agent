@@ -7,7 +7,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
-from . import blueprint_models, blueprints, document_models, documents, image_analysis, image_assets, image_models, images, knowledge, knowledge_models, lessons, models, preparation, reconstruction, records, rendering, semantic, workflows
+from . import blueprint_models, blueprints, document_models, documents, image_analysis, image_assets, image_models, images, knowledge, knowledge_models, layout_repair, lessons, models, preparation, reconstruction, records, rendering, semantic, workflows
 from .database import database, encode
 
 
@@ -70,6 +70,7 @@ WRITES = {
     "slide.page.export": (models.Identifier, reconstruction.export_page),
     "slide.page.preview_export": (models.Identifier, reconstruction.preview_page),
     "slide.deck.export": (models.Identifier, reconstruction.export_deck),
+    "slide.page.fit_text": (layout_repair.RepairRequest, layout_repair.repair),
 }
 
 

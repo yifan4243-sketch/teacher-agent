@@ -54,7 +54,7 @@ def test_render_claim_concurrency_preview_and_corrupt_file(render_workspace, mon
         calls.append(renderer)
         started.set()
         assert release.wait(30)
-        return rendered, "fixture-office"
+        return rendered, {"version": "fixture-office"}
 
     monkeypatch.setattr(adapter, "render", render)
     job = saved(call, "slide.render.begin", {"id": page["id"]})
@@ -96,7 +96,7 @@ def test_office_failure_is_durable_and_new_task_recovers(render_workspace, monke
     assert failed["state"] == "failed" and failed["error_code"] == "office_unavailable"
     saved(call, "slide.render.run", {"id": job["id"]}, job["id"])
     assert len(calls) == 1
-    monkeypatch.setattr(adapter, "render", lambda *args: (rendered, "fixture-office"))
+    monkeypatch.setattr(adapter, "render", lambda *args: (rendered, {"version": "fixture-office"}))
     next_job = saved(call, "slide.render.begin", {"id": page["id"]})
     assert next_job["id"] != job["id"]
     assert saved(call, "slide.render.run", {"id": next_job["id"]}, next_job["id"])["state"] == "succeeded"

@@ -47,6 +47,7 @@ export interface EditablePage extends EditablePageSummary {
   layout: NativeLayout
   object_counts: Record<string, number>
   text_check: { missing_text: string[] }
+  repair?: { render_job_id: string; minimum_font_pixels: number; report: { changes: { element_name: string; from_font_pixels: number; to_font_pixels: number }[]; minimum_limited: string[]; missing_regions: number } } | null
 }
 
 export async function downloadSlides(route: PluginProfileRoute, operation: string, id: string) {

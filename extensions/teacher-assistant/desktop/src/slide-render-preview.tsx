@@ -1,13 +1,14 @@
-import { Button, useMutation, useQuery, useQueryClient, type PluginProfileRoute } from '@hermes/plugin-sdk'
+import { Button, host, useMutation, useQuery, useQueryClient, type PluginProfileRoute } from '@hermes/plugin-sdk'
 import { useState, type FormEvent } from 'react'
 
 import { call, routeKey } from './api'
-import { downloadRender, generateRender, type ImagePreview, type RenderJob } from './render-api'
+import { downloadRender, fitMeasuredText, generateRender, type ImagePreview, type RenderJob } from './render-api'
 
-interface Props { route: PluginProfileRoute; pageId: string; assetId: string }
-interface ComparisonProps { route: PluginProfileRoute; job: RenderJob; assetId: string }
+interface Props { route: PluginProfileRoute; pageId: string; assetId: string; onVersion: (pageId: string) => void }
+interface ComparisonProps { route: PluginProfileRoute; job: RenderJob; assetId: string; onVersion: (pageId: string) => void }
 
-function RenderComparison({ route, job, assetId }: ComparisonProps) {
+function RenderComparison({ route, job, assetId, onVersion }: ComparisonProps) {
+  const queryClient = useQueryClient()
   const [visible, setVisible] = useState(false)
   const previews = useQuery({
     queryKey: [...routeKey(route), 'render-comparison', job.id, assetId],
@@ -23,9 +24,30 @@ function RenderComparison({ route, job, assetId }: ComparisonProps) {
     staleTime: Infinity,
   })
   const download = useMutation({ mutationFn: (variant: string) => downloadRender(route, job.id, variant) })
+  const repair = useMutation({
+    mutationFn: (minimum: number) => fitMeasuredText(route, job, minimum),
+    onSuccess: async result => {
+      if (result.changed) {
+        if (result.preview_error) host.notify({ kind: 'error', message: '修复草稿已保存，预览生成失败。请在新版本中重试。', detail: result.preview_error })
+        await queryClient.invalidateQueries({ queryKey: routeKey(route) })
+        onVersion(result.page.id)
+      }
+    },
+    retry: false,
+  })
+  function fit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    repair.mutate(Number(new FormData(event.currentTarget).get('minimum')))
+  }
   return <div className="space-y-3">
     <p>RGB平均绝对差 {job.comparison.mean_absolute_rgb_error?.toFixed(2)} · 通道差值大于32的像素占比 {new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 2 }).format(job.comparison.pixels_above_32_fraction!)}</p>
     <p>{job.comparison.review_note}</p>
+    {job.comparison.text_bounds && <p>已测量文字区域 {job.comparison.text_bounds.measured_regions} · 超框区域 {job.comparison.text_bounds.overflow_regions} · 缺少测量 {job.comparison.text_bounds.missing_regions}</p>}
+    <form onSubmit={fit} className="grid gap-2">
+      <label>修复最小字号（原图像素）<input aria-label="修复最小字号（原图像素）" name="minimum" type="number" min="8" max="160" step="0.1" defaultValue="32" required /></label>
+      <Button type="submit" disabled={repair.isPending || !job.comparison.text_bounds?.measured_regions}>按实测字号修复并生成预览</Button>
+    </form>
+    {repair.data && !repair.data.changed && <p role="status">已检查{repair.data.report.measured_regions}个文字区域，{repair.data.report.minimum_limited.length}个对象受到最小字号限制，{repair.data.report.missing_regions}个区域缺少测量。</p>}
     <Button variant="secondary" onClick={() => setVisible(value => !value)}>{visible ? '收起渲染对照' : '查看渲染对照'}</Button>
     {visible && previews.isPending && <p role="status">正在读取实际渲染图</p>}
     {visible && previews.data && <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))' }}>{previews.data.map(preview => <figure key={preview.label}>
@@ -35,11 +57,11 @@ function RenderComparison({ route, job, assetId }: ComparisonProps) {
       <Button variant="secondary" disabled={download.isPending} onClick={() => download.mutate('rendered')}>下载实际渲染PNG</Button>
       <Button variant="secondary" disabled={download.isPending} onClick={() => download.mutate('difference')}>下载像素差异PNG</Button>
     </div>
-    {[previews.error, download.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
+    {[previews.error, download.error, repair.error].filter(Boolean).map((error, index) => <p role="alert" key={index}>{error?.message}</p>)}
   </div>
 }
 
-export function SlideRenderPreview({ route, pageId, assetId }: Props) {
+export function SlideRenderPreview({ route, pageId, assetId, onVersion }: Props) {
   const queryClient = useQueryClient()
   const [offset, setOffset] = useState(0)
   const key = [...routeKey(route), 'slide-renders', pageId]
@@ -69,7 +91,7 @@ export function SlideRenderPreview({ route, pageId, assetId }: Props) {
     {jobs.data?.items.map(job => <article key={job.id} className="space-y-3 rounded border border-(--ui-border) p-3">
       <p>{states[job.state]} · {engines[job.renderer]} {job.renderer_version ?? ''}</p>
       {job.error_code && <p role="alert">{errors[job.error_code] ?? job.error_code}</p>}
-      {job.state === 'succeeded' && <RenderComparison route={route} job={job} assetId={assetId} />}
+      {job.state === 'succeeded' && <RenderComparison route={route} job={job} assetId={assetId} onVersion={onVersion} />}
     </article>)}
     <div className="flex gap-2">
       <Button variant="secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}>上一组渲染记录</Button>

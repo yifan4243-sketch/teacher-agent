@@ -345,6 +345,68 @@ print(json.dumps({'renderer': row['renderer'], 'renderer_version': row['renderer
     expect(renderProbe.status, renderProbe.stderr).toBe(0)
     writeFileSync(testInfo.outputPath('render-receipt.json'), renderProbe.stdout)
     await page.screenshot({ path: testInfo.outputPath('teacher-render-comparison.jpg'), type: 'jpeg', quality: 85 })
+    await reconstruction.getByLabel('编辑页面对象', { exact: true }).selectOption({ label: 'title · 文字' })
+    await reconstruction.getByLabel('对象字号', { exact: true }).fill('160')
+    await reconstruction.getByRole('button', { name: '保存页面对象为新版本', exact: true }).click()
+    await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v4 · 草稿', exact: true })).toBeVisible()
+    await renderPanel.getByRole('button', { name: '生成实际页面预览', exact: true }).click()
+    await expect(renderPanel.getByText(/超框区域 1/)).toBeVisible({ timeout: 120000 })
+    await renderPanel.getByRole('button', { name: '按实测字号修复并生成预览', exact: true }).click()
+    await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v5 · 草稿', exact: true })).toBeVisible({ timeout: 120000 })
+    await expect(renderPanel.getByText(/超框区域 0/)).toBeVisible()
+    await expect(reconstruction.getByRole('status').filter({ hasText: '依据实际文字边界修复了1个对象' })).toBeVisible()
+    const repairProbe = spawnSync(python, ['-c', `
+import json,sqlite3,sys
+from pathlib import Path
+with sqlite3.connect(Path(sys.argv[1]) / 'plugin-data/teacher-assistant/teaching.db') as conn:
+    conn.row_factory = sqlite3.Row
+    pages = [dict(row) for row in conn.execute('SELECT id,version,status,layout_json FROM slide_pages ORDER BY version')]
+    repair = dict(conn.execute('SELECT * FROM slide_page_repairs').fetchone())
+    before = dict(conn.execute('SELECT * FROM slide_render_jobs WHERE page_id=?', (pages[-2]['id'],)).fetchone())
+    after = dict(conn.execute('SELECT * FROM slide_render_jobs WHERE page_id=?', (pages[-1]['id'],)).fetchone())
+assert [page['status'] for page in pages] == ['draft','draft','approved','draft','draft']
+old_layout, new_layout = [json.loads(page['layout_json']) for page in pages[-2:]]
+old_title, new_title = [next(element for element in layout['elements'] if element['name']=='title') for layout in [old_layout,new_layout]]
+assert old_title['font_size'] == 160 and 32 <= new_title['font_size'] < 160
+assert old_title['text'] == new_title['text']
+source_bounds = json.loads(before['comparison_json'])['text_bounds']
+target_bounds = json.loads(after['comparison_json'])['text_bounds']
+assert source_bounds['overflow_regions'] == 1 and target_bounds['overflow_regions'] == 0
+assert target_bounds['missing_regions'] == 0 and target_bounds['measured_regions'] == 16
+assert repair['render_job_id'] == before['id'] and repair['page_id'] == pages[-1]['id']
+print(json.dumps({'before_font_pixels':old_title['font_size'],'after_font_pixels':new_title['font_size'],'before':source_bounds,'after':target_bounds,'approved_version':3,'repair_version':5,'renderer':after['renderer']},ensure_ascii=False))
+`, home], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(repairProbe.status, repairProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('text-fit-receipt.json'), repairProbe.stdout)
+    await reconstruction.getByLabel('编辑页面对象', { exact: true }).selectOption({ label: 'comparison-table · 表格' })
+    await reconstruction.getByLabel('对象字号', { exact: true }).fill('100')
+    await reconstruction.getByRole('button', { name: '保存页面对象为新版本', exact: true }).click()
+    await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v6 · 草稿', exact: true })).toBeVisible()
+    await renderPanel.getByRole('button', { name: '生成实际页面预览', exact: true }).click()
+    await expect(renderPanel.getByText(/超框区域 9/)).toBeVisible({ timeout: 120000 })
+    await renderPanel.getByRole('button', { name: '按实测字号修复并生成预览', exact: true }).click()
+    await expect(reconstruction.getByRole('heading', { name: '可编辑第1页 · v7 · 草稿', exact: true })).toBeVisible({ timeout: 120000 })
+    await expect(renderPanel.getByText(/超框区域 0/)).toBeVisible()
+    const tableFitProbe = spawnSync(python, ['-c', `
+import json,sqlite3,sys
+from pathlib import Path
+with sqlite3.connect(Path(sys.argv[1]) / 'plugin-data/teacher-assistant/teaching.db') as conn:
+    conn.row_factory = sqlite3.Row
+    pages = [dict(row) for row in conn.execute('SELECT id,version,status,layout_json FROM slide_pages ORDER BY version')]
+    source = dict(conn.execute('SELECT * FROM slide_render_jobs WHERE page_id=?', (pages[-2]['id'],)).fetchone())
+    target = dict(conn.execute('SELECT * FROM slide_render_jobs WHERE page_id=?', (pages[-1]['id'],)).fetchone())
+    repairs = conn.execute('SELECT COUNT(*) FROM slide_page_repairs').fetchone()[0]
+assert pages[2]['status']=='approved' and pages[-1]['status']=='draft' and repairs==2
+tables = [next(element for element in json.loads(page['layout_json'])['elements'] if element['name']=='comparison-table') for page in pages[-2:]]
+assert tables[0]['font_size']==100 and 32 <= tables[1]['font_size'] < 100
+assert tables[0]['rows']==tables[1]['rows']
+before, after = [json.loads(job['comparison_json'])['text_bounds'] for job in [source,target]]
+assert before['overflow_regions']==9 and after['overflow_regions']==0 and after['missing_regions']==0
+print(json.dumps({'before_font_pixels':tables[0]['font_size'],'after_font_pixels':tables[1]['font_size'],'before':before,'after':after,'approved_version':3,'repair_version':7,'renderer':target['renderer']},ensure_ascii=False))
+`, home], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(tableFitProbe.status, tableFitProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('table-fit-receipt.json'), tableFitProbe.stdout)
+    await page.screenshot({ path: testInfo.outputPath('teacher-text-fit.jpg'), type: 'jpeg', quality: 85 })
     await reconstruction.getByRole('button', { name: '下载完整可编辑PPTX', exact: true }).click()
     await expect(reconstruction.getByRole('alert').filter({ hasText: '第2页尚无已审核的可编辑版本' })).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('teacher-editable-page.png') })

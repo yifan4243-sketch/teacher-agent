@@ -1,9 +1,11 @@
 """Profile-owned native no-agent cron, triggered by the current Windows user's task."""
 
 import hashlib
+from contextlib import contextmanager
 import json
 import logging
 import os
+import sqlite3
 from pathlib import Path
 import subprocess
 import sys
@@ -13,6 +15,7 @@ import hermes_constants
 from hermes_constants import get_hermes_home
 from hermes_platform import resolver
 from tools.registry import discover_builtin_tools, registry
+from plugins.plugin_storage import plugin_db
 
 from .database import audit, database, encode, new_id
 from .files import file_root
@@ -20,6 +23,24 @@ from .models import DomainError
 
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def configuration_lock():
+    # Native discovery and OS registration can take longer than a teaching write.
+    # Keep their cross-process serialization independent of the teaching database.
+    conn = plugin_db("teacher-assistant", "reminder-configuration.db")
+    try:
+        conn.execute("PRAGMA busy_timeout=120000")
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+        except sqlite3.OperationalError as exc:
+            if exc.sqlite_errorcode in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED}:
+                raise DomainError("background_configuration_busy", "另一项后台配置正在运行，请稍后刷新状态") from exc
+            raise
+        yield
+    finally:
+        conn.close()
 
 
 def identity():
@@ -93,12 +114,11 @@ def status(conn, data):
 def install(*, data, actor, request_id, session_id=None):
     if not request_id or len(request_id) > 128:
         raise DomainError("invalid_request_id", "后台配置需要有效的request_id")
-    with database() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        return _install(conn, actor)
+    with configuration_lock():
+        return _install(actor)
 
 
-def _install(conn, actor):
+def _install(actor):
     home = get_hermes_home().resolve()
     plugin = Path(__file__).resolve().parents[1]
     binding = {"home": str(home), "plugin": str(plugin)}
@@ -106,7 +126,8 @@ def _install(conn, actor):
     script = write_owned(home / "scripts", "teacher-reminder", ("BINDING = " + repr(binding) + "\n" + source).encode(), ".py")
     name = identity()["name"]
     jobs = cron_call(action="list")["jobs"]
-    stored_id = conn.execute("SELECT cron_job_id FROM reminder_settings WHERE id=1").fetchone()[0]
+    with database() as conn:
+        stored_id = conn.execute("SELECT cron_job_id FROM reminder_settings WHERE id=1").fetchone()[0]
     job = next((job for job in jobs if job["name"] == name and job.get("no_agent")
         and (job["job_id"] == stored_id or job.get("script") == script.name)), None)
     if job is None:
@@ -118,7 +139,9 @@ def _install(conn, actor):
             cron_call(action="update", job_id=job_id, script=script.name)
         if not job["enabled"]:
             cron_call(action="resume", job_id=job_id)
-    conn.execute("UPDATE reminder_settings SET cron_job_id=?,background_task_name=? WHERE id=1", (job_id, name))
+    with database() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("UPDATE reminder_settings SET cron_job_id=?,background_task_name=? WHERE id=1", (job_id, name))
     core = Path(hermes_constants.__file__).resolve().parent
     runtime = os.environ.get("HERMES_RUNTIME_DIR", "")
     config = write_owned(home / "scripts", "teacher-background", encode({**binding, "core": str(core), "runtime": runtime}).encode(), ".json")
@@ -127,24 +150,25 @@ def _install(conn, actor):
     executable = str(hidden if hidden.is_file() else python)
     arguments = subprocess.list2cmdline([str(plugin / "scripts/background_tick.py"), str(config)])
     response = windows_task("install", executable=executable, arguments=arguments, workdir=str(core))
-    # Registration starts the task without waiting for its child. Commit before the
-    # child reads teaching.db, while serializing concurrent setup/remove requests.
-    audit(conn, "reminder_settings", "1", "background_install", actor, None, {"cron_job_id": job_id, "windows": response})
+    with database() as conn:
+        audit(conn, "reminder_settings", "1", "background_install", actor, None, {"cron_job_id": job_id, "windows": response})
     return {"cron_job_id": job_id, "windows": response}
 
 
 def remove(*, data, actor, request_id, session_id=None):
     if not request_id or len(request_id) > 128:
         raise DomainError("invalid_request_id", "后台配置需要有效的request_id")
-    with database() as conn:
-        conn.execute("BEGIN IMMEDIATE")
+    with configuration_lock():
         response = windows_task("remove")
-        row = conn.execute("SELECT cron_job_id FROM reminder_settings WHERE id=1").fetchone()
+        with database() as conn:
+            row = conn.execute("SELECT cron_job_id FROM reminder_settings WHERE id=1").fetchone()
         if row[0]:
             jobs = cron_call(action="list")["jobs"]
             job = next((job for job in jobs if job["job_id"] == row[0] and job["name"] == identity()["name"]), None)
             if job:
                 cron_call(action="pause", job_id=job["job_id"])
-        conn.execute("UPDATE reminder_settings SET background_task_name=NULL WHERE id=1")
-        audit(conn, "reminder_settings", "1", "background_remove", actor, None, response)
+        with database() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE reminder_settings SET background_task_name=NULL WHERE id=1")
+            audit(conn, "reminder_settings", "1", "background_remove", actor, None, response)
     return response

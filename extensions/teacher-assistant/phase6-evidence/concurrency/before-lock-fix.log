@@ -1,0 +1,136 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 16 test files (~64 tests) under ['tests\\extensions']; running with -j 8
+[  4.7% |     3/~64 | ✓3 | ✗0] ✓ tests\extensions\test_teacher_layout_repair.py (3✓, 73.0s)
+[  9.4% |     6/~64 | ✓6 | ✗0] ✓ tests\extensions\test_teacher_documents.py (3✓, 73.9s)
+[ 14.1% |     9/~64 | ✓9 | ✗0] ✓ tests\extensions\test_teacher_templates.py (3✓, 78.1s)
+[ 18.8% |    12/~64 | ✓12 | ✗ 0] ✓ tests\extensions\test_teacher_rendering.py (3✓, 82.3s)
+[ 25.0% |    16/~64 | ✓16 | ✗ 0] ✓ tests\extensions\test_teacher_reconstruction.py (4✓, 91.7s)
+[ 34.4% |    22/~64 | ✓22 | ✗ 0] ✓ tests\extensions\test_teacher_images.py (6✓, 103.7s)
+[ 37.5% |    24/~64 | ✓24 | ✗ 0] ✓ tests\extensions\test_teacher_blueprints.py (2✓, 22.3s)
+[ 40.6% |    26/~64 | ✓26 | ✗ 0] ✓ tests\extensions\test_teacher_references.py (2✓, 31.2s)
+[ 43.8% |    28/~64 | ✓28 | ✗ 0] ✓ tests\extensions\test_teacher_slides.py (2✓, 20.2s)
+[ 48.4% |    31/~64 | ✓31 | ✗ 0] ✓ tests\extensions\test_teacher_planning.py (3✓, 34.3s)
+[ 53.1% |    34/~64 | ✓34 | ✗ 0] ✓ tests\extensions\test_teacher_timetable.py (3✓, 39.6s)
+[ 56.2% |    36/~64 | ✓36 | ✗ 0] ✓ tests\extensions\test_teacher_plan_export.py (2✓, 19.4s)
+[ 60.9% |    39/~64 | ✓39 | ✗ 0] ✓ tests\extensions\test_teacher_questions.py (3✓, 22.4s)
+[ 73.4% |    47/~64 | ✓50 | ✗ 0] ✓ tests\extensions\test_teacher_knowledge.py (11✓, 127.7s)
+[ 90.6% |    58/~64 | ✓61 | ✗ 0] ✓ tests\extensions\test_teacher_foundation.py (11✓, 65.3s)
+[100.0% |    64/~64 | ✓67 | ✗ 0] ✓ tests\extensions\test_teacher_reminders.py (6✓, 174.9s)
+
+=== Summary: 16 files, 67 tests passed, 0 failed (100% complete) in 176.5s (8 workers) ===
+
+=== ⚠ 1 FLAKY file (failed once, passed on retry — fix these) ===
+  tests\extensions\test_teacher_reminders.py
+⚠ FLAKY: failed on attempt 1, passed on retry (attempt 2). Fix the flake — do not ignore this.
+--- first-attempt output ---
+....F.                                                                   [100%]
+================================== FAILURES ===================================
+__ test_native_cron_configuration_recovery_parallel_setup_and_plugin_disable __
+
+teacher = (WindowsPath('C:/Users/yifan/AppData/Local/Temp/hermes-pytest/r-34ncku3v/pytest-of-unknown/pytest-0/test_native_cron_c...hermes_cli.plugins.PluginManager object at 0x000001F871BDF770>, <function teacher.<locals>.call at 0x000001F878AEB060>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F877F92140>
+
+    def test_native_cron_configuration_recovery_parallel_setup_and_plugin_disable(teacher, monkeypatch):
+        home, manager, call = teacher
+        prefix = manager._plugins["teacher-assistant"].module.__name__ + ".teaching"
+        schedule = importlib.import_module(prefix + ".reminder_schedule")
+        database = importlib.import_module(prefix + ".database").database
+        errors = importlib.import_module(prefix + ".models")
+        assert not tool("reminder.background.install", {}, "agent-scheduler")["ok"]
+    
+        def rejected(action, **kwargs):
+            raise errors.DomainError("background_task_failed", "offline OS rejection")
+    
+        monkeypatch.setattr(schedule, "windows_task", rejected)
+        result = call("reminder.background.install", {}, "os-reject")
+        assert result["error"]["code"] == "background_task_failed"
+        created = schedule.cron_call(action="list")["jobs"]
+        assert len(created) == 1 and created[0]["no_agent"]
+    
+        calls = []
+    
+        def windows_task(action, **kwargs):
+            calls.append(action)
+            return {"ok": True, "installed": action != "remove", "enabled": True, "provider": "offline OS boundary"}
+    
+        monkeypatch.setattr(schedule, "windows_task", windows_task)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+>           outcomes = list(executor.map(lambda request: call("reminder.background.install", {}, request), ["install-a", "install-b"]))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\extensions\test_teacher_reminders.py:164: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\concurrent\futures\_base.py:645: in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\concurrent\futures\_base.py:312: in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\concurrent\futures\_base.py:447: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\concurrent\futures\_base.py:396: in __get_result
+    raise self._exception
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\concurrent\futures\thread.py:86: in run
+    result = ctx.run(self.task)
+             ^^^^^^^^^^^^^^^^^^
+E:\TeacherAgentData\runtime\python-3.14.9+20261021-win32-x64\Lib\concurrent\futures\thread.py:73: in run
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_reminders.py:164: in <lambda>
+    outcomes = list(executor.map(lambda request: call("reminder.background.install", {}, request), ["install-a", "install-b"]))
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\extensions\test_teacher_foundation.py:35: in call
+    return rpc({"operation": operation, "data": data, "request_id": request_id}, session_id=None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-34ncku3v\pytest-of-unknown\pytest-0\test_native_cron_configuration0\teacher-home\plugins\teacher-assistant\__init__.py:43: in rpc
+    return service.call(params.get("operation"), params.get("data"), params.get("request_id"),
+..\..\appdata\local\temp\hermes-pytest\r-34ncku3v\pytest-of-unknown\pytest-0\test_native_cron_configuration0\teacher-home\plugins\teacher-assistant\teaching\service.py:153: in call
+    return {"ok": True, "data": self._call(command.operation, command.data, command.request_id, human, session_id)}
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\appdata\local\temp\hermes-pytest\r-34ncku3v\pytest-of-unknown\pytest-0\test_native_cron_configuration0\teacher-home\plugins\teacher-assistant\teaching\service.py:193: in _call
+    return handler(data=payload, actor=actor, request_id=request_id, session_id=session_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = Input(), actor = 'desktop:teacher', request_id = 'install-b'
+session_id = None
+
+    def install(*, data, actor, request_id, session_id=None):
+        if not request_id or len(request_id) > 128:
+            raise DomainError("invalid_request_id", "后台配置需要有效的request_id")
+        with database() as conn:
+>           conn.execute("BEGIN IMMEDIATE")
+E           sqlite3.OperationalError: database is locked
+
+..\..\appdata\local\temp\hermes-pytest\r-34ncku3v\pytest-of-unknown\pytest-0\test_native_cron_configuration0\teacher-home\plugins\teacher-assistant\teaching\reminder_schedule.py:97: OperationalError
+=========================== short test summary info ===========================
+FAILED tests/extensions/test_teacher_reminders.py::test_native_cron_configuration_recovery_parallel_setup_and_plugin_disable
+1 failed, 5 passed in 112.31s (0:01:52)
+
+
+--- retry output ---
+......                                                                   [100%]
+6 passed in 46.78s
+  Durations cached to test_durations.json (15 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   16
+  Total subprocess CPU-wall: 1059.9s  (runner wall: 176.5s, parallelism: 8x)
+  P50: 73.01s  P90: 127.67s  P95: 174.86s  P99: 174.86s  Max: 174.86s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+    174.86s  tests\extensions\test_teacher_reminders.py
+    127.67s  tests\extensions\test_teacher_knowledge.py
+    103.67s  tests\extensions\test_teacher_images.py
+     91.66s  tests\extensions\test_teacher_reconstruction.py
+     82.32s  tests\extensions\test_teacher_rendering.py
+     78.10s  tests\extensions\test_teacher_templates.py
+     73.85s  tests\extensions\test_teacher_documents.py
+     73.01s  tests\extensions\test_teacher_layout_repair.py
+     65.35s  tests\extensions\test_teacher_foundation.py
+     39.64s  tests\extensions\test_teacher_timetable.py

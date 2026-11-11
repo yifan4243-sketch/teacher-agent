@@ -233,3 +233,26 @@ def test_break_end_times_preparation_pages_and_legacy_settings_receipt(teacher, 
     assert call("reminder.get", {"id": end["id"]})["data"]["state"] == "cancelled"
     entries = call("reminder.list")["data"]["items"]
     assert any(item["event_id"] == event["id"] and item["kind"] == "class_break" and item["due_at"] == (start + timedelta(days=1, minutes=40)).isoformat() and item["state"] == "queued" for item in entries)
+
+
+def test_background_registration_releases_teaching_database_for_other_writes(teacher, monkeypatch):
+    _, manager, call = teacher
+    module = importlib.import_module(manager._plugins["teacher-assistant"].module.__name__ + ".teaching.reminder_schedule")
+    started, release = Event(), Event()
+
+    def register(action, **kwargs):
+        if action == "install":
+            started.set()
+            assert release.wait(60)
+        return {"ok": True, "installed": action != "remove", "provider": "offline OS boundary"}
+
+    monkeypatch.setattr(module, "windows_task", register)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        installing = executor.submit(call, "reminder.background.install", {}, "register-without-teaching-lock")
+        try:
+            assert started.wait(60)
+            todo = saved(call, "todo.create", task_params(datetime(2026, 11, 11, 10, 0)))
+            assert call("todo.get", {"id": todo["id"]})["data"]["title"] == todo["title"]
+        finally:
+            release.set()
+        assert installing.result(timeout=60)["ok"]

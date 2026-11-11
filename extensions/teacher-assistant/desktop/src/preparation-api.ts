@@ -76,7 +76,7 @@ export interface Generation {
   task: TeachingTask
 }
 
-export async function openGeneration(route: PluginProfileRoute, generation: Generation) {
+export async function openGeneration(route: PluginProfileRoute, generation: Omit<Generation, 'kind' | 'document_id'>, claimOperation = 'document.generation.claim') {
   if (generation.task.status !== 'pending') {
     if (!generation.stored_session_id) throw new Error('此任务尚未绑定Agent会话')
     await host.openSession(generation.stored_session_id, { route, profile: route.profile, intent: 'tab', awaitHydration: true })
@@ -89,7 +89,7 @@ export async function openGeneration(route: PluginProfileRoute, generation: Gene
       toolsets: ['teacher', 'skills'],
       ...generation.model,
     })
-    await call(route, 'document.generation.claim', { id: generation.workflow_id, runtime_session_id: session.session_id, stored_session_id: session.stored_session_id }, `${generation.workflow_id}:claim`)
+    await call(route, claimOperation, { id: generation.workflow_id, runtime_session_id: session.session_id, stored_session_id: session.stored_session_id }, `${generation.workflow_id}:claim`)
     // Claim before dispatch. A lost submit response requires inspecting this same chat, never an automatic second paid turn.
     await host.requestProfile(route, 'prompt.submit', { session_id: session.session_id, text: generation.prompt, input_id: generation.workflow_id }, 120000)
     await host.openSession(session.stored_session_id, { route, profile: route.profile, intent: 'tab', awaitHydration: true, hydrationTimeoutMs: 90000 })

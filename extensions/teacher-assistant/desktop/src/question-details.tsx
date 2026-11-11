@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { call, routeKey } from './api'
 import { DIFFICULTIES, QUESTION_KINDS, QUESTION_STATUS, type Question } from './question-api'
 
-interface Props { route: PluginProfileRoute; question: Question; onEdit: () => void }
+interface Props { route: PluginProfileRoute; question: Question; onEdit?: () => void }
 
 export function QuestionDetails({ route, question, onEdit }: Props) {
   const queryClient = useQueryClient()
@@ -24,7 +24,7 @@ export function QuestionDetails({ route, question, onEdit }: Props) {
     <details><summary>教材原文依据 · {question.sources.length}条</summary>{question.sources.map(source => <article key={source.id} className="my-2 space-y-1"><p>{source.filename} · v{source.version} · {source.locator}</p><p className="whitespace-pre-wrap">{source.text}</p></article>)}</details>
     {question.duplicates.length > 0 && <p role="status">题干归一化后与其他{question.duplicates.length}道题重复，请核对使用目的与答案。</p>}
     {question.reviewed_at && <p>审核记录 {question.review_note || '教师已复核'} · {question.reviewed_at}</p>}
-    {question.version === question.latest_version && <Button variant="secondary" onClick={onEdit}>修订此题目</Button>}
+    {onEdit && question.version === question.latest_version && <Button variant="secondary" onClick={onEdit}>修订此题目</Button>}
     {question.status === 'draft' && <div className="grid gap-3">
       <label>审核说明（选填）<textarea aria-label="题目审核说明" value={note} maxLength={4000} onChange={event => setNote(event.target.value)} /></label>
       <div className="flex gap-2"><Button disabled={review.isPending} onClick={() => review.mutate('approved')}>通过题目审核</Button><Button variant="secondary" disabled={review.isPending} onClick={() => review.mutate('rejected')}>退回题目修改</Button></div>

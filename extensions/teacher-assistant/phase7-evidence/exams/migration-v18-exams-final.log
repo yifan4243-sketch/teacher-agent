@@ -1,0 +1,1 @@
+{"source_schema": 18, "target_schema": 19, "original_read_only": true, "full_record_hashes_preserved": true, "record_counts": {"courses": 2, "classes": 1, "students": 1, "question_versions": 6, "teaching_documents": 6, "semester_plans": 3}, "migration_copy_home": "C:\\Users\\yifan\\AppData\\Local\\Temp\\teacher-exam-upgrade-v18-kkoh3pv5"}

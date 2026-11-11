@@ -1,7 +1,7 @@
 ---
 name: teacher-assessment
-description: Build source-linked questions with reviewed answers.
-version: 0.1.0
+description: Build source-linked questions and versioned exams with reviewed exports.
+version: 0.2.0
 author: yifan4243-sketch
 license: MIT
 metadata:
@@ -70,3 +70,38 @@ the persisted versions. Every mutation uses a stable request_id.
 
 Confirm the persisted question type, exact score units, source IDs, answer
 structure and review state. Read the returned duplicate IDs and report them.
+
+## Exam Authoring
+
+Read `exam.plan.schema` and `exam.paper.schema` on demand. Save the user's
+course, textbook version, chapter IDs, knowledge point IDs, completed_only,
+question type counts, difficulty counts, total_points_centi, duration_minutes,
+coverage_percent and student_level through `exam.plan.save`.
+
+`exam.plan.get` returns the fixed source and knowledge universe, including
+the recorded completed-session versions when completed_only was selected.
+Use actual source IDs through `teacher_knowledge` `source.get` to retrieve
+the evidence. A scope revision saves a new plan version.
+
+1. Read the exact plan version and all required source passages.
+2. Search the existing bank for suitable reviewed versions. Draft missing
+   questions with `question.save`, including supported knowledge IDs.
+3. Allocate points to match the exact total. For short answers, rubric
+   points must equal the question points.
+4. Assemble ordered, exact question IDs through `exam.paper.save`. The server
+   checks type and difficulty counts, points, scope, normalized duplicate
+   prompts and minimum unique knowledge coverage. Resolve reported constraint
+   errors using the actual question content and the saved specification.
+5. If invoked by a native generation workflow, supply its generation_id.
+   Read `exam.generation.get` before repeating work after a disconnect.
+6. Report the saved paper ID and checks. The teacher reviews every question
+   version and the paper through Desktop before formal export.
+7. Export the approved paper through `exam.export` with audience student or
+   teacher and format docx or pdf. Student exports contain visible questions,
+   options and answer space. Teacher exports include answers, explanations,
+   rubric items and source locators.
+
+Paper revisions use root_id and the latest expected_version. Historical
+papers retain their exact question versions and their own review records.
+Normal lesson timing remains 40+10+40. Exam duration is the independently
+configured assessment duration.

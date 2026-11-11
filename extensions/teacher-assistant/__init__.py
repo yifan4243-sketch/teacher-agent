@@ -10,19 +10,19 @@ def register(ctx):
     service = TeachingService(ctx)
     knowledge_prefixes = ("textbook.", "knowledge.", "source.", "chapter.", "lesson.")
     preparation_prefixes = ("document.", "preparation.")
-    record_operations = sorted(op for op in {**READS, **WRITES} if not op.startswith(("task.", "slide.", "question.", *knowledge_prefixes, *preparation_prefixes)))
+    record_operations = sorted(op for op in {**READS, **WRITES} if not op.startswith(("task.", "slide.", "question.", "exam.", *knowledge_prefixes, *preparation_prefixes)))
     knowledge_operations = sorted(op for op in {**service.reads, **WRITES} if op.startswith(knowledge_prefixes))
     task_operations = sorted(op for op in {**READS, **WRITES} if op.startswith("task."))
     preparation_operations = sorted(op for op in {**READS, **WRITES} if op.startswith(preparation_prefixes))
     slide_operations = sorted(op for op in {**READS, **WRITES, **service.external_writes} if op.startswith("slide."))
-    assessment_operations = sorted(op for op in {**READS, **WRITES} if op.startswith("question."))
+    assessment_operations = sorted(op for op in {**READS, **WRITES} if op.startswith(("question.", "exam.")))
     for name, description, operations in (
         ("teacher_records", "Manage local courses, class links, dated plans, calendar preparation and teacher reminders.", ["schema", *record_operations]),
         ("teacher_tasks", "Run durable teaching tasks and wait for teacher review.", task_operations),
         ("teacher_knowledge", "Import textbooks and retrieve verifiable chapter sources.", ["schema", *knowledge_operations]),
         ("teacher_preparation", "Save full teaching scripts and template-based lesson plans as reviewable DOCX versions.", ["schema", *preparation_operations]),
         ("teacher_slides", "Plan source-linked teaching slides, run teacher-authorized image jobs and inspect text checks.", ["schema", *slide_operations]),
-        ("teacher_assessment", "Create and revise source-linked question bank drafts with typed answers and scoring rubrics.", ["schema", *assessment_operations]),
+        ("teacher_assessment", "Create source-linked question drafts and versioned exams with checked blueprints and reviewed exports.", ["schema", *assessment_operations]),
     ):
         def handle(args, task_id=None, **kwargs):
             return json.dumps(service.call(args.get("operation"), args.get("data"), args.get("request_id"),

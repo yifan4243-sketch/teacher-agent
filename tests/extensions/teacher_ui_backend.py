@@ -12,13 +12,55 @@ from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall, write_h
 from tests.extensions.test_teacher_documents import plan_fixture, script_fixture
 from tests.extensions.test_teacher_blueprints import blueprint_fixture
 from tests.extensions.test_teacher_slides import sample_layout
+from tests.extensions.test_teacher_questions import question_params
+
+
+def exam_responder(home):
+    stages = {}
+
+    def respond(identifier):
+        with sqlite3.connect(home / "plugin-data/teacher-assistant/teaching.db") as conn:
+            conn.row_factory = sqlite3.Row
+            generation = dict(conn.execute("SELECT * FROM exam_generations WHERE workflow_id=?", (identifier,)).fetchone())
+            plan = dict(conn.execute("SELECT * FROM exam_plans WHERE id=?", (generation["plan_id"],)).fetchone())
+            scope = json.loads(plan["scope_json"])
+            config = json.loads(plan["config_json"])
+            saved_questions = [row[0] for row in conn.execute("SELECT id FROM question_versions WHERE prompt LIKE ? ORDER BY rowid", ("%UI原生命题 " + identifier + "%",))]
+        source = scope["source_ids"][0]
+        calls = [("teacher_assessment", {"operation": "exam.plan.get", "data": {"id": plan["id"]}}),
+                 ("teacher_knowledge", {"operation": "source.get", "data": {"id": source}}),
+                 ("teacher_assessment", {"operation": "question.schema"})]
+        lesson = {"course_id": plan["course_id"], "version_id": plan["textbook_version_id"], "sources": [{"id": source}]}
+        for item in config["question_types"]:
+            for index in range(item["count"]):
+                params = question_params(lesson, item["kind"])
+                params["content"]["prompt"] += f" UI原生命题 {identifier} {item['kind']} {index}"
+                params["content"]["explanation"] = "模拟解析仅教师可见，依据测试教材说明。"
+                calls.append(("teacher_assessment", {"operation": "question.save", "data": params, "request_id": f"{identifier}:{item['kind']}:{index}"}))
+        calls.append(("teacher_assessment", {"operation": "exam.paper.save", "data": {"plan_id": plan["id"], "title": plan["title"],
+            "question_ids": saved_questions, "generation_id": identifier}, "request_id": identifier + ":paper"}))
+        stage = stages.get(identifier, 0)
+        stages[identifier] = stage + 1
+        if stage == 0:
+            return ToolCall("skill_view", {"name": "teacher-assistant:teacher-assessment"})
+        if stage <= len(calls):
+            name, arguments = calls[stage - 1]
+            return ToolCall("tool_call", {"calls": [{"name": name, "arguments": arguments}]})
+        return Text("本地模拟模型已保存试卷草稿，请教师审核。")
+
+    return respond
 
 
 def document_responder(home):
     stages = {}
+    exam = exam_responder(home)
 
     def respond(record):
         messages = record["body"]["messages"]
+        exam_match = next((re.search(r"生成任务ID ([0-9a-f-]+)", str(message.get("content", "")))
+                           for message in reversed(messages) if message["role"] == "user"), None)
+        if exam_match:
+            return exam(exam_match.group(1))
         if any("将这张教学幻灯片图片分解为可编辑页面对象" in str(message.get("content", "")) for message in messages):
             layout = sample_layout()
             layout["elements"].append({"kind": "image", "name": "detail-illustration", "x": 1460, "y": 400, "width": 100, "height": 100,

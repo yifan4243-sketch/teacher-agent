@@ -17,9 +17,18 @@ from . import plan_export
 from . import reminder_models, reminders, reminder_schedule, todos, windows_notifications
 from . import preparation_status
 from . import question_models, questions
+from . import exam_models, exams, exam_generation, exam_export
 
 
 READS = {
+    "exam.plan.schema": (models.Input, lambda conn, data: exam_models.ExamPlanSave.model_json_schema()),
+    "exam.paper.schema": (models.Input, lambda conn, data: exam_models.ExamPaperSave.model_json_schema()),
+    "exam.plan.get": (models.Identifier, exams.get_plan),
+    "exam.plan.list": (exam_models.ExamList, exams.list_plans),
+    "exam.paper.get": (models.Identifier, exams.get_paper),
+    "exam.paper.list": (exam_models.ExamList, exams.list_papers),
+    "exam.generation.get": (models.Identifier, exam_generation.get_generation),
+    "exam.generation.list": (models.Identifier, exam_generation.list_generations),
     "question.schema": (models.Input, lambda conn, data: question_models.QuestionSave.model_json_schema()),
     "question.get": (models.Identifier, questions.get_question),
     "question.list": (question_models.QuestionList, questions.list_questions),
@@ -67,6 +76,9 @@ READS = {
     "todo.get": (models.Identifier, todos.get_todo),
 }
 WRITES = {
+    "exam.plan.save": (exam_models.ExamPlanSave, exams.save_plan),
+    "exam.paper.save": (exam_models.ExamPaperSave, exams.save_paper),
+    "exam.export": (exam_models.ExamExport, exam_export.export),
     "question.save": (question_models.QuestionSave, questions.save_question),
     "todo.create": (reminder_models.TodoCreate, todos.create),
     "todo.update": (reminder_models.TodoUpdate, todos.update),
@@ -126,6 +138,9 @@ class TeachingService:
             "reminder.background.remove": (models.Input, reminder_schedule.remove),
         }
         self.human_writes = {
+            "exam.paper.review": (question_models.QuestionReview, exams.review_paper),
+            "exam.generation.begin": (exam_models.ExamGenerationStart, partial(exam_generation.begin, ctx=ctx)),
+            "exam.generation.claim": (document_models.GenerationClaim, exam_generation.claim),
             "question.review": (question_models.QuestionReview, questions.review_question),
             "task.review": (models.TaskReview, workflows.review_task),
             "plan.publish": (timetable_models.PlanPublish, publication.publish),
@@ -174,6 +189,7 @@ class TeachingService:
                  "reminder.probe": (models.Input, windows_notifications.probe),
                  "reminder.background.status": (models.Input, reminder_schedule.status),
                  "plan.export.file": (models.Identifier, plan_export.download),
+                 "exam.export.file": (models.Identifier, exam_export.download),
                  "slide.image.preview": (models.Identifier, image_assets.preview),
                  "slide.image.file": (models.Identifier, image_assets.download),
                  "slide.reference.preview": (models.Identifier, slide_references.preview),

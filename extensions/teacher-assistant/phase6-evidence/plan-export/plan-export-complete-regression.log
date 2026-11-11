@@ -1,0 +1,40 @@
+▶ not activated — using HERMES_PYTHON: E:/TeacherAgentData/dev-home/installs/40230316ec923abe/test-environment/gen-cf83738ae79e43f48d20d57fa5cb9cea/venv/Scripts/python.exe
+▶ running per-file parallel test suite via run_tests_parallel.py
+  (TZ=UTC LANG=C.UTF-8 PYTHONHASHSEED=0; clean env)
+▶ pre-compiling bytecode cache
+▶ launching test runner
+Discovered 14 test files (~54 tests) under ['tests\\extensions']; running with -j 8
+[  5.6% |     3/~54 | ✓3 | ✗0] ✓ tests\extensions\test_teacher_layout_repair.py (3✓, 38.2s)
+[ 11.1% |     6/~54 | ✓6 | ✗0] ✓ tests\extensions\test_teacher_documents.py (3✓, 39.8s)
+[ 16.7% |     9/~54 | ✓9 | ✗0] ✓ tests\extensions\test_teacher_rendering.py (3✓, 41.1s)
+[ 22.2% |    12/~54 | ✓12 | ✗ 0] ✓ tests\extensions\test_teacher_templates.py (3✓, 44.7s)
+[ 29.6% |    16/~54 | ✓16 | ✗ 0] ✓ tests\extensions\test_teacher_reconstruction.py (4✓, 57.9s)
+[ 33.3% |    18/~54 | ✓18 | ✗ 0] ✓ tests\extensions\test_teacher_slides.py (2✓, 20.3s)
+[ 37.0% |    20/~54 | ✓20 | ✗ 0] ✓ tests\extensions\test_teacher_blueprints.py (2✓, 22.7s)
+[ 48.1% |    26/~54 | ✓26 | ✗ 0] ✓ tests\extensions\test_teacher_images.py (6✓, 68.0s)
+[ 51.9% |    28/~54 | ✓28 | ✗ 0] ✓ tests\extensions\test_teacher_planning.py (2✓, 23.3s)
+[ 55.6% |    30/~54 | ✓30 | ✗ 0] ✓ tests\extensions\test_teacher_references.py (2✓, 30.5s)
+[ 59.3% |    32/~54 | ✓32 | ✗ 0] ✓ tests\extensions\test_teacher_plan_export.py (2✓, 15.1s)
+[ 64.8% |    35/~54 | ✓35 | ✗ 0] ✓ tests\extensions\test_teacher_timetable.py (3✓, 20.9s)
+[ 79.6% |    43/~54 | ✓46 | ✗ 0] ✓ tests\extensions\test_teacher_knowledge.py (11✓, 80.0s)
+[100.0% |    54/~54 | ✓57 | ✗ 0] ✓ tests\extensions\test_teacher_foundation.py (11✓, 91.9s)
+
+=== Summary: 14 files, 57 tests passed, 0 failed (100% complete) in 92.1s (8 workers) ===
+  Durations cached to test_durations.json (14 files)
+
+=== Per-file subprocess time distribution ===
+  Files:   14
+  Total subprocess CPU-wall: 594.4s  (runner wall: 92.1s, parallelism: 8x)
+  P50: 39.77s  P90: 80.01s  P95: 91.86s  P99: 91.86s  Max: 91.86s
+  <1s: 0 files (0%)  <2s: 0 files (0%)
+  Top 10 slowest:
+     91.86s  tests\extensions\test_teacher_foundation.py
+     80.01s  tests\extensions\test_teacher_knowledge.py
+     67.98s  tests\extensions\test_teacher_images.py
+     57.95s  tests\extensions\test_teacher_reconstruction.py
+     44.72s  tests\extensions\test_teacher_templates.py
+     41.08s  tests\extensions\test_teacher_rendering.py
+     39.77s  tests\extensions\test_teacher_documents.py
+     38.23s  tests\extensions\test_teacher_layout_repair.py
+     30.50s  tests\extensions\test_teacher_references.py
+     23.30s  tests\extensions\test_teacher_planning.py

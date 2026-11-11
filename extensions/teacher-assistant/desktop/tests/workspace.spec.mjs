@@ -554,6 +554,43 @@ print(json.dumps({'versions':versions,'session_totals':totals,'basis':'actual co
     writeFileSync(testInfo.outputPath('planning-receipt.json'), planningProbe.stdout)
     const latestPlan = await planning.getByLabel('计划版本', { exact: true }).locator('option').filter({ hasText: 'UI实际日期测试学期 · v2' }).getAttribute('value')
     await planning.getByLabel('计划版本', { exact: true }).selectOption(latestPlan)
+    const planPaths = {}
+    for (const format of ['docx', 'xlsx', 'pdf']) {
+      const path = testInfo.outputPath(`semester-plan.${format}`)
+      planPaths[format] = path
+      await app.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }) }, path)
+      await planning.getByLabel('计划导出格式', { exact: true }).selectOption(format)
+      await planning.getByRole('button', { name: '导出所选范围计划', exact: true }).click()
+      await expect.poll(() => existsSync(path)).toBe(true)
+    }
+    await planning.getByLabel('计划范围', { exact: true }).selectOption('week:2026-W45')
+    const weeklyPath = testInfo.outputPath('weekly-plan.xlsx')
+    await app.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }) }, weeklyPath)
+    await planning.getByLabel('计划导出格式', { exact: true }).selectOption('xlsx')
+    await planning.getByRole('button', { name: '导出所选范围计划', exact: true }).click()
+    await expect.poll(() => existsSync(weeklyPath)).toBe(true)
+    await planning.getByLabel('计划范围', { exact: true }).selectOption('all')
+    const exportProbe = spawnSync(python, ['-c', `
+import hashlib,json,sqlite3,sys
+from pathlib import Path
+from docx import Document
+from openpyxl import load_workbook
+from pypdf import PdfReader
+home=Path(sys.argv[1]); paths=[Path(path) for path in sys.argv[2:]]
+with sqlite3.connect(home/'plugin-data/teacher-assistant/teaching.db') as conn:
+    hashes={row[0] for row in conn.execute('SELECT sha256 FROM plan_exports')}
+assert all(hashlib.sha256(path.read_bytes()).hexdigest() in hashes for path in paths)
+doc=Document(paths[0]); sheet=load_workbook(paths[1],data_only=False).active; pdf=PdfReader(paths[2])
+assert len(doc.tables[0].rows)==10 and sheet.max_row==14
+assert sum(sheet.cell(row,6).value for row in range(6,15))==640
+assert sum(sheet.cell(row,7).value for row in range(6,15))==120
+assert '教学640分钟' in ''.join(page.extract_text() for page in pdf.pages)
+assert load_workbook(paths[3]).active.max_row==7
+assert all(cell.data_type!='f' for row in sheet for cell in row)
+print(json.dumps({'formats':['docx','xlsx','pdf'],'semester_sessions':9,'weekly_sessions':2,'instruction_minutes':640,'assessment_minutes':120,'pdf_pages':len(pdf.pages),'sha256_verified':True},ensure_ascii=False))
+`, home, planPaths.docx, planPaths.xlsx, planPaths.pdf, weeklyPath], { cwd: repo, env, encoding: 'utf8', windowsHide: true })
+    expect(exportProbe.status, exportProbe.stderr).toBe(0)
+    writeFileSync(testInfo.outputPath('plan-export-receipt.json'), exportProbe.stdout)
     const publicationPanel = planning.getByRole('region', { name: '计划发布与课表', exact: true })
     await publicationPanel.getByLabel(/已核对实际日期、章节与课时/).check()
     await publicationPanel.getByLabel('发布审核说明', { exact: true }).fill('核对虚构校历并发布到实际测试课表')

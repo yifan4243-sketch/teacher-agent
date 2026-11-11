@@ -55,6 +55,11 @@ response, and use a new ID for a changed command.
   `calendar.publication` and `calendar.history` expose actual scheduled events,
   recorded progress and audit history. Publishing, rescheduling and progress
   corrections require the teacher Desktop; Agent tools cannot perform them.
+- `plan.export` creates DOCX, XLSX or PDF for a selected semester, month or ISO
+  week from the immutable plan version. It labels unpublished, active and
+  historical plans and excludes later actual calendar moves. Scope keys must
+  exist in plan.get. This export does not change the DOCX-only rule for teaching
+  scripts and formal lesson plans.
 
 ## Procedure
 

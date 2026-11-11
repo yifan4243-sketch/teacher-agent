@@ -13,6 +13,7 @@ from . import template_slides
 from . import slide_references
 from . import planning, planning_models
 from . import publication, timetable, timetable_models
+from . import plan_export
 
 
 READS = {
@@ -56,6 +57,7 @@ READS = {
 WRITES = {
     "course.create": (models.CourseCreate, partial(records.create_record, entity="course")),
     "plan.save": (planning_models.PlanSave, planning.save),
+    "plan.export": (plan_export.PlanExport, plan_export.export),
     "course.update": (models.CourseUpdate, partial(records.update_record, entity="course")),
     "class.create": (models.ClassCreate, partial(records.create_record, entity="class")),
     "class.update": (models.ClassUpdate, partial(records.update_record, entity="class")),
@@ -144,6 +146,7 @@ class TeachingService:
             return self.update_settings(data, human)
         writes = {**WRITES, **self.external_writes, **(self.human_writes if human else {})}
         reads = {**self.reads, "document.file": (models.Identifier, documents.read_export),
+                 "plan.export.file": (models.Identifier, plan_export.download),
                  "slide.image.preview": (models.Identifier, image_assets.preview),
                  "slide.image.file": (models.Identifier, image_assets.download),
                  "slide.reference.preview": (models.Identifier, slide_references.preview),

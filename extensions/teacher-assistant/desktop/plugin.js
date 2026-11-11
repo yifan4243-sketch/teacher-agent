@@ -1,7 +1,7 @@
 // Generated from desktop/src by scripts/build_desktop.mjs.
 
 // extensions/teacher-assistant/desktop/src/plugin.tsx
-import { Button as Button21, host as host6, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery21, useValue } from "@hermes/plugin-sdk";
+import { Button as Button21, host as host7, ROUTES_AREA, SIDEBAR_NAV_AREA, useQuery as useQuery21, useValue } from "@hermes/plugin-sdk";
 import { useState as useState20 } from "react";
 
 // extensions/teacher-assistant/desktop/src/records.tsx
@@ -2094,7 +2094,7 @@ function SlidesWorkspace({ route }) {
 }
 
 // extensions/teacher-assistant/desktop/src/planning.tsx
-import { Button as Button18, useMutation as useMutation18, useQuery as useQuery18, useQueryClient as useQueryClient17 } from "@hermes/plugin-sdk";
+import { Button as Button18, captureGatewayFileDownload as captureGatewayFileDownload5, host as host6, useMutation as useMutation18, useQuery as useQuery18, useQueryClient as useQueryClient17 } from "@hermes/plugin-sdk";
 import { useState as useState17 } from "react";
 
 // extensions/teacher-assistant/desktop/src/plan-publication.tsx
@@ -2260,8 +2260,22 @@ function PlanForm({ route, courseId, book, plan, onSaved }) {
     save.error && /* @__PURE__ */ jsx18("p", { role: "alert", children: save.error.message })
   ] });
 }
-function PlanResults({ plan }) {
+function PlanResults({ route, plan }) {
   const [group, setGroup] = useState17("all");
+  const [format, setFormat] = useState17("docx");
+  const download = useMutation18({ mutationFn: async () => {
+    const save = captureGatewayFileDownload5();
+    const release = await host6.retainProfile(route, { spawnPriority: "foreground" });
+    try {
+      const scope = group === "all" ? "semester" : group.startsWith("month:") ? "month" : "week";
+      const key = scope === "semester" ? null : group.slice(scope === "month" ? 6 : 5);
+      const exported = await call(route, "plan.export", { id: plan.id, format, scope, key }, crypto.randomUUID());
+      const file = await call(route, "plan.export.file", { id: exported.id });
+      await save(file.stored_path, file.filename);
+    } finally {
+      release();
+    }
+  } });
   const allowed = group === "all" ? null : group.startsWith("month:") ? plan.months[group.slice(6)] : plan.weeks[group.slice(5)];
   return /* @__PURE__ */ jsxs18("section", { "aria-label": "\u5B66\u671F\u8BA1\u5212\u8BA1\u7B97\u7ED3\u679C", className: "space-y-3", children: [
     /* @__PURE__ */ jsxs18("h3", { children: [
@@ -2294,6 +2308,17 @@ function PlanResults({ plan }) {
         ] }, week))
       ] })
     ] }),
+    /* @__PURE__ */ jsx18("p", { children: "\u6309\u5F53\u524D\u6240\u9009\u8303\u56F4\u5BFC\u51FA\u8BA1\u5212\u7248\u672C\uFF0C\u5B9E\u9645\u8C03\u8BFE\u548C\u6388\u8BFE\u8FDB\u5EA6\u4EE5\u8BFE\u8868\u4E3A\u51C6\u3002" }),
+    /* @__PURE__ */ jsxs18("label", { children: [
+      "\u8BA1\u5212\u5BFC\u51FA\u683C\u5F0F",
+      /* @__PURE__ */ jsxs18("select", { "aria-label": "\u8BA1\u5212\u5BFC\u51FA\u683C\u5F0F", value: format, onChange: (event) => setFormat(event.target.value), children: [
+        /* @__PURE__ */ jsx18("option", { value: "docx", children: "DOCX" }),
+        /* @__PURE__ */ jsx18("option", { value: "xlsx", children: "XLSX" }),
+        /* @__PURE__ */ jsx18("option", { value: "pdf", children: "PDF" })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx18(Button18, { disabled: download.isPending, onClick: () => download.mutate(), children: "\u5BFC\u51FA\u6240\u9009\u8303\u56F4\u8BA1\u5212" }),
+    download.error && /* @__PURE__ */ jsx18("p", { role: "alert", children: download.error.message }),
     /* @__PURE__ */ jsxs18("table", { children: [
       /* @__PURE__ */ jsx18("thead", { children: /* @__PURE__ */ jsxs18("tr", { children: [
         /* @__PURE__ */ jsx18("th", { children: "\u8BFE\u6B21" }),
@@ -2380,7 +2405,7 @@ function Planning({ route }) {
     ] }),
     planId && plan.isPending && /* @__PURE__ */ jsx18("p", { role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u8BA1\u5212\u7248\u672C" }),
     book.data && (!planId || plan.data) && /* @__PURE__ */ jsx18(PlanForm, { route, courseId, book: book.data, plan: plan.data, onSaved: saved }, `${planId}:${bookId}`),
-    plan.data && /* @__PURE__ */ jsx18(PlanResults, { plan: plan.data }, `results:${planId}`),
+    plan.data && /* @__PURE__ */ jsx18(PlanResults, { route, plan: plan.data }, `results:${planId}`),
     plan.data && /* @__PURE__ */ jsx18(PlanPublication, { route, planId, latest: plan.data.version === plan.data.latest_version, current: plan.data.publication }, `publication:${planId}`),
     [courses.error, books.error, plans.error, plan.error, book.error].filter(Boolean).map((error, index) => /* @__PURE__ */ jsx18("p", { role: "alert", children: error?.message }, index))
   ] });
@@ -2627,13 +2652,13 @@ var PAGES = [
   ["settings", "\u6A21\u578B\u4E0E\u6743\u9650"]
 ];
 function TeacherWorkspace() {
-  const profile = useValue(host6.state.profile);
-  const connectionId = useValue(host6.state.connectionId);
+  const profile = useValue(host7.state.profile);
+  const connectionId = useValue(host7.state.connectionId);
   const [page, setPage] = useState20("course");
   const routing = useQuery21({
     queryKey: ["teacher-route", connectionId, profile],
     queryFn: async () => {
-      const routes = await host6.profileRoutes();
+      const routes = await host7.profileRoutes();
       const route2 = routes.find((item) => item.connectionId === connectionId && item.profile === profile);
       if (!route2) throw new Error("\u5F53\u524D\u6559\u5E08\u914D\u7F6E\u7684 Gateway \u8DEF\u7531\u5C1A\u672A\u5C31\u7EEA");
       return route2;

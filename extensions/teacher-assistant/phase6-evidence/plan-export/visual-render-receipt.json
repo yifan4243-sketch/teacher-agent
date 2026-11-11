@@ -1,0 +1,30 @@
+{
+  "renders": [
+    {
+      "file": "plan-sample.pdf",
+      "pages": 1,
+      "images": [
+        "E:\\TeacherAgentData\\phase6-evidence\\plan-export-qa-e4bda3e26dde49b1a0d0fdd13aff15fd\\plan-sample-1.jpg"
+      ],
+      "totals_text_verified": true
+    },
+    {
+      "file": "wps-docx.pdf",
+      "pages": 1,
+      "images": [
+        "E:\\TeacherAgentData\\phase6-evidence\\plan-export-qa-e4bda3e26dde49b1a0d0fdd13aff15fd\\wps-docx-1.jpg"
+      ],
+      "totals_text_verified": true
+    },
+    {
+      "file": "wps-xlsx.pdf",
+      "pages": 2,
+      "images": [
+        "E:\\TeacherAgentData\\phase6-evidence\\plan-export-qa-e4bda3e26dde49b1a0d0fdd13aff15fd\\wps-xlsx-1.jpg",
+        "E:\\TeacherAgentData\\phase6-evidence\\plan-export-qa-e4bda3e26dde49b1a0d0fdd13aff15fd\\wps-xlsx-2.jpg"
+      ],
+      "totals_text_verified": true
+    }
+  ],
+  "office_source_hashes_unchanged": true
+}

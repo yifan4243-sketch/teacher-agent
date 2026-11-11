@@ -1,0 +1,48 @@
+{
+  "plan_totals": {
+    "sessions": 9,
+    "instruction_minutes": 640,
+    "assessment_minutes": 120,
+    "calendar_minutes": 840
+  },
+  "exports": {
+    "docx": {
+      "id": "b56290d1-92f0-4eb2-b96a-671a2a261dac",
+      "plan_id": "e38e7a68-b2a1-42b6-a013-96c37b8c0c9a",
+      "format": "docx",
+      "selection_hash": "dde97f53fbe55c9d6776415b93eefb340e391386803f4607592b1e7d95256d69",
+      "scope_json": "{\"key\": null, \"scope\": \"semester\"}",
+      "stored_path": "E:\\TeacherAgentData\\phase6-evidence\\plan-export-qa-e4bda3e26dde49b1a0d0fdd13aff15fd\\teacher-home\\plugin-data\\teacher-assistant\\files\\b234d8d0d7553c70b2e1eb0fa4568a147b38fc025f41d270fd320a36ca3be7dd.docx",
+      "sha256": "b234d8d0d7553c70b2e1eb0fa4568a147b38fc025f41d270fd320a36ca3be7dd",
+      "byte_size": 36532,
+      "filename": "教学计划-全学期-v1.docx",
+      "created_at": "2026-11-11T01:54:13.692Z"
+    },
+    "xlsx": {
+      "id": "f1bacf74-911f-4fad-a21e-2cdf40bfc0ad",
+      "plan_id": "e38e7a68-b2a1-42b6-a013-96c37b8c0c9a",
+      "format": "xlsx",
+      "selection_hash": "dde97f53fbe55c9d6776415b93eefb340e391386803f4607592b1e7d95256d69",
+      "scope_json": "{\"key\": null, \"scope\": \"semester\"}",
+      "stored_path": "E:\\TeacherAgentData\\phase6-evidence\\plan-export-qa-e4bda3e26dde49b1a0d0fdd13aff15fd\\teacher-home\\plugin-data\\teacher-assistant\\files\\c3ff379d263ee4b6c80004b8f7da98142291db6b64bc266f7fb619aaf16511fb.xlsx",
+      "sha256": "c3ff379d263ee4b6c80004b8f7da98142291db6b64bc266f7fb619aaf16511fb",
+      "byte_size": 6411,
+      "filename": "教学计划-全学期-v1.xlsx",
+      "created_at": "2026-11-11T01:54:13.983Z"
+    },
+    "pdf": {
+      "id": "59d35ab9-c7e3-4fb6-be48-4a931c4a18d8",
+      "plan_id": "e38e7a68-b2a1-42b6-a013-96c37b8c0c9a",
+      "format": "pdf",
+      "selection_hash": "dde97f53fbe55c9d6776415b93eefb340e391386803f4607592b1e7d95256d69",
+      "scope_json": "{\"key\": null, \"scope\": \"semester\"}",
+      "stored_path": "E:\\TeacherAgentData\\phase6-evidence\\plan-export-qa-e4bda3e26dde49b1a0d0fdd13aff15fd\\teacher-home\\plugin-data\\teacher-assistant\\files\\eedfcbdde67c5ed822e6c94f021dcaa5c1586739d42ecb03c9ebfc2d1b822472.pdf",
+      "sha256": "eedfcbdde67c5ed822e6c94f021dcaa5c1586739d42ecb03c9ebfc2d1b822472",
+      "byte_size": 3810,
+      "filename": "教学计划-全学期-v1.pdf",
+      "created_at": "2026-11-11T01:54:14.175Z"
+    }
+  },
+  "model_calls": 0,
+  "data": "explicit synthetic calendar"
+}
